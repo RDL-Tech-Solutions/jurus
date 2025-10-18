@@ -218,21 +218,21 @@ const DashboardMelhorado: React.FC<DashboardMelhoradoProps> = ({
   };
 
   const renderizarVisaoGeral = () => (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Resumo Principal */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white"
+          className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-4 sm:p-6 text-white"
         >
-          <div className="flex items-center justify-between mb-4">
-            <DollarSign className="w-8 h-8" />
-            <span className="text-blue-100 text-sm">Valor Atual</span>
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <DollarSign className="w-6 h-6 sm:w-8 sm:h-8" />
+            <span className="text-blue-100 text-xs sm:text-sm">Valor Atual</span>
           </div>
-          <div className="space-y-2">
-            <p className="text-3xl font-bold">{formatarMoeda(valorAtual)}</p>
-            <p className="text-blue-100">
+          <div className="space-y-1 sm:space-y-2">
+            <p className="text-xl sm:text-3xl font-bold">{formatarMoeda(valorAtual)}</p>
+            <p className="text-blue-100 text-sm">
               {formatarPorcentagem(((valorAtual - valorInicial) / valorInicial) * 100)} vs inicial
             </p>
           </div>
@@ -242,15 +242,15 @@ const DashboardMelhorado: React.FC<DashboardMelhoradoProps> = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-6 text-white"
+          className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl p-4 sm:p-6 text-white"
         >
-          <div className="flex items-center justify-between mb-4">
-            <TrendingUp className="w-8 h-8" />
-            <span className="text-green-100 text-sm">Rendimento</span>
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <TrendingUp className="w-6 h-6 sm:w-8 sm:h-8" />
+            <span className="text-green-100 text-xs sm:text-sm">Rendimento</span>
           </div>
-          <div className="space-y-2">
-            <p className="text-3xl font-bold">{formatarMoeda(valorAtual - valorInicial)}</p>
-            <p className="text-green-100">Lucro acumulado</p>
+          <div className="space-y-1 sm:space-y-2">
+            <p className="text-xl sm:text-3xl font-bold">{formatarMoeda(valorAtual - valorInicial)}</p>
+            <p className="text-green-100 text-sm">Lucro acumulado</p>
           </div>
         </motion.div>
 
@@ -258,15 +258,15 @@ const DashboardMelhorado: React.FC<DashboardMelhoradoProps> = ({
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-6 text-white"
+          className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl p-4 sm:p-6 text-white sm:col-span-2 lg:col-span-1"
         >
-          <div className="flex items-center justify-between mb-4">
-            <Target className="w-8 h-8" />
-            <span className="text-purple-100 text-sm">Performance</span>
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <Target className="w-6 h-6 sm:w-8 sm:h-8" />
+            <span className="text-purple-100 text-xs sm:text-sm">Performance</span>
           </div>
-          <div className="space-y-2">
-            <p className="text-3xl font-bold">Excelente</p>
-            <p className="text-purple-100">Acima da meta</p>
+          <div className="space-y-1 sm:space-y-2">
+            <p className="text-xl sm:text-3xl font-bold">Excelente</p>
+            <p className="text-purple-100 text-sm">Acima da meta</p>
           </div>
         </motion.div>
       </div>
@@ -276,19 +276,32 @@ const DashboardMelhorado: React.FC<DashboardMelhoradoProps> = ({
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+        className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700"
       >
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
           Evolução do Investimento
         </h3>
-        <ResponsiveContainer width="100%" height={300}>
+        <ResponsiveContainer width="100%" height={250} className="sm:!h-[300px]">
           <AreaChart data={dashboard.historico}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="data" />
-            <YAxis />
+            <XAxis 
+              dataKey="data" 
+              fontSize={12}
+              className="text-xs sm:text-sm"
+            />
+            <YAxis 
+              fontSize={12}
+              className="text-xs sm:text-sm"
+            />
             <Tooltip 
               formatter={(value: number) => [formatarMoeda(value), 'Valor']}
               labelFormatter={(label) => `Data: ${label}`}
+              contentStyle={{
+                fontSize: '14px',
+                borderRadius: '8px',
+                border: 'none',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+              }}
             />
             <Area 
               type="monotone" 
@@ -443,17 +456,31 @@ const DashboardMelhorado: React.FC<DashboardMelhoradoProps> = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-200 dark:border-gray-700"
+      className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-200 dark:border-gray-700"
     >
-      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+      <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4">
         Histórico Detalhado
       </h3>
-      <ResponsiveContainer width="100%" height={400}>
+      <ResponsiveContainer width="100%" height={300} className="sm:!h-[400px]">
         <LineChart data={dashboard.historico}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="data" />
-          <YAxis />
-          <Tooltip />
+          <XAxis 
+            dataKey="data" 
+            fontSize={12}
+            className="text-xs sm:text-sm"
+          />
+          <YAxis 
+            fontSize={12}
+            className="text-xs sm:text-sm"
+          />
+          <Tooltip 
+            contentStyle={{
+              fontSize: '14px',
+              borderRadius: '8px',
+              border: 'none',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+            }}
+          />
           <Line 
             type="monotone" 
             dataKey="valor" 
@@ -485,9 +512,9 @@ const DashboardMelhorado: React.FC<DashboardMelhoradoProps> = ({
   return (
     <div className={`space-y-6 ${className}`}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
             Dashboard de Performance Avançado
           </h2>
           <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -495,7 +522,8 @@ const DashboardMelhorado: React.FC<DashboardMelhoradoProps> = ({
             {tempoReal && (
               <span className="ml-2 inline-flex items-center gap-1 text-green-600">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                Tempo real
+                <span className="hidden sm:inline">Tempo real</span>
+                <span className="sm:hidden">Ao vivo</span>
               </span>
             )}
           </div>
@@ -511,7 +539,7 @@ const DashboardMelhorado: React.FC<DashboardMelhoradoProps> = ({
             }`}
             title={tempoReal ? 'Desativar tempo real' : 'Ativar tempo real'}
           >
-            <Zap className="w-5 h-5" />
+            <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           
           <button
@@ -519,16 +547,17 @@ const DashboardMelhorado: React.FC<DashboardMelhoradoProps> = ({
             className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
             title="Configurações"
           >
-            <Settings className="w-5 h-5" />
+            <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
           
           <button
             onClick={() => atualizarDashboard(valorAtual, valorInicial)}
             disabled={dashboard.isLoading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 sm:px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors text-sm"
           >
             <RefreshCw className={`w-4 h-4 ${dashboard.isLoading ? 'animate-spin' : ''}`} />
-            Atualizar
+            <span className="hidden sm:inline">Atualizar</span>
+            <span className="sm:hidden">Sync</span>
           </button>
         </div>
       </div>
@@ -542,10 +571,10 @@ const DashboardMelhorado: React.FC<DashboardMelhoradoProps> = ({
             exit={{ opacity: 0, height: 0 }}
             className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 space-y-4"
           >
-            <h3 className="font-semibold text-gray-900 dark:text-white">Configurações Avançadas</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Configurações Avançadas</h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <label className="flex items-center gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+              <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   checked={configuracoes.atualizacaoAutomatica}
@@ -553,14 +582,14 @@ const DashboardMelhorado: React.FC<DashboardMelhoradoProps> = ({
                     ...prev,
                     atualizacaoAutomatica: e.target.checked
                   }))}
-                  className="rounded"
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   Atualização automática
                 </span>
               </label>
               
-              <label className="flex items-center gap-2">
+              <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   checked={configuracoes.mostrarComparacao}
@@ -568,19 +597,22 @@ const DashboardMelhorado: React.FC<DashboardMelhoradoProps> = ({
                     ...prev,
                     mostrarComparacao: e.target.checked
                   }))}
-                  className="rounded"
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   Mostrar comparação
                 </span>
               </label>
 
-              <label className="flex items-center gap-2">
+              <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  checked={tempoReal}
-                  onChange={(e) => setTempoReal(e.target.checked)}
-                  className="rounded"
+                  checked={configuracoes.modoTempoReal}
+                  onChange={(e) => setConfiguracoes(prev => ({
+                    ...prev,
+                    modoTempoReal: e.target.checked
+                  }))}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   Modo tempo real
@@ -593,7 +625,7 @@ const DashboardMelhorado: React.FC<DashboardMelhoradoProps> = ({
 
       {/* Navegação por Abas */}
       <div className="border-b border-gray-200 dark:border-gray-700">
-        <nav className="flex space-x-8">
+        <nav className="-mb-px flex space-x-4 sm:space-x-8 overflow-x-auto">
           {[
             { id: 'visao-geral', nome: 'Visão Geral', icone: Eye },
             { id: 'metricas', nome: 'Métricas', icone: BarChart3 },
@@ -603,14 +635,17 @@ const DashboardMelhorado: React.FC<DashboardMelhoradoProps> = ({
             <button
               key={aba.id}
               onClick={() => setAbaSelecionada(aba.id as any)}
-              className={`flex items-center gap-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors whitespace-nowrap ${
                 abaSelecionada === aba.id
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
               }`}
             >
-              <aba.icone className="w-4 h-4" />
-              {aba.nome}
+              <div className="flex items-center gap-2">
+                <aba.icone className="w-4 h-4" />
+                <span className="hidden sm:inline">{aba.nome}</span>
+                <span className="sm:hidden">{aba.nome.split(' ')[0]}</span>
+              </div>
             </button>
           ))}
         </nav>

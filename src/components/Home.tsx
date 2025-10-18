@@ -1,9 +1,25 @@
 import { useEffect, useState, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Calculator, TrendingUp, Target, BarChart3, Settings, Download, Zap, Heart, Brain, GraduationCap, Crown } from 'lucide-react';
+import { Calculator, TrendingUp, Target, BarChart3, Settings, Download, Zap, Heart, Brain, GraduationCap, HelpCircle, Bell, Accessibility, Users, Shield, Smartphone, Menu } from 'lucide-react';
+import { Z_INDEX } from '../constants/zIndex';
 import { useSimulacao, useUI } from '../store/useAppStore';
 import { useToast } from '../hooks/useToast';
 import { useNotificacoes } from '../hooks/useNotificacoes';
+import { usePreloadComponents, useIntelligentPreload, useHoverPreload } from '../hooks/usePreloadComponents';
+import { useOnboarding } from '../hooks/useOnboarding';
+import { useContextualTutorials } from './ContextualTutorial';
+import { useContextualHelp } from './ContextualHelp';
+import { useNotificationSystem } from './NotificationSystem';
+import { OnboardingTour } from './OnboardingTour';
+import { ContextualTutorial } from './ContextualTutorial';
+import { ContextualHelp } from './ContextualHelp';
+import { NotificationSystem } from './NotificationSystem';
+import { AccessibilityPanel } from './AccessibilityPanel';
+import GlobalSettings from './GlobalSettings';
+import ProfileManager from './ProfileManager';
+import BackupManager from './BackupManager';
+import PWAManager from './PWAManager';
+import { useProfiles } from '../hooks/useProfiles';
 import { FormularioEntrada } from './FormularioEntrada';
 import { ResultadoSimulacao } from './ResultadoSimulacao';
 import { GraficoInterativo } from './GraficoInterativo';
@@ -36,7 +52,7 @@ import SistemaFavoritos from './SistemaFavoritos';
 import DashboardInsights from './DashboardInsights';
 import SimuladorCenarios from './SimuladorCenarios';
 import SistemaEducacao from './SistemaEducacao';
-import FuncionalidadesPremium from './FuncionalidadesPremium';
+import Sidebar from './Sidebar';
 
 export const Home = memo(() => {
   const { success, error, info } = useToast();
@@ -46,6 +62,61 @@ export const Home = memo(() => {
     criarLembreteAporte, 
     verificarPerformance 
   } = useNotificacoes();
+  
+  // Hooks de preload para melhorar performance
+  usePreloadComponents();
+  const { registerNavigation } = useIntelligentPreload();
+  const hoverPreload = useHoverPreload();
+  
+  // Hook de onboarding
+  const {
+    isActive: isOnboardingActive,
+    currentTour,
+    startTour,
+    completeTour,
+    skipTour,
+    hasCompletedTour
+  } = useOnboarding();
+
+  // Hooks dos novos sistemas
+  const {
+    activeTutorial,
+    startTutorial,
+    completeTutorial,
+    skipTutorial,
+    closeTutorial,
+    isCompleted: isTutorialCompleted,
+    refreshCompletedTutorials
+  } = useContextualTutorials();
+
+  const {
+    isHelpOpen,
+    helpContext,
+    openHelp,
+    closeHelp
+  } = useContextualHelp();
+
+  const {
+    notifications,
+    settings: notificationSettings,
+    addNotification,
+    markAsRead,
+    markAllAsRead,
+    archiveNotification,
+    deleteNotification,
+    updateSettings: updateNotificationSettings
+  } = useNotificationSystem();
+
+  const { currentProfile } = useProfiles();
+
+  // Estado para controlar painéis
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showAccessibility, setShowAccessibility] = useState(false);
+  const [showGlobalSettings, setShowGlobalSettings] = useState(false);
+  const [showProfileManager, setShowProfileManager] = useState(false);
+  const [showBackupManager, setShowBackupManager] = useState(false);
+  const [showPWAManager, setShowPWAManager] = useState(false);
   
   // Estado global do Zustand
   const {
@@ -77,6 +148,14 @@ export const Home = memo(() => {
   
   const resultadoCalculado = useJurosCompostos(simulacao);
 
+  // Efeito para sincronizar estados de tutorial na inicialização
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      refreshCompletedTutorials();
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [refreshCompletedTutorials]);
+
   // Função para abrir/fechar modais
   const toggleModal = useCallback((modalName: keyof typeof modals) => {
     setModals(prev => ({
@@ -84,6 +163,34 @@ export const Home = memo(() => {
       [modalName]: !prev[modalName]
     }));
   }, []);
+
+  // Função melhorada para mudança de aba com preload
+  const handleTabChange = useCallback((tabId: string) => {
+    setActiveTab(tabId);
+    registerNavigation(`/${tabId}`);
+    
+    // Preload baseado na aba selecionada
+    switch (tabId) {
+      case 'comparador':
+        hoverPreload.preloadRelatorios();
+        break;
+      case 'historico':
+        hoverPreload.preloadDashboard();
+        break;
+      case 'meta':
+        hoverPreload.preloadSimulador();
+        break;
+      case 'recomendacoes':
+        hoverPreload.preloadRecomendacoes();
+        break;
+      case 'cenarios':
+        hoverPreload.preloadSimulador();
+        break;
+      case 'educacao':
+        hoverPreload.preloadEducacao();
+        break;
+    }
+  }, [setActiveTab, registerNavigation, hoverPreload]);
 
   const handleCalcular = async () => {
     setLoading(true);
@@ -94,11 +201,113 @@ export const Home = memo(() => {
       await new Promise(resolve => setTimeout(resolve, 500));
       setResultado(resultadoCalculado);
       success('Cálculo concluído!', 'Sua simulação foi processada com sucesso');
+      
+      // Adicionar notificação de sucesso
+      addNotification({
+        title: 'Simulação Concluída',
+        message: `Seu investimento pode render R$ ${resultadoCalculado.saldoFinal.toLocaleString('pt-BR')} em ${simulacao.periodo} meses`,
+        type: 'success',
+        priority: 'medium',
+        category: 'simulacao',
+        actionLabel: 'Ver Detalhes',
+        actionUrl: '#resultado'
+      });
     } catch (err) {
       error('Erro no cálculo', 'Ocorreu um erro ao processar sua simulação');
+      
+      // Adicionar notificação de erro
+      addNotification({
+        title: 'Erro na Simulação',
+        message: 'Não foi possível processar sua simulação. Tente novamente.',
+        type: 'error',
+        priority: 'high',
+        category: 'sistema'
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  // Função para iniciar tutorial contextual
+  const startContextualTutorial = (tutorialType: string) => {
+    const tutorials = {
+      'simulacao-basica': {
+        id: 'simulacao-basica',
+        title: 'Tutorial: Simulação Básica',
+        description: 'Aprenda a fazer sua primeira simulação',
+        category: 'beginner' as const,
+        estimatedTime: 5,
+        steps: [
+          {
+            id: 'step-1',
+            title: 'Valor Inicial',
+            content: 'Digite o valor que você tem para investir inicialmente',
+            target: '[data-tutorial="valor-inicial"]',
+            position: 'bottom' as const,
+            highlight: true,
+            tips: ['Use valores realistas', 'Considere sua reserva de emergência']
+          },
+          {
+            id: 'step-2',
+            title: 'Aporte Mensal',
+            content: 'Defina quanto você pode investir mensalmente',
+            target: '[data-tutorial="aporte-mensal"]',
+            position: 'bottom' as const,
+            highlight: true,
+            tips: ['Seja consistente', 'Comece com valores menores se necessário']
+          },
+          {
+            id: 'step-3',
+            title: 'Taxa de Juros',
+            content: 'Escolha uma taxa de juros realista para seu investimento',
+            target: '[data-tutorial="taxa-juros"]',
+            position: 'bottom' as const,
+            highlight: true,
+            tips: ['CDI atual: ~13% ao ano', 'Renda fixa: 10-14% ao ano', 'Renda variável: histórico de 15% ao ano']
+          },
+          {
+            id: 'step-4',
+            title: 'Período',
+            content: 'Defina por quanto tempo você vai investir',
+            target: '[data-tutorial="periodo"]',
+            position: 'bottom' as const,
+            highlight: true,
+            tips: ['Quanto mais tempo, maior o efeito dos juros compostos']
+          },
+          {
+            id: 'step-5',
+            title: 'Calcular',
+            content: 'Clique em calcular para ver os resultados',
+            target: '[data-tutorial="calcular"]',
+            position: 'top' as const,
+            highlight: true,
+            action: 'click' as const
+          }
+        ]
+      }
+    };
+
+    const tutorial = tutorials[tutorialType as keyof typeof tutorials];
+    if (tutorial) {
+      startTutorial(tutorial);
+    }
+  };
+
+  // Função para abrir ajuda contextual
+  const openContextualHelp = (context?: string) => {
+    openHelp(context || activeTab);
+  };
+
+  // Função para lidar com ações de notificação
+  const handleNotificationAction = (notification: any) => {
+    if (notification.actionUrl === '#resultado') {
+      // Scroll para o resultado
+      const resultElement = document.getElementById('resultado-simulacao');
+      if (resultElement) {
+        resultElement.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    markAsRead(notification.id);
   };
 
   // Efeito para gerar notificações inteligentes baseadas nos resultados
@@ -117,14 +326,52 @@ export const Home = memo(() => {
       if (simulacao.valorMensal < 1000) {
         const valorSugerido = Math.min(simulacao.valorMensal * 1.5, 2000);
         criarLembreteAporte(valorSugerido);
+        
+        // Adicionar notificação de sugestão
+        addNotification({
+          title: 'Sugestão de Aporte',
+          message: `Considere aumentar seu aporte para R$ ${valorSugerido.toLocaleString('pt-BR')} para acelerar seus resultados`,
+          type: 'info',
+          priority: 'medium',
+          category: 'sugestao',
+          actionLabel: 'Ver Tutorial',
+          actionUrl: '#tutorial-aporte'
+        });
       }
 
       // Verificar metas próximas (simular uma meta de R$ 100.000)
       const metaSimulada = 100000;
       const mesesRestantes = Math.max(0, 60 - simulacao.periodo); // Meta de 5 anos
       verificarMetasProximas(resultado.saldoFinal, metaSimulada, mesesRestantes);
+
+      // Notificação de conquista se atingir meta
+      if (resultado.saldoFinal >= metaSimulada) {
+        addNotification({
+          title: 'Meta Atingida! 🎉',
+          message: 'Parabéns! Sua simulação atingiu a meta de R$ 100.000',
+          type: 'success',
+          priority: 'high',
+          category: 'conquista',
+          sound: true,
+          vibration: true
+        });
+      }
     }
-  }, [resultado, simulacao, verificarMetasProximas, verificarOportunidadesMercado, criarLembreteAporte, verificarPerformance]);
+  }, [resultado, simulacao, verificarMetasProximas, verificarOportunidadesMercado, criarLembreteAporte, verificarPerformance, addNotification]);
+
+  // Efeito para mostrar tutorial para novos usuários
+  useEffect(() => {
+    if (!hasCompletedTour('welcome') && !isOnboardingActive && !isTutorialCompleted('simulacao-basica')) {
+      // Mostrar tutorial após 2 segundos para novos usuários
+      const timer = setTimeout(() => {
+        if (activeTab === 'simulacao') {
+          startContextualTutorial('simulacao-basica');
+        }
+      }, 2000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, hasCompletedTour, isOnboardingActive, isTutorialCompleted]);
 
   // Atalhos de teclado
   useEffect(() => {
@@ -147,6 +394,36 @@ export const Home = memo(() => {
             event.preventDefault();
             setActiveTab('meta');
             break;
+          case 'h':
+            event.preventDefault();
+            openContextualHelp();
+            break;
+          case 'n':
+             event.preventDefault();
+             setShowNotifications(!showNotifications);
+             break;
+           case 'a':
+             event.preventDefault();
+             setShowAccessibility(!showAccessibility);
+             break;
+           case 's':
+             if (event.ctrlKey) {
+               event.preventDefault();
+               setShowGlobalSettings(!showGlobalSettings);
+             }
+             break;
+           case 'p':
+             if (event.ctrlKey) {
+               event.preventDefault();
+               setShowProfileManager(!showProfileManager);
+             }
+             break;
+          case 'b':
+            if (event.ctrlKey) {
+              event.preventDefault();
+              setShowBackupManager(!showBackupManager);
+            }
+            break;
           case 'Enter':
             if (activeTab === 'simulacao' && !isLoading) {
               event.preventDefault();
@@ -155,11 +432,17 @@ export const Home = memo(() => {
             break;
         }
       }
+      
+      // Tecla F1 para ajuda
+      if (event.key === 'F1') {
+        event.preventDefault();
+        openContextualHelp();
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTab, isLoading, setActiveTab]);
+       return () => window.removeEventListener('keydown', handleKeyDown);
+     }, [activeTab, isLoading, setActiveTab, showNotifications, showAccessibility, showGlobalSettings, showProfileManager, showBackupManager, openContextualHelp]);
 
   const tabs = [
     { id: 'simulacao', label: 'Simulação', icon: Calculator },
@@ -173,7 +456,6 @@ export const Home = memo(() => {
     { id: 'performance', label: 'Performance', icon: TrendingUp },
     { id: 'cenarios', label: 'Cenários', icon: Settings },
     { id: 'educacao', label: 'Educação', icon: GraduationCap },
-    { id: 'premium', label: 'Premium', icon: Crown },
     { id: 'recomendacoes', label: 'IA Recomendações', icon: Zap },
     { id: 'aposentadoria', label: 'Aposentadoria', icon: Target }
   ];
@@ -229,7 +511,6 @@ export const Home = memo(() => {
       performance: 'Performance',
       cenarios: 'Cenários',
       educacao: 'Educação Financeira',
-      premium: 'Funcionalidades Premium',
       recomendacoes: 'IA Recomendações',
       aposentadoria: 'Aposentadoria'
     };
@@ -242,26 +523,135 @@ export const Home = memo(() => {
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Navigation Tabs */}
-      <nav className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-16 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-4">
-            {/* Breadcrumbs */}
-            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 mb-2">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+      {/* Header Simplificado */}
+      <header 
+        className="fixed top-0 left-0 right-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-4 py-3"
+        style={{ zIndex: Z_INDEX.STICKY_HEADER }}
+      >
+        <div className="flex items-center justify-between max-w-7xl mx-auto">
+          {/* Lado Esquerdo - Logo e Menu */}
+          <div className="flex items-center gap-3">
+            {/* Botão Menu Sidebar */}
+            <motion.button
+              onClick={() => setShowSidebar(!showSidebar)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Menu (Ctrl+B)"
+            >
+              <Menu className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+            </motion.button>
+
+            {/* Logo/Título */}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <Calculator className="w-4 h-4 text-white" />
+              </div>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white hidden sm:block">
+                Jurus
+              </h1>
+            </div>
+          </div>
+
+          {/* Lado Direito - Perfil e Notificações */}
+          <div className="flex items-center gap-2">
+            {/* Botão de Notificações */}
+            <motion.button
+              onClick={() => setShowNotifications(!showNotifications)}
+              className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              title="Notificações (Ctrl+N)"
+            >
+              <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              {notifications.filter(n => !n.read && !n.archived).length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {notifications.filter(n => !n.read && !n.archived).length}
+                </span>
+              )}
+            </motion.button>
+
+            {/* Perfil do Usuário */}
+            {currentProfile && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowProfileManager(!showProfileManager)}
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                title={`Perfil: ${currentProfile.name} (Ctrl+P)`}
+              >
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                  {currentProfile.avatar || currentProfile.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300 max-w-20 truncate">
+                  {currentProfile.name}
+                </span>
+              </motion.button>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Sidebar */}
+      <Sidebar
+        isOpen={showSidebar}
+        onToggle={() => setShowSidebar(!showSidebar)}
+        onAccessibilityClick={() => {
+          setShowAccessibility(!showAccessibility);
+          setShowSidebar(false);
+        }}
+        onGlobalSettingsClick={() => {
+          setShowGlobalSettings(!showGlobalSettings);
+          setShowSidebar(false);
+        }}
+        onBackupClick={() => {
+          setShowBackupManager(!showBackupManager);
+          setShowSidebar(false);
+        }}
+        onTutorialClick={() => {
+          startContextualTutorial('simulacao-basica');
+          setShowSidebar(false);
+        }}
+        onHelpClick={() => {
+          openContextualHelp();
+          setShowSidebar(false);
+        }}
+      />
+
+      {/* Navigation Tabs - Completely Responsive */}
+      <nav 
+        className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-16 mt-16 w-full"
+        style={{ zIndex: Z_INDEX.NAVIGATION }}
+      >
+        <div className="w-full max-w-7xl mx-auto">
+          <div className="px-3 sm:px-4 lg:px-6 xl:px-8">
+            {/* Breadcrumbs - Mobile First Design */}
+            <div className="flex flex-wrap items-center gap-1 sm:gap-2 py-2 sm:py-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
               {getBreadcrumbs().map((crumb, index) => (
                 <div key={crumb.path} className="flex items-center">
-                  {index > 0 && <span className="mx-2">/</span>}
-                  <span className={index === getBreadcrumbs().length - 1 ? 'text-blue-600 dark:text-blue-400 font-medium' : ''}>
+                  {index > 0 && (
+                    <span className="mx-1 text-gray-400 dark:text-gray-600 select-none">/</span>
+                  )}
+                  <span 
+                    className={`
+                      truncate max-w-[120px] sm:max-w-none
+                      ${index === getBreadcrumbs().length - 1 
+                        ? 'text-blue-600 dark:text-blue-400 font-medium' 
+                        : 'hover:text-gray-800 dark:hover:text-gray-200 transition-colors'
+                      }
+                    `}
+                    title={crumb.label}
+                  >
                     {crumb.label}
                   </span>
                 </div>
               ))}
             </div>
 
-            <div className="flex items-center space-x-4">
-              {/* Enhanced Navigation */}
-              <div className="flex-1">
+            {/* Enhanced Navigation - Fully Responsive Container */}
+            <div className="py-2 sm:py-3 lg:py-4">
+              <div className="w-full overflow-hidden">
                 <MemoizedNavigationEnhanced 
                   activeTab={activeTab}
                   onTabChange={(tab) => {
@@ -275,7 +665,7 @@ export const Home = memo(() => {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
         {/* Welcome Section - Only show when no tab is active or on simulacao */}
         {activeTab === 'simulacao' && !resultado && (
           <AnimatedContainer variant="fadeIn" className="mb-8">
@@ -299,21 +689,21 @@ export const Home = memo(() => {
             </div>
 
             {/* Quick Actions */}
-            <StaggeredContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <StaggeredContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
               {quickActions.map((action, index) => (
                 <AnimatedItem key={action.title}>
                   <motion.div
-                    className={`relative p-6 rounded-2xl bg-gradient-to-br ${action.color} text-white cursor-pointer group overflow-hidden`}
+                    className={`relative p-4 sm:p-6 rounded-2xl bg-gradient-to-br ${action.color} text-white cursor-pointer group overflow-hidden`}
                     whileHover={{ scale: 1.05, y: -5 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={action.action}
                     title={`${action.title} (${action.shortcut})`}
                   >
                     <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <action.icon className="w-8 h-8 mb-4 relative z-10" />
-                    <h3 className="text-lg font-semibold mb-2 relative z-10">{action.title}</h3>
-                    <p className="text-sm opacity-90 relative z-10">{action.description}</p>
-                    <div className="text-xs opacity-75 mt-2 relative z-10">{action.shortcut}</div>
+                    <action.icon className="w-6 h-6 sm:w-8 sm:h-8 mb-3 sm:mb-4 relative z-10" />
+                    <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-2 relative z-10">{action.title}</h3>
+                    <p className="text-xs sm:text-sm opacity-90 relative z-10">{action.description}</p>
+                    <div className="text-xs opacity-75 mt-1 sm:mt-2 relative z-10 hidden sm:block">{action.shortcut}</div>
                   </motion.div>
                 </AnimatedItem>
               ))}
@@ -329,11 +719,11 @@ export const Home = memo(() => {
         >
           {activeTab === 'simulacao' && (
             <StaggeredContainer 
-              className="grid grid-cols-1 lg:grid-cols-2 gap-8"
+              className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8"
               staggerDelay={0.15}
               initialDelay={0.1}
             >
-              <AnimatedItem className="space-y-6">
+              <AnimatedItem className="space-y-4 sm:space-y-6">
                 <MemoizedFormularioEntrada
                   simulacao={simulacao}
                   onSimulacaoChange={setSimulacao}
@@ -342,7 +732,7 @@ export const Home = memo(() => {
                 />
               </AnimatedItem>
               
-              <AnimatedItem className="space-y-6">
+              <AnimatedItem className="space-y-4 sm:space-y-6">
                 {isLoading ? (
                   <StaggeredContainer staggerDelay={0.1}>
                     <AnimatedItem>
@@ -475,14 +865,14 @@ export const Home = memo(() => {
               <SistemaEducacao />
             </AnimatedContainer>
           )}
-
-          {activeTab === 'premium' && (
-            <AnimatedContainer variant="slideUp" delay={0.1}>
-              <FuncionalidadesPremium />
-            </AnimatedContainer>
-          )}
         </AnimatedContainer>
       </main>
+
+      {/* PWA Manager */}
+      <PWAManager
+        isOpen={showPWAManager}
+        onClose={() => setShowPWAManager(false)}
+      />
 
       {/* Modals */}
       {modals.showInflacao && calculado && (
@@ -543,12 +933,119 @@ export const Home = memo(() => {
           />
         </LazyWrapper>
       )}
-    </div>
-  );
-});
+
+      {/* Sistemas de Tutorial, Ajuda e Notificações */}
+       <ContextualTutorial
+         tutorial={activeTutorial}
+         isActive={!!activeTutorial}
+         onComplete={() => {
+           if (activeTutorial) {
+             // Garantir que o tutorial seja marcado como completado
+             completeTutorial(activeTutorial.id);
+             
+             // Forçar uma atualização do estado para garantir persistência
+             setTimeout(() => {
+               refreshCompletedTutorials();
+             }, 50);
+             
+             addNotification({
+               title: 'Tutorial Concluído! 🎓',
+               message: `Você completou o tutorial "${activeTutorial.title}"`,
+               type: 'success',
+               priority: 'medium',
+               category: 'educacao'
+             });
+           }
+         }}
+         onSkip={() => {
+           skipTutorial();
+           addNotification({
+             title: 'Tutorial Ignorado',
+             message: 'Você pode acessar tutoriais a qualquer momento na central de ajuda',
+             type: 'info',
+             priority: 'low',
+             category: 'educacao'
+           });
+         }}
+         onClose={closeTutorial}
+         autoPlay={false}
+         showProgress={true}
+       />
+
+       <ContextualHelp
+         isOpen={isHelpOpen}
+         onClose={closeHelp}
+         context={helpContext}
+       />
+
+       <NotificationSystem
+         isOpen={showNotifications}
+         onClose={() => setShowNotifications(false)}
+         notifications={notifications}
+         onMarkAsRead={markAsRead}
+         onMarkAllAsRead={markAllAsRead}
+         onArchive={archiveNotification}
+         onDelete={deleteNotification}
+         onAction={handleNotificationAction}
+         settings={notificationSettings}
+         onUpdateSettings={updateNotificationSettings}
+       />
+
+       <AccessibilityPanel
+         isOpen={showAccessibility}
+         onClose={() => setShowAccessibility(false)}
+       />
+
+       <GlobalSettings
+          isOpen={showGlobalSettings}
+          onClose={() => setShowGlobalSettings(false)}
+        />
+
+         <ProfileManager
+           isOpen={showProfileManager}
+           onClose={() => setShowProfileManager(false)}
+         />
+
+         <BackupManager
+           isOpen={showBackupManager}
+           onClose={() => setShowBackupManager(false)}
+         />
+
+        {/* Onboarding Tour (mantido para compatibilidade) */}
+       {isOnboardingActive && currentTour && (
+         <OnboardingTour
+           steps={currentTour.steps}
+           isActive={isOnboardingActive}
+           onComplete={() => {
+             completeTour();
+             addNotification({
+               title: 'Bem-vindo ao Jurus! 🚀',
+               message: 'Você completou o tour de boas-vindas. Explore todas as funcionalidades!',
+               type: 'success',
+               priority: 'medium',
+               category: 'onboarding'
+             });
+           }}
+           onSkip={() => {
+             skipTour();
+             addNotification({
+               title: 'Tour Ignorado',
+               message: 'Você pode refazer o tour a qualquer momento nas configurações',
+               type: 'info',
+               priority: 'low',
+               category: 'onboarding'
+             });
+           }}
+         />
+       )}
+     </div>
+   );
+ });
 
 // Memoizar componentes para otimizar performance
 const MemoizedFormularioEntrada = memo(FormularioEntrada);
 const MemoizedResultadoSimulacao = memo(ResultadoSimulacao);
 const MemoizedGraficoInterativo = memo(GraficoInterativo);
 const MemoizedNavigationEnhanced = memo(NavigationEnhanced);
+
+export default Home;

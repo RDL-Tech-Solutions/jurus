@@ -63,7 +63,39 @@ export const useInsights = () => {
   useEffect(() => {
     const gerarInsights = async () => {
       if (historicoFormatado.length === 0) {
-        setInsights(null);
+        setInsights({
+          padroes: [],
+          sugestoes: [],
+          metricas: [],
+          alertas: [],
+          analiseComportamental: {
+            id: 'inicial',
+            perfil: 'moderado',
+            caracteristicas: {
+              frequenciaSimulacoes: 0,
+              valorMedioInvestido: 0,
+              periodoMedioInvestimento: 0,
+              diversificacao: 0,
+              consistencia: 0,
+              toleranciaRisco: 50
+            },
+            tendencias: {
+              aumentoAportes: false,
+              extensaoPrazos: false,
+              diversificacaoModalidades: false,
+              buscaMaiorRentabilidade: false
+            },
+            recomendacoes: ['Comece criando algumas simulações para entender melhor seu perfil']
+          },
+          resumoExecutivo: {
+            totalSimulacoes: 0,
+            rendimentoMedioProjetado: 0,
+            metasProximas: 0,
+            oportunidadesIdentificadas: 0,
+            pontuacaoGeral: 0
+          }
+        });
+        setIsLoading(false);
         return;
       }
 

@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Calculator } from 'lucide-react';
-import { CentroNotificacoes } from './CentroNotificacoes';
+import CentroNotificacoes from './CentroNotificacoes';
 import { ThemeToggleEnhanced } from './ThemeToggleEnhanced';
 import { AccessibilityEnhanced } from './AccessibilityEnhanced';
 

@@ -51,7 +51,7 @@ const TimelineMetas: React.FC<TimelineMetasProps> = ({ className = '' }) => {
         tipo: 'inicio',
         meta,
         titulo: `Início: ${meta.nome}`,
-        descricao: `Meta criada com objetivo de ${formatCurrency(meta.valorObjetivo)}`,
+        descricao: `Meta criada com objetivo de ${formatCurrency(meta.valorMeta)}`,
         status: new Date(meta.dataInicio) <= hoje ? 'passado' : 'futuro'
       });
 
@@ -89,16 +89,16 @@ const TimelineMetas: React.FC<TimelineMetasProps> = ({ className = '' }) => {
         }
       });
 
-      // Evento de prazo
-      const dataObjetivo = new Date(meta.dataObjetivo);
+      // Evento de prazo (usando dataLimite se disponível, senão dataObjetivo)
+      const dataLimite = meta.dataLimite ? new Date(meta.dataLimite) : new Date(meta.dataObjetivo);
       eventosTimeline.push({
         id: `${meta.id}-prazo`,
-        data: dataObjetivo,
+        data: dataLimite,
         tipo: 'prazo',
         meta,
         titulo: `Prazo: ${meta.nome}`,
-        descricao: `Data limite para atingir o objetivo de ${formatCurrency(meta.valorObjetivo)}`,
-        status: dataObjetivo <= hoje ? 'passado' : 'futuro'
+        descricao: `Data limite para atingir o objetivo de ${formatCurrency(meta.valorMeta)}`,
+        status: dataLimite <= hoje ? 'passado' : 'futuro'
       });
 
       // Evento de conclusão (se concluída)
@@ -190,6 +190,25 @@ const TimelineMetas: React.FC<TimelineMetasProps> = ({ className = '' }) => {
       month: 'long', 
       year: 'numeric' 
     });
+  };
+
+  // Função para obter cor da meta (com fallback)
+  const getCorMeta = (meta: MetaFinanceira) => {
+    // Se a meta tem cor definida, usar ela, senão usar cor baseada na categoria
+    if (meta.cor) return meta.cor;
+    
+    // Cores padrão baseadas na categoria
+    const coresPorCategoria: Record<string, string> = {
+      'emergencia': '#ef4444',
+      'aposentadoria': '#3b82f6',
+      'casa': '#10b981',
+      'viagem': '#f59e0b',
+      'educacao': '#8b5cf6',
+      'investimento': '#06b6d4',
+      'outros': '#6b7280'
+    };
+    
+    return coresPorCategoria[meta.categoria] || '#6b7280';
   };
 
   if (eventos.length === 0) {
@@ -313,8 +332,8 @@ const TimelineMetas: React.FC<TimelineMetasProps> = ({ className = '' }) => {
                                 <span 
                                   className="inline-block px-2 py-1 text-xs font-medium rounded-full"
                                   style={{ 
-                                    backgroundColor: evento.meta.cor + '20',
-                                    color: evento.meta.cor 
+                                    backgroundColor: getCorMeta(evento.meta) + '20',
+                                    color: getCorMeta(evento.meta)
                                   }}
                                 >
                                   {evento.meta.nome}

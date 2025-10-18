@@ -246,9 +246,10 @@ const FormularioEntrada = memo(function FormularioEntrada({
   };
 
   const inputClassName = (field: string) => `
-    w-full px-4 py-3 border rounded-lg transition-all duration-200 
+    w-full px-3 py-2.5 sm:px-4 sm:py-3 border rounded-lg transition-all duration-200 
     focus:ring-2 focus:ring-blue-500 focus:border-transparent 
     bg-white dark:bg-gray-800 text-gray-900 dark:text-white
+    text-base sm:text-sm
     ${hasFieldError(field) 
       ? 'border-red-500 dark:border-red-400 focus:ring-red-500' 
       : 'border-gray-300 dark:border-gray-600'
@@ -273,9 +274,9 @@ const FormularioEntrada = memo(function FormularioEntrada({
       </div>
 
       {/* Grid responsivo para campos principais */}
-      <StaggerContainer className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
+      <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6">
         {/* Valor Inicial */}
-        <StaggerItem className="md:col-span-1">
+        <StaggerItem className="sm:col-span-1">
           <div className="space-y-2">
             <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               <motion.div
@@ -303,7 +304,7 @@ const FormularioEntrada = memo(function FormularioEntrada({
         </StaggerItem>
 
         {/* Aporte Mensal */}
-        <StaggerItem className="md:col-span-1">
+        <StaggerItem className="sm:col-span-1">
           <div className="space-y-2">
             <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               <motion.div
@@ -331,7 +332,7 @@ const FormularioEntrada = memo(function FormularioEntrada({
         </StaggerItem>
 
         {/* Período */}
-        <StaggerItem className="md:col-span-1 lg:col-span-1">
+        <StaggerItem className="sm:col-span-2 lg:col-span-1">
           <div className="space-y-2">
             <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               <motion.div
@@ -371,7 +372,7 @@ const FormularioEntrada = memo(function FormularioEntrada({
         </StaggerItem>
 
         {/* Tipo de Taxa - Ocupa toda a largura */}
-        <StaggerItem className="md:col-span-2 lg:col-span-3">
+        <StaggerItem className="col-span-full">
           <div className="space-y-2">
             <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               <motion.div

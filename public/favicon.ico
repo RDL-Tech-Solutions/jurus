@@ -1,0 +1,7 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="32" height="32" rx="4" fill="#3b82f6"/>
+  <g transform="translate(5, 5)">
+    <!-- Logo J simplificado -->
+    <path d="M11 4C11 1.79086 12.7909 0 15 0C17.2091 0 19 1.79086 19 4V11C19 16.5228 14.5228 21 9 21C3.47715 21 -1 16.5228 -1 11V10C-1 7.79086 0.790861 6 3 6C5.20914 6 7 7.79086 7 10V11C7 12.1046 7.89543 13 9 13C10.1046 13 11 12.1046 11 11V4Z" fill="white"/>
+  </g>
+</svg>

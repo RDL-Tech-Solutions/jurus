@@ -14,6 +14,9 @@ export function useJurosCompostos(input: SimulacaoInput): ResultadoSimulacao & {
         totalInvestido: 0,
         totalJuros: 0,
         valorFinal: 0,
+        saldoFinal: 0, // Alias para valorFinal
+        rendimentoTotal: 0, // Alias para totalJuros
+        jurosGanhos: 0, // Alias para totalJuros
         ganhoDiario: 0,
         ganhoMensal: 0,
         ganhoAnual: 0,
@@ -35,6 +38,9 @@ export function useJurosCompostos(input: SimulacaoInput): ResultadoSimulacao & {
         totalInvestido: input.valorInicial,
         totalJuros: 0,
         valorFinal: input.valorInicial,
+        saldoFinal: input.valorInicial, // Alias para valorFinal
+        rendimentoTotal: 0, // Alias para totalJuros
+        jurosGanhos: 0, // Alias para totalJuros
         ganhoDiario: 0,
         ganhoMensal: 0,
         ganhoAnual: 0,

@@ -1,0 +1,11 @@
+<svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="72" height="72" rx="9" fill="#3b82f6"/>
+  <g transform="translate(12, 12)">
+    <!-- Logo J simplificado -->
+    <path d="M24 9C24 4.02944 27.0294 1 32 1C36.9706 1 40 4.02944 40 9V30C40 39.9411 32.9411 48 23 48C13.0589 48 6 39.9411 6 30V27C6 22.0294 9.02944 19 14 19C18.9706 19 22 22.0294 22 27V30C22 31.6569 23.3431 33 25 33C26.6569 33 28 31.6569 28 30V9Z" fill="white"/>
+    
+    <!-- Elemento gráfico mínimo -->
+    <rect x="36" y="36" width="3" height="12" rx="1.5" fill="white" opacity="0.8"/>
+    <rect x="42" y="33" width="3" height="15" rx="1.5" fill="white"/>
+  </g>
+</svg>

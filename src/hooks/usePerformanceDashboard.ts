@@ -55,7 +55,8 @@ export const usePerformanceDashboard = () => {
     atualizacaoAutomatica: true,
     intervaloAtualizacao: 300000, // 5 minutos
     mostrarComparacao: true,
-    mostrarTendencias: true
+    mostrarTendencias: true,
+    modoTempoReal: false
   });
 
   // Simular dados de indicadores econômicos

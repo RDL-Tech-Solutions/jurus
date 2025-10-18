@@ -1,5 +1,7 @@
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
+import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { Z_INDEX } from '../constants/zIndex';
 import { useEffect, forwardRef } from 'react';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -168,7 +170,7 @@ interface ToastContainerProps {
 
 export function ToastContainer({ toasts, onClose }: ToastContainerProps) {
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
+    <div className="fixed top-4 right-4 space-y-2" style={{ zIndex: Z_INDEX.TOAST }}>
       <AnimatePresence mode="popLayout">
         {toasts.map((toast) => (
           <Toast

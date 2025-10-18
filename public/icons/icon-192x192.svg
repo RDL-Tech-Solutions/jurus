@@ -1,0 +1,20 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="192" height="192" rx="24" fill="#3b82f6"/>
+  <g transform="translate(32, 32)">
+    <!-- Logo J -->
+    <path d="M64 24C64 10.7452 74.7452 0 88 0C101.255 0 112 10.7452 112 24V80C112 106.51 90.5097 128 64 128C37.4903 128 16 106.51 16 80V72C16 58.7452 26.7452 48 40 48C53.2548 48 64 58.7452 64 72V80C64 84.4183 67.5817 88 72 88C76.4183 88 80 84.4183 80 80V24Z" fill="white"/>
+    
+    <!-- Gráfico de barras -->
+    <rect x="96" y="96" width="8" height="32" rx="4" fill="white" opacity="0.8"/>
+    <rect x="108" y="88" width="8" height="40" rx="4" fill="white" opacity="0.9"/>
+    <rect x="120" y="80" width="8" height="48" rx="4" fill="white"/>
+    
+    <!-- Linha de tendência -->
+    <path d="M96 112L108 104L120 96" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+    
+    <!-- Pontos de dados -->
+    <circle cx="96" cy="112" r="2" fill="white"/>
+    <circle cx="108" cy="104" r="2" fill="white"/>
+    <circle cx="120" cy="96" r="2" fill="white"/>
+  </g>
+</svg>

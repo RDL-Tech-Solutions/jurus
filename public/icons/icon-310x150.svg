@@ -1,0 +1,21 @@
+<svg width="310" height="150" viewBox="0 0 310 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="310" height="150" fill="#3b82f6"/>
+  <g transform="translate(25, 25)">
+    <!-- Logo J -->
+    <path d="M50 15C50 6.71573 56.7157 0 65 0C73.2843 0 80 6.71573 80 15V50C80 72.0914 62.0914 90 40 90C17.9086 90 0 72.0914 0 50V45C0 36.7157 6.71573 30 15 30C23.2843 30 30 36.7157 30 45V50C30 52.7614 32.2386 55 35 55C37.7614 55 40 52.7614 40 50V15Z" fill="white"/>
+    
+    <!-- Texto "JURUS" -->
+    <g transform="translate(120, 30)" fill="white" font-family="Arial, sans-serif" font-size="24" font-weight="bold">
+      <text x="0" y="0">JURUS</text>
+      <text x="0" y="30" font-size="12" opacity="0.8">Plataforma de Investimentos</text>
+    </g>
+    
+    <!-- Gráfico horizontal */
+    <g transform="translate(120, 70)">
+      <rect x="0" y="0" width="40" height="8" rx="4" fill="white" opacity="0.8"/>
+      <rect x="0" y="12" width="60" height="8" rx="4" fill="white" opacity="0.9"/>
+      <rect x="0" y="24" width="80" height="8" rx="4" fill="white"/>
+      <rect x="0" y="36" width="70" height="8" rx="4" fill="white" opacity="0.9"/>
+    </g>
+  </g>
+</svg>

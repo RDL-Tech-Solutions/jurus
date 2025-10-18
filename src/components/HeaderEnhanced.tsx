@@ -1,86 +1,120 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
+  Home, 
+  BarChart3, 
+  TrendingUp, 
   Calculator, 
-  Bell, 
+  FileText, 
   Settings, 
+  Bell, 
+  User, 
   Moon, 
   Sun, 
   Menu, 
-  X,
-  TrendingUp,
-  User,
-  HelpCircle
+  X, 
+  HelpCircle,
+  Shield,
+  Brain,
+  Gamepad2,
+  Palette,
+  GraduationCap,
+  Database
 } from 'lucide-react';
-import { CentroNotificacoes } from './CentroNotificacoes';
-import { useAppStore } from '../store/useAppStore';
+import { useThemeObject } from '../hooks/useTheme';
 import { useNotificacoes } from '../hooks/useNotificacoes';
+import CentroNotificacoes from './CentroNotificacoes';
+import { DataManager } from './DataManager';
 
-interface HeaderEnhancedProps {
-  className?: string;
+interface MenuItem {
+  id: string;
+  label: string;
+  path: string;
+  icon: React.ComponentType<any>;
 }
 
-export function HeaderEnhanced({ className = '' }: HeaderEnhancedProps) {
-  const { configuracoes, updateConfiguracoes } = useAppStore();
-  const { naoLidas } = useNotificacoes();
+function HeaderEnhanced() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { theme, toggleTheme } = useThemeObject();
+  const { notificacoes } = useNotificacoes();
+  
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showDataManager, setShowDataManager] = useState(false);
 
-  const toggleTheme = () => {
-    const novoTema = configuracoes.tema === 'light' ? 'dark' : 'light';
-    updateConfiguracoes({ tema: novoTema });
-    
-    // Aplicar tema ao documento
-    if (novoTema === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
+  // Calcular notificações não lidas
+  const naoLidas = notificacoes.filter(n => !n.lida).length;
 
-  const menuItems = [
-    { id: 'simulacao', label: 'Simulação', icon: Calculator },
-    { id: 'comparador', label: 'Comparador', icon: TrendingUp },
-    { id: 'historico', label: 'Histórico', icon: TrendingUp },
-    { id: 'meta', label: 'Metas', icon: TrendingUp },
+  // Menu items disponíveis
+  const menuItems: MenuItem[] = [
+    { id: 'home', label: 'Início', path: '/', icon: Home },
+    { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: BarChart3 },
+    { id: 'dashboard-executivo', label: 'Dashboard Executivo', path: '/dashboard-executivo', icon: TrendingUp },
+    { id: 'dashboard-avancado', label: 'Dashboard Avançado', path: '/dashboard-executivo-avancado', icon: BarChart3 },
+    { id: 'calculadora', label: 'Calculadora', path: '/calculadora', icon: Calculator },
+    { id: 'relatorios', label: 'Relatórios', path: '/relatorios', icon: FileText },
+    { id: 'relatorios-avancados', label: 'Relatórios Avançados', path: '/relatorios-avancados', icon: FileText },
+    { id: 'recomendacoes-ia', label: 'Recomendações IA', path: '/recomendacoes-ia', icon: Brain },
+    { id: 'simulador', label: 'Simulador', path: '/simulador-cenarios', icon: Gamepad2 },
+    { id: 'temas', label: 'Temas', path: '/sistema-temas', icon: Palette },
+    { id: 'educacao', label: 'Educação', path: '/sistema-educacao', icon: GraduationCap }
   ];
 
+  // Função para navegar
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    setShowMobileMenu(false);
+  };
+
+  // Fechar dropdowns quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowNotifications(false);
+      setShowUserMenu(false);
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   return (
-    <header className={`bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 ${className}`}>
+    <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40 backdrop-blur-sm bg-white/95 dark:bg-gray-900/95">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo e Título */}
-          <div className="flex items-center space-x-4">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex items-center space-x-2"
-            >
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg">
-                <Calculator className="w-6 h-6 text-white" />
-              </div>
-              <div className="hidden sm:block">
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Jurus
-                </h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                  Calculadora de Investimentos
-                </p>
-              </div>
-            </motion.div>
-          </div>
+          {/* Logo */}
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            className="flex items-center space-x-3 cursor-pointer"
+            onClick={() => handleNavigation('/')}
+          >
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">J</span>
+            </div>
+            <span className="text-xl font-bold text-gray-900 dark:text-white">
+              Jurus
+            </span>
+          </motion.div>
 
-          {/* Menu Desktop */}
+          {/* Navegação Desktop */}
           <nav className="hidden md:flex items-center space-x-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              
               return (
                 <motion.button
                   key={item.id}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  onClick={() => handleNavigation(item.path)}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                    isActive 
+                      ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20' 
+                      : 'text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
                 >
                   <Icon className="w-4 h-4" />
                   <span className="text-sm font-medium">{item.label}</span>
@@ -133,7 +167,7 @@ export function HeaderEnhanced({ className = '' }: HeaderEnhancedProps) {
               onClick={toggleTheme}
               className="p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             >
-              {configuracoes.tema === 'light' ? (
+              {theme === 'light' ? (
                 <Moon className="w-5 h-5" />
               ) : (
                 <Sun className="w-5 h-5" />
@@ -161,9 +195,29 @@ export function HeaderEnhanced({ className = '' }: HeaderEnhancedProps) {
                     className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50"
                   >
                     <div className="py-2">
-                      <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <button 
+                        onClick={() => {
+                          setShowDataManager(true);
+                          setShowUserMenu(false);
+                        }}
+                        className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        <Database className="w-4 h-4" />
+                        <span>Gerenciar Dados</span>
+                      </button>
+                      <button 
+                        onClick={() => handleNavigation('/configuracoes')}
+                        className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
                         <Settings className="w-4 h-4" />
                         <span>Configurações</span>
+                      </button>
+                      <button 
+                        onClick={() => handleNavigation('/acessibilidade')}
+                        className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      >
+                        <Shield className="w-4 h-4" />
+                        <span>Acessibilidade</span>
                       </button>
                       <button className="flex items-center space-x-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">
                         <HelpCircle className="w-4 h-4" />
@@ -205,12 +259,19 @@ export function HeaderEnhanced({ className = '' }: HeaderEnhancedProps) {
               <nav className="space-y-2">
                 {menuItems.map((item) => {
                   const Icon = item.icon;
+                  const isActive = location.pathname === item.path;
+                  
                   return (
                     <motion.button
                       key={item.id}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      className="flex items-center space-x-3 w-full px-3 py-2 rounded-lg text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      onClick={() => handleNavigation(item.path)}
+                      className={`flex items-center space-x-3 w-full px-3 py-2 rounded-lg transition-colors ${
+                        isActive 
+                          ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20' 
+                          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
+                      }`}
                     >
                       <Icon className="w-5 h-5" />
                       <span className="font-medium">{item.label}</span>
@@ -234,6 +295,12 @@ export function HeaderEnhanced({ className = '' }: HeaderEnhancedProps) {
           }}
         />
       )}
+
+      {/* Data Manager Modal */}
+      <DataManager
+        isOpen={showDataManager}
+        onClose={() => setShowDataManager(false)}
+      />
     </header>
   );
 }

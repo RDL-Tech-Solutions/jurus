@@ -1,0 +1,12 @@
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="96" height="96" rx="12" fill="#3b82f6"/>
+  <g transform="translate(16, 16)">
+    <!-- Logo J -->
+    <path d="M32 12C32 5.37258 37.3726 0 44 0C50.6274 0 56 5.37258 56 12V40C56 53.2548 45.2548 64 32 64C18.7452 64 8 53.2548 8 40V36C8 29.3726 13.3726 24 20 24C26.6274 24 32 29.3726 32 36V40C32 42.2091 33.7909 44 36 44C38.2091 44 40 42.2091 40 40V12Z" fill="white"/>
+    
+    <!-- Gráfico -->
+    <rect x="48" y="48" width="4" height="16" rx="2" fill="white" opacity="0.8"/>
+    <rect x="54" y="44" width="4" height="20" rx="2" fill="white" opacity="0.9"/>
+    <rect x="60" y="40" width="4" height="24" rx="2" fill="white"/>
+  </g>
+</svg>

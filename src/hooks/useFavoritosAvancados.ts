@@ -105,7 +105,12 @@ export const useFavoritosAvancados = () => {
         tipoTaxa: simulacaoInput.unidadePeriodo === 'anos' ? 'anual' : 'mensal',
         tipoCalculo: 'juros_compostos'
       },
-      dataCreacao: new Date()
+      dataCreacao: new Date(),
+      // Propriedades do SimulacaoInput para compatibilidade
+      valorInicial: simulacaoInput.valorInicial,
+      valorMensal: simulacaoInput.valorMensal,
+      periodo: simulacaoInput.periodo,
+      modalidade: simulacaoInput.modalidade
     };
   };
 

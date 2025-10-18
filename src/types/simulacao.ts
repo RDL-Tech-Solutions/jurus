@@ -10,6 +10,16 @@ export interface Simulacao {
   resultado?: ResultadoSimulacao;
   dataCreacao: Date;
   dataAtualizacao?: Date;
+  // Propriedades do SimulacaoInput para compatibilidade
+  valorInicial: number;
+  valorMensal: number;
+  periodo: number;
+  modalidade?: {
+    id: string;
+    nome: string;
+    taxaAnual: number;
+    tipo: 'poupanca' | 'cdb' | 'lci_lca' | 'tesouro';
+  };
 }
 
 export interface SimulacaoParametros {
@@ -23,8 +33,11 @@ export interface SimulacaoParametros {
 
 export interface ResultadoSimulacao {
   valorFinal: number;
+  saldoFinal: number; // Alias para valorFinal
   totalInvestido: number;
   totalJuros: number;
+  rendimentoTotal: number; // Alias para totalJuros
+  jurosGanhos: number; // Alias para totalJuros
   taxaEfetiva?: number;
   evolucaoMensal: Array<{
     mes: number;

@@ -4,7 +4,76 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Trae Project</title>
+    <title>JURUS</title>
+    
+    <!-- Script de inicialização das configurações -->
+    <script>
+      (function() {
+        try {
+          // Aplicar tema imediatamente
+          const savedTheme = localStorage.getItem('theme') || 'system';
+          const root = document.documentElement;
+          
+          if (savedTheme === 'dark') {
+            root.classList.add('dark');
+          } else if (savedTheme === 'light') {
+            root.classList.remove('dark');
+          } else {
+            // Sistema - detectar preferência
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (prefersDark) {
+              root.classList.add('dark');
+            } else {
+              root.classList.remove('dark');
+            }
+          }
+          
+          // Aplicar configurações de acessibilidade
+          const accessibilitySettings = localStorage.getItem('accessibility-settings');
+          if (accessibilitySettings) {
+            const settings = JSON.parse(accessibilitySettings);
+            
+            // Alto contraste
+            if (settings.highContrast) {
+              root.classList.add('high-contrast');
+            }
+            
+            // Movimento reduzido
+            if (settings.reducedMotion) {
+              root.classList.add('reduced-motion');
+            }
+            
+            // Tamanho da fonte
+            if (settings.fontSize) {
+              root.classList.add(`font-${settings.fontSize}`);
+            }
+            
+            // Altura da linha
+            if (settings.lineHeight) {
+              root.classList.add(`line-height-${settings.lineHeight}`);
+            }
+            
+            // Espaçamento entre letras
+            if (settings.letterSpacing) {
+              root.classList.add(`letter-spacing-${settings.letterSpacing}`);
+            }
+            
+            // Modo daltônico
+            if (settings.colorBlindMode && settings.colorBlindMode !== 'none') {
+              root.classList.add(settings.colorBlindMode);
+            }
+            
+            // Indicadores de foco
+            if (settings.focusIndicators) {
+              root.classList.add('enhanced-focus');
+            }
+          }
+        } catch (error) {
+          console.warn('Erro ao carregar configurações iniciais:', error);
+        }
+      })();
+    </script>
+    
     <script type="module">
       if (import.meta.hot?.on) {
         import.meta.hot.on('vite:error', (error) => {

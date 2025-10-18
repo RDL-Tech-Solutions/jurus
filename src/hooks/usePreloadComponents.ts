@@ -1,0 +1,119 @@
+import { useEffect } from 'react';
+
+// Hook para preload de componentes críticos
+export const usePreloadComponents = () => {
+  useEffect(() => {
+    // Preload dos componentes mais utilizados após 2 segundos
+    const preloadTimer = setTimeout(() => {
+      // Dashboard Executivo (mais usado)
+      import('../components/DashboardExecutivo').catch(() => {});
+      
+      // Relatórios Avançados (segundo mais usado)
+      import('../components/RelatoriosAvancados').catch(() => {});
+      
+      // Dashboard Executivo Avançado
+      import('../components/DashboardExecutivoAvancado').catch(() => {});
+    }, 2000);
+
+    // Preload de componentes secundários após 5 segundos
+    const secondaryPreloadTimer = setTimeout(() => {
+      import('../components/RecomendacoesIA').catch(() => {});
+      import('../components/SimuladorCenarios').catch(() => {});
+      import('../components/SistemaEducacao').catch(() => {});
+    }, 5000);
+
+    return () => {
+      clearTimeout(preloadTimer);
+      clearTimeout(secondaryPreloadTimer);
+    };
+  }, []);
+};
+
+// Hook para preload baseado em hover
+export const useHoverPreload = () => {
+  const preloadComponent = (componentPath: string) => {
+    return () => {
+      import(componentPath).catch(() => {});
+    };
+  };
+
+  return {
+    preloadDashboard: preloadComponent('../components/DashboardExecutivo'),
+    preloadDashboardAvancado: preloadComponent('../components/DashboardExecutivoAvancado'),
+    preloadRelatorios: preloadComponent('../components/RelatoriosAvancados'),
+    preloadRecomendacoes: preloadComponent('../components/RecomendacoesIA'),
+    preloadSimulador: preloadComponent('../components/SimuladorCenarios'),
+    preloadTemas: preloadComponent('../components/SistemaTemas'),
+    preloadEducacao: preloadComponent('../components/SistemaEducacao'),
+    preloadNotificacoes: preloadComponent('../components/CentroNotificacoes'),
+    preloadAcessibilidade: preloadComponent('../components/ConfiguracoesAcessibilidade'),
+    // Missing functions that were causing errors
+    preloadSimulacao: preloadComponent('../components/SimuladorCenarios'),
+    preloadComparador: preloadComponent('../components/ComparadorInvestimentos'),
+    preloadHistorico: preloadComponent('../components/HistoricoSimulacoes'),
+    preloadMetas: preloadComponent('../components/MetasFinanceiras'),
+    preloadPerformance: preloadComponent('../components/DashboardPerformance'),
+    preloadCenarios: preloadComponent('../components/SimuladorCenarios'),
+  };
+};
+
+// Hook para preload inteligente baseado no histórico de navegação
+export const useIntelligentPreload = () => {
+  useEffect(() => {
+    // Verificar histórico de navegação no localStorage
+    const navigationHistory = JSON.parse(localStorage.getItem('navigation-history') || '[]');
+    
+    // Preload dos componentes mais visitados
+    const mostVisited = navigationHistory
+      .reduce((acc: Record<string, number>, path: string) => {
+        acc[path] = (acc[path] || 0) + 1;
+        return acc;
+      }, {});
+
+    const sortedPaths = Object.entries(mostVisited)
+      .sort(([,a], [,b]) => (b as number) - (a as number))
+      .slice(0, 3)
+      .map(([path]) => path);
+
+    // Preload baseado no histórico
+    setTimeout(() => {
+      sortedPaths.forEach(path => {
+        switch (path) {
+          case '/dashboard':
+            import('../components/DashboardExecutivo').catch(() => {});
+            break;
+          case '/dashboard-avancado':
+            import('../components/DashboardExecutivoAvancado').catch(() => {});
+            break;
+          case '/relatorios':
+            import('../components/RelatoriosAvancados').catch(() => {});
+            break;
+          case '/recomendacoes':
+            import('../components/RecomendacoesIA').catch(() => {});
+            break;
+          case '/simulador':
+            import('../components/SimuladorCenarios').catch(() => {});
+            break;
+          case '/educacao':
+            import('../components/SistemaEducacao').catch(() => {});
+            break;
+        }
+      });
+    }, 1000);
+  }, []);
+
+  // Função para registrar navegação
+  const registerNavigation = (path: string) => {
+    const history = JSON.parse(localStorage.getItem('navigation-history') || '[]');
+    history.push(path);
+    
+    // Manter apenas os últimos 50 registros
+    if (history.length > 50) {
+      history.splice(0, history.length - 50);
+    }
+    
+    localStorage.setItem('navigation-history', JSON.stringify(history));
+  };
+
+  return { registerNavigation };
+};

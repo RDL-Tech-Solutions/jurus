@@ -18,6 +18,18 @@ import {
   ProgressoTutorial,
   AvaliacaoTutorial
 } from '../types/educacao';
+import {
+  glossarioCompleto,
+  dicasCompletas,
+  tutoriaisCompletos,
+  artigosCompletos,
+  conquistasCompletas,
+  calcularProgressoAprendizado,
+  gerarRecomendacoesPersonalizadas,
+  calcularEstatisticasAvancadas,
+  verificarConquistasAvancadas,
+  gerarPlanoEstudos
+} from '../utils/educacao';
 
 const useEducacao = () => {
   // Estados principais
@@ -51,230 +63,22 @@ const useEducacao = () => {
   const [tutorialAtivo, setTutorialAtivo] = useState<string | null>(null);
   const [ultimaAtualizacao, setUltimaAtualizacao] = useState<number>(Date.now());
 
-  // Dados iniciais do glossário
-  const glossarioInicial: TermoGlossario[] = [
-    {
-      id: 'juros-compostos',
-      termo: 'Juros Compostos',
-      definicao: 'Sistema de capitalização onde os juros são calculados sobre o capital inicial acrescido dos juros acumulados dos períodos anteriores.',
-      categoria: 'basico',
-      tags: ['investimento', 'capitalização', 'rendimento'],
-      exemplos: [
-        'R$ 1.000 a 10% ao ano por 2 anos = R$ 1.210',
-        'Reinvestimento de dividendos em ações'
-      ],
-      termosRelacionados: ['capitalização', 'rendimento', 'investimento'],
-      dataAtualizacao: Date.now()
-    },
-    {
-      id: 'taxa-selic',
-      termo: 'Taxa Selic',
-      definicao: 'Taxa básica de juros da economia brasileira, definida pelo Comitê de Política Monetária (Copom) do Banco Central.',
-      categoria: 'intermediario',
-      tags: ['economia', 'juros', 'política monetária'],
-      exemplos: [
-        'Referência para CDI e poupança',
-        'Influencia todos os juros da economia'
-      ],
-      termosRelacionados: ['cdi', 'copom', 'banco-central'],
-      dataAtualizacao: Date.now()
-    },
-    {
-      id: 'diversificacao',
-      termo: 'Diversificação',
-      definicao: 'Estratégia de investimento que consiste em distribuir recursos entre diferentes ativos para reduzir riscos.',
-      categoria: 'intermediario',
-      tags: ['estratégia', 'risco', 'portfólio'],
-      exemplos: [
-        'Investir em ações, renda fixa e fundos imobiliários',
-        'Distribuir investimentos entre setores diferentes'
-      ],
-      termosRelacionados: ['risco', 'portfolio', 'alocacao'],
-      dataAtualizacao: Date.now()
-    }
-  ];
-
-  // Dados iniciais de dicas
-  const dicasIniciais: DicaFinanceira[] = [
-    {
-      id: 'regra-72',
-      titulo: 'Regra dos 72',
-      conteudo: 'Para descobrir em quantos anos seu dinheiro dobrará, divida 72 pela taxa de juros anual. Por exemplo: 72 ÷ 8% = 9 anos.',
-      categoria: 'investimento',
-      nivel: 'iniciante',
-      tags: ['cálculo', 'tempo', 'duplicação'],
-      contexto: 'calculadora',
-      relevancia: 9,
-      visualizacoes: 0,
-      curtidas: 0,
-      dataPublicacao: Date.now()
-    },
-    {
-      id: 'emergencia-primeiro',
-      titulo: 'Reserva de Emergência Primeiro',
-      conteudo: 'Antes de investir, tenha uma reserva de emergência equivalente a 6-12 meses de gastos em aplicações líquidas e seguras.',
-      categoria: 'planejamento',
-      nivel: 'iniciante',
-      tags: ['emergência', 'planejamento', 'segurança'],
-      relevancia: 10,
-      visualizacoes: 0,
-      curtidas: 0,
-      dataPublicacao: Date.now()
-    },
-    {
-      id: 'tempo-aliado',
-      titulo: 'Tempo é seu Maior Aliado',
-      conteudo: 'Quanto mais cedo começar a investir, maior será o poder dos juros compostos. Mesmo pequenos valores podem se tornar grandes fortunas.',
-      categoria: 'investimento',
-      nivel: 'iniciante',
-      tags: ['tempo', 'juros compostos', 'início'],
-      relevancia: 9,
-      visualizacoes: 0,
-      curtidas: 0,
-      dataPublicacao: Date.now()
-    }
-  ];
-
-  // Dados iniciais de tutoriais
-  const tutoriaisIniciais: TutorialInterativo[] = [
-    {
-      id: 'introducao-juros-compostos',
-      titulo: 'Introdução aos Juros Compostos',
-      descricao: 'Aprenda o conceito fundamental dos juros compostos e como eles podem multiplicar seus investimentos.',
-      categoria: 'calculadora',
-      nivel: 'iniciante',
-      duracao: 15,
-      etapas: [
-        {
-          id: 'conceito',
-          titulo: 'O que são Juros Compostos?',
-          descricao: 'Entenda a diferença entre juros simples e compostos',
-          tipo: 'explicacao',
-          conteudo: {
-            texto: 'Juros compostos são juros calculados sobre o capital inicial acrescido dos juros acumulados dos períodos anteriores. É o famoso "juros sobre juros".'
-          },
-          tempoEstimado: 3,
-          obrigatoria: true
-        },
-        {
-          id: 'calculo-pratico',
-          titulo: 'Calculando na Prática',
-          descricao: 'Use a calculadora para ver os juros compostos em ação',
-          tipo: 'interacao',
-          conteudo: {
-            interacao: {
-              tipo: 'calculadora',
-              elemento: '#valor-inicial',
-              acao: 'inserir-valor',
-              valorEsperado: 1000,
-              feedback: 'Ótimo! Agora vamos ver como R$ 1.000 cresce ao longo do tempo.'
-            }
-          },
-          tempoEstimado: 5,
-          obrigatoria: true
-        },
-        {
-          id: 'quiz-final',
-          titulo: 'Teste seus Conhecimentos',
-          descricao: 'Quiz sobre juros compostos',
-          tipo: 'quiz',
-          conteudo: {
-            quiz: {
-              pergunta: 'Qual a principal vantagem dos juros compostos?',
-              opcoes: [
-                { id: 'a', texto: 'Rendimento linear', correta: false },
-                { id: 'b', texto: 'Crescimento exponencial', correta: true },
-                { id: 'c', texto: 'Menor risco', correta: false }
-              ],
-              respostaCorreta: 1,
-              explicacao: 'Os juros compostos proporcionam crescimento exponencial porque os juros rendem juros.',
-              tentativasPermitidas: 3
-            }
-          },
-          tempoEstimado: 2,
-          obrigatoria: true
-        }
-      ],
-      prerequisitos: [],
-      objetivos: [
-        'Entender o conceito de juros compostos',
-        'Saber calcular juros compostos',
-        'Reconhecer a importância do tempo nos investimentos'
-      ],
-      recursos: [
-        {
-          tipo: 'calculadora',
-          titulo: 'Calculadora de Juros Compostos',
-          descricao: 'Use nossa calculadora para experimentar'
-        }
-      ]
-    }
-  ];
-
-  // Dados iniciais de conquistas
-  const conquistasIniciais: ConquistaEducativa[] = [
-    {
-      id: 'primeiro-tutorial',
-      nome: 'Primeiro Passo',
-      descricao: 'Complete seu primeiro tutorial',
-      icone: '🎯',
-      categoria: 'tutorial',
-      criterios: [
-        {
-          tipo: 'tutoriais_completos',
-          valor: 1,
-          descricao: 'Completar 1 tutorial'
-        }
-      ],
-      recompensa: {
-        tipo: 'badge',
-        valor: 'primeiro-tutorial',
-        descricao: 'Badge de Primeiro Tutorial'
-      },
-      raridade: 'comum'
-    },
-    {
-      id: 'estudioso',
-      nome: 'Estudioso',
-      descricao: 'Estude por 1 hora total',
-      icone: '📚',
-      categoria: 'pratica',
-      criterios: [
-        {
-          tipo: 'tempo_estudo',
-          valor: 60,
-          descricao: 'Estudar por 60 minutos'
-        }
-      ],
-      recompensa: {
-        tipo: 'titulo',
-        valor: 'Estudioso',
-        descricao: 'Título de Estudioso'
-      },
-      raridade: 'raro'
-    }
-  ];
-
-  // Inicialização
-  useEffect(() => {
-    carregarDados();
-  }, []);
-
-  // Carregar dados salvos
+  // Carregar dados iniciais
   const carregarDados = useCallback(() => {
     try {
+      setLoading(true);
+
       // Carregar configuração
       const configSalva = localStorage.getItem('educacao-config');
       if (configSalva) {
         setConfiguracao(JSON.parse(configSalva));
       }
 
-      // Carregar perfil
+      // Carregar ou criar perfil
       const perfilSalvo = localStorage.getItem('educacao-perfil');
       if (perfilSalvo) {
         setPerfil(JSON.parse(perfilSalvo));
       } else {
-        // Criar perfil inicial
         const novoPerfil: PerfilEducativo = {
           id: 'user-' + Date.now(),
           nivel: 1,
@@ -285,10 +89,16 @@ const useEducacao = () => {
           artigosLidos: [],
           tempoTotalEstudo: 0,
           pontuacaoTotal: 0,
-          areas: {},
+          areas: {
+            'conceitos': { nivel: 1, experiencia: 0, tutoriais: 0, artigos: 0 },
+            'estrategias': { nivel: 1, experiencia: 0, tutoriais: 0, artigos: 0 },
+            'mercado': { nivel: 1, experiencia: 0, tutoriais: 0, artigos: 0 },
+            'impostos': { nivel: 1, experiencia: 0, tutoriais: 0, artigos: 0 },
+            'planejamento': { nivel: 1, experiencia: 0, tutoriais: 0, artigos: 0 }
+          },
           preferencias: {
             nivelPreferido: 'iniciante',
-            categoriasInteresse: [],
+            categoriasInteresse: ['conceitos', 'planejamento'],
             formatoPreferido: 'interativo',
             tempoSessao: 30,
             lembretes: true,
@@ -315,16 +125,24 @@ const useEducacao = () => {
         setHistorico(JSON.parse(historicoSalvo));
       }
 
-      // Carregar dados de conteúdo
-      setGlossario(glossarioInicial);
-      setDicas(dicasIniciais);
-      setTutoriais(tutoriaisIniciais);
-      setConquistas(conquistasIniciais);
+      // Carregar dados de conteúdo expandidos
+      setGlossario(glossarioCompleto);
+      setDicas(dicasCompletas);
+      setTutoriais(tutoriaisCompletos);
+      setArtigos(artigosCompletos);
+      setConquistas(conquistasCompletas);
 
     } catch (error) {
       console.error('Erro ao carregar dados de educação:', error);
+    } finally {
+      setLoading(false);
     }
   }, []);
+
+  // Carregar dados na inicialização
+  useEffect(() => {
+    carregarDados();
+  }, [carregarDados]);
 
   // Salvar dados
   const salvarDados = useCallback(() => {
@@ -390,7 +208,7 @@ const useEducacao = () => {
       fim: Date.now()
     };
 
-    // Atualizar perfil
+    // Atualizar perfil com experiência e pontuação
     const novoPerfilData = {
       ...perfil,
       experiencia: perfil.experiencia + sessaoAtual.experienciaGanha,
@@ -399,10 +217,14 @@ const useEducacao = () => {
     };
 
     // Verificar se subiu de nível
-    if (novoPerfilData.experiencia >= novoPerfilData.proximoNivel) {
+    while (novoPerfilData.experiencia >= novoPerfilData.proximoNivel) {
       novoPerfilData.nivel += 1;
+      novoPerfilData.experiencia -= novoPerfilData.proximoNivel;
       novoPerfilData.proximoNivel = novoPerfilData.nivel * 100;
     }
+
+    // Atualizar estatísticas
+    novoPerfilData.estatisticas = calcularEstatisticasAvancadas(novoPerfilData, historico);
 
     setPerfil(novoPerfilData);
 
@@ -412,20 +234,19 @@ const useEducacao = () => {
       sessoes: [...prev.sessoes, sessaoFinalizada]
     }));
 
+    // Verificar novas conquistas
+    verificarConquistas();
+
     setSessaoAtual(null);
-  }, [sessaoAtual, perfil]);
+  }, [sessaoAtual, perfil, historico]);
 
   // Registrar atividade na sessão
-  const registrarAtividade = useCallback((atividade: Omit<any, 'id'>) => {
+  const registrarAtividade = useCallback((atividade: Omit<AtividadeEstudo, 'id'>) => {
     if (!sessaoAtual) return;
 
     const novaAtividade: AtividadeEstudo = {
-      tipo: atividade.tipo,
-      id: 'atividade-' + Date.now(),
-      titulo: atividade.titulo,
-      tempoGasto: atividade.tempoGasto,
-      concluida: atividade.concluida,
-      pontuacao: atividade.pontuacao
+      ...atividade,
+      id: 'atividade-' + Date.now()
     };
 
     setSessaoAtual(prev => prev ? {
@@ -448,6 +269,12 @@ const useEducacao = () => {
       ...perfil,
       tutoriaisCompletos: [...perfil.tutoriaisCompletos, tutorialId]
     };
+
+    // Atualizar área específica
+    if (novoPerfilData.areas[tutorial.categoria]) {
+      novoPerfilData.areas[tutorial.categoria].tutoriais += 1;
+      novoPerfilData.areas[tutorial.categoria].experiencia += 50;
+    }
 
     setPerfil(novoPerfilData);
 
@@ -479,6 +306,12 @@ const useEducacao = () => {
       artigosLidos: [...perfil.artigosLidos, artigoId]
     };
 
+    // Atualizar área específica
+    if (novoPerfilData.areas[artigo.categoria]) {
+      novoPerfilData.areas[artigo.categoria].artigos += 1;
+      novoPerfilData.areas[artigo.categoria].experiencia += 20;
+    }
+
     setPerfil(novoPerfilData);
 
     // Registrar atividade
@@ -496,48 +329,16 @@ const useEducacao = () => {
         ? { ...a, visualizacoes: a.visualizacoes + 1 }
         : a
     ));
+
+    // Verificar conquistas
+    verificarConquistas();
   }, [perfil, artigos, registrarAtividade]);
 
-  // Verificar conquistas
+  // Verificar conquistas usando função avançada
   const verificarConquistas = useCallback(() => {
     if (!perfil) return;
 
-    const novasConquistas: string[] = [];
-
-    conquistas.forEach(conquista => {
-      if (perfil.conquistas.includes(conquista.id)) return;
-
-      let criteriosAtendidos = 0;
-
-      conquista.criterios.forEach(criterio => {
-        switch (criterio.tipo) {
-          case 'tutoriais_completos':
-            if (perfil.tutoriaisCompletos.length >= criterio.valor) {
-              criteriosAtendidos++;
-            }
-            break;
-          case 'artigos_lidos':
-            if (perfil.artigosLidos.length >= criterio.valor) {
-              criteriosAtendidos++;
-            }
-            break;
-          case 'tempo_estudo':
-            if (perfil.tempoTotalEstudo >= criterio.valor) {
-              criteriosAtendidos++;
-            }
-            break;
-          case 'pontuacao':
-            if (perfil.pontuacaoTotal >= criterio.valor) {
-              criteriosAtendidos++;
-            }
-            break;
-        }
-      });
-
-      if (criteriosAtendidos === conquista.criterios.length) {
-        novasConquistas.push(conquista.id);
-      }
-    });
+    const novasConquistas = verificarConquistasAvancadas(perfil, conquistas);
 
     if (novasConquistas.length > 0) {
       setPerfil(prev => prev ? {
@@ -641,48 +442,23 @@ const useEducacao = () => {
     return resultados.sort((a, b) => b.relevancia - a.relevancia);
   }, [glossario, dicas, tutoriais, artigos]);
 
-  // Obter recomendações
+  // Obter recomendações usando função avançada
   const obterRecomendacoes = useCallback((): RecomendacaoEducativa[] => {
     if (!perfil) return [];
-
-    const recomendacoes: RecomendacaoEducativa[] = [];
-
-    // Recomendar tutoriais não completados
-    tutoriais
-      .filter(t => !perfil.tutoriaisCompletos.includes(t.id))
-      .slice(0, 3)
-      .forEach(tutorial => {
-        recomendacoes.push({
-          id: tutorial.id,
-          tipo: 'tutorial',
-          titulo: tutorial.titulo,
-          motivo: 'Tutorial recomendado para seu nível',
-          relevancia: 0.9,
-          categoria: tutorial.categoria,
-          nivel: tutorial.nivel,
-          tempoEstimado: tutorial.duracao
-        });
-      });
-
-    // Recomendar artigos não lidos
-    artigos
-      .filter(a => !perfil.artigosLidos.includes(a.id))
-      .slice(0, 2)
-      .forEach(artigo => {
-        recomendacoes.push({
-          id: artigo.id,
-          tipo: 'artigo',
-          titulo: artigo.titulo,
-          motivo: 'Artigo popular em sua área de interesse',
-          relevancia: 0.7,
-          categoria: artigo.categoria,
-          nivel: artigo.nivel,
-          tempoEstimado: artigo.tempoLeitura
-        });
-      });
-
-    return recomendacoes.sort((a, b) => b.relevancia - a.relevancia);
+    return gerarRecomendacoesPersonalizadas(perfil, tutoriais, artigos);
   }, [perfil, tutoriais, artigos]);
+
+  // Obter plano de estudos
+  const obterPlanoEstudos = useCallback(() => {
+    if (!perfil) return null;
+    return gerarPlanoEstudos(perfil, tutoriais, artigos);
+  }, [perfil, tutoriais, artigos]);
+
+  // Obter progresso de aprendizado
+  const obterProgressoAprendizado = useCallback(() => {
+    if (!perfil) return null;
+    return calcularProgressoAprendizado(perfil);
+  }, [perfil]);
 
   // Memoized selectors
   const estatisticas = useMemo(() => {
@@ -746,6 +522,10 @@ const useEducacao = () => {
     obterRecomendacoes,
     setTutorialAtivo,
     setPesquisa,
+
+    // Novas funcionalidades avançadas
+    obterPlanoEstudos,
+    obterProgressoAprendizado,
 
     // Utilitários
     carregarDados,

@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Persistência de Tutorial</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .tutorial {
+            background: #f0f8ff;
+            border: 2px solid #007acc;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .hidden {
+            display: none;
+        }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a9e;
+        }
+        .status {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .debug {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>Teste de Persistência de Tutorial</h1>
+    
+    <div class="status">
+        <h3>Status do Tutorial:</h3>
+        <p id="tutorial-status">Verificando...</p>
+    </div>
+
+    <div id="tutorial" class="tutorial">
+        <h2>Tutorial: Simulação Básica</h2>
+        <p>Este é um tutorial de exemplo para testar a persistência no localStorage.</p>
+        <button onclick="completeTutorial()">Completar Tutorial</button>
+        <button onclick="skipTutorial()">Pular Tutorial</button>
+    </div>
+
+    <div class="debug">
+        <h3>Debug Info:</h3>
+        <div id="debug-info"></div>
+    </div>
+
+    <button onclick="clearStorage()">Limpar localStorage</button>
+    <button onclick="checkStatus()">Verificar Status</button>
+    <button onclick="reloadPage()">Recarregar Página</button>
+
+    <script>
+        const TUTORIAL_ID = 'simulacao-basica';
+        const STORAGE_KEY = 'jurus_completed_tutorials';
+
+        function updateDebugInfo() {
+            const debugInfo = document.getElementById('debug-info');
+            const completedTutorials = getCompletedTutorials();
+            
+            debugInfo.textContent = `
+localStorage key: ${STORAGE_KEY}
+Stored value: ${localStorage.getItem(STORAGE_KEY)}
+Parsed tutorials: ${JSON.stringify(completedTutorials)}
+Tutorial completed: ${isTutorialCompleted(TUTORIAL_ID)}
+            `;
+        }
+
+        function getCompletedTutorials() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (!stored) return [];
+                
+                const parsed = JSON.parse(stored);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (error) {
+                console.error('Erro ao carregar tutoriais completados:', error);
+                return [];
+            }
+        }
+
+        function saveCompletedTutorials(tutorials) {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(tutorials));
+                
+                // Verificar se foi salvo corretamente
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved !== JSON.stringify(tutorials)) {
+                    console.error('Falha ao salvar no localStorage');
+                    return false;
+                }
+                return true;
+            } catch (error) {
+                console.error('Erro ao salvar tutoriais:', error);
+                return false;
+            }
+        }
+
+        function isTutorialCompleted(tutorialId) {
+            const completed = getCompletedTutorials();
+            return completed.includes(tutorialId);
+        }
+
+        function completeTutorial() {
+            console.log('🎯 Completando tutorial:', TUTORIAL_ID);
+            
+            const completed = getCompletedTutorials();
+            if (!completed.includes(TUTORIAL_ID)) {
+                completed.push(TUTORIAL_ID);
+                
+                if (saveCompletedTutorials(completed)) {
+                    console.log('✅ Tutorial salvo com sucesso');
+                } else {
+                    console.error('❌ Falha ao salvar tutorial');
+                }
+            }
+            
+            checkStatus();
+        }
+
+        function skipTutorial() {
+            console.log('⏭️ Pulando tutorial:', TUTORIAL_ID);
+            completeTutorial(); // Mesmo comportamento por simplicidade
+        }
+
+        function clearStorage() {
+            localStorage.removeItem(STORAGE_KEY);
+            console.log('🗑️ localStorage limpo');
+            checkStatus();
+        }
+
+        function checkStatus() {
+            const isCompleted = isTutorialCompleted(TUTORIAL_ID);
+            const statusElement = document.getElementById('tutorial-status');
+            const tutorialElement = document.getElementById('tutorial');
+            
+            if (isCompleted) {
+                statusElement.textContent = '✅ Tutorial completado - não será exibido novamente';
+                tutorialElement.classList.add('hidden');
+            } else {
+                statusElement.textContent = '❌ Tutorial não completado - será exibido';
+                tutorialElement.classList.remove('hidden');
+            }
+            
+            updateDebugInfo();
+        }
+
+        function reloadPage() {
+            window.location.reload();
+        }
+
+        // Verificar status inicial
+        window.addEventListener('load', () => {
+            console.log('📄 Página carregada - verificando status do tutorial');
+            checkStatus();
+        });
+    </script>
+</body>
+</html>

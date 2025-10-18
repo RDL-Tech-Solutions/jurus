@@ -1,0 +1,15 @@
+<svg width="144" height="144" viewBox="0 0 144 144" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="144" height="144" rx="18" fill="#3b82f6"/>
+  <g transform="translate(24, 24)">
+    <!-- Logo J -->
+    <path d="M48 18C48 8.05887 55.0589 1 65 1C74.9411 1 82 8.05887 82 18V60C82 79.8823 66.8823 96 47 96C27.1177 96 12 79.8823 12 60V54C12 44.0589 19.0589 37 29 37C38.9411 37 46 44.0589 46 54V60C46 63.3137 48.6863 66 52 66C55.3137 66 58 63.3137 58 60V18Z" fill="white"/>
+    
+    <!-- Gráfico simplificado -->
+    <rect x="72" y="72" width="6" height="24" rx="3" fill="white" opacity="0.8"/>
+    <rect x="81" y="66" width="6" height="30" rx="3" fill="white" opacity="0.9"/>
+    <rect x="90" y="60" width="6" height="36" rx="3" fill="white"/>
+    
+    <!-- Linha de tendência -->
+    <path d="M75 84L84 78L93 72" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+  </g>
+</svg>

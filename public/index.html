@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#3b82f6" />
+  <meta name="description" content="Plataforma completa e gratuita para gestão de investimentos com IA, simulações e análises avançadas" />
+  <meta name="keywords" content="investimentos, finanças, IA, simulação, análise, portfolio, gratuito" />
+  <meta name="author" content="Jurus" />
+  
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+  
+  <!-- Apple PWA Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Jurus" />
+  <link rel="apple-touch-icon" href="%PUBLIC_URL%/icons/icon-192x192.png" />
+  
+  <!-- Microsoft PWA Meta Tags -->
+  <meta name="msapplication-TileImage" content="%PUBLIC_URL%/icons/icon-144x144.png" />
+  <meta name="msapplication-TileColor" content="#3b82f6" />
+  <meta name="msapplication-config" content="%PUBLIC_URL%/browserconfig.xml" />
+  
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Jurus - Plataforma de Investimentos" />
+  <meta property="og:description" content="Plataforma completa e gratuita para gestão de investimentos com IA, simulações e análises avançadas" />
+  <meta property="og:image" content="%PUBLIC_URL%/icons/icon-512x512.png" />
+  <meta property="og:url" content="https://jurus.app" />
+  <meta property="og:site_name" content="Jurus" />
+  
+  <!-- Twitter Card Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Jurus - Plataforma de Investimentos" />
+  <meta name="twitter:description" content="Plataforma completa e gratuita para gestão de investimentos com IA, simulações e análises avançadas" />
+  <meta name="twitter:image" content="%PUBLIC_URL%/icons/icon-512x512.png" />
+  
+  <!-- Preload Critical Resources -->
+  <link rel="preload" href="%PUBLIC_URL%/static/css/main.css" as="style" />
+  <link rel="preload" href="%PUBLIC_URL%/static/js/bundle.js" as="script" />
+  
+  <!-- DNS Prefetch -->
+  <link rel="dns-prefetch" href="//fonts.googleapis.com" />
+  <link rel="dns-prefetch" href="//api.jurus.app" />
+  
+  <!-- Security Headers -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta http-equiv="X-Frame-Options" content="DENY" />
+  <meta http-equiv="X-XSS-Protection" content="1; mode=block" />
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+  
+  <!-- Performance Hints -->
+  <meta http-equiv="Cache-Control" content="public, max-age=31536000" />
+  
+  <title>Jurus - Plataforma de Investimentos</title>
+  
+  <!-- Critical CSS Inline (será substituído pelo build) -->
+  <style>
+    /* Critical CSS será injetado aqui durante o build */
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+        sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background-color: #f9fafb;
+    }
+    
+    /* Loading spinner */
+    .loading-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #e5e7eb;
+      border-top: 4px solid #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .loading-text {
+      margin-top: 16px;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    
+    /* Hide loading when app loads */
+    .app-loaded .loading-container {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <noscript>
+    <div style="padding: 20px; text-align: center; font-family: Arial, sans-serif;">
+      <h2>JavaScript Necessário</h2>
+      <p>Você precisa habilitar o JavaScript para executar esta aplicação.</p>
+      <p>O Jurus é uma aplicação web moderna que requer JavaScript para funcionar corretamente.</p>
+    </div>
+  </noscript>
+  
+  <!-- Loading Screen -->
+  <div class="loading-container" id="loading-screen">
+    <div style="text-align: center;">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Carregando Jurus...</div>
+    </div>
+  </div>
+  
+  <!-- App Root -->
+  <div id="root"></div>
+  
+  <!-- Service Worker Registration -->
+  <script>
+    // Registrar Service Worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then((registration) => {
+            console.log('SW registrado com sucesso:', registration.scope);
+          })
+          .catch((error) => {
+            console.log('Falha ao registrar SW:', error);
+          });
+      });
+    }
+    
+    // Remover loading screen quando o app carregar
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+          loadingScreen.style.opacity = '0';
+          loadingScreen.style.transition = 'opacity 0.3s ease-out';
+          setTimeout(() => {
+            loadingScreen.remove();
+            document.body.classList.add('app-loaded');
+          }, 300);
+        }
+      }, 1000);
+    });
+    
+    // Detectar modo escuro do sistema
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.documentElement.classList.add('dark');
+    }
+    
+    // Monitorar mudanças no modo escuro
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      if (e.matches) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    });
+    
+    // Performance monitoring
+    window.addEventListener('load', () => {
+      if ('performance' in window) {
+        const perfData = performance.getEntriesByType('navigation')[0];
+        console.log('Page Load Time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+      }
+    });
+    
+    // Error handling
+    window.addEventListener('error', (event) => {
+      console.error('Global error:', event.error);
+      // Aqui você pode enviar erros para um serviço de monitoramento
+    });
+    
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      // Aqui você pode enviar erros para um serviço de monitoramento
+    });
+  </script>
+</body>
+</html>

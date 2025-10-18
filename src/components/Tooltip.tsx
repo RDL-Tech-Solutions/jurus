@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { createPortal } from 'react-dom';
+import { Z_INDEX } from '../constants/zIndex';
 
 interface TooltipProps {
   content: ReactNode;
@@ -109,7 +110,7 @@ export function Tooltip({
   };
 
   const getTooltipClasses = () => {
-    const baseClasses = 'absolute z-50 px-3 py-2 text-sm text-white dark:text-gray-900 bg-gray-900 dark:bg-gray-100 rounded-lg shadow-lg max-w-xs';
+    const baseClasses = 'absolute px-3 py-2 text-sm text-white dark:text-gray-900 bg-gray-900 dark:bg-gray-100 rounded-lg shadow-lg max-w-xs';
     
     switch (position) {
       case 'top':
@@ -149,7 +150,8 @@ export function Tooltip({
             style={{
               left: tooltipPosition.x,
               top: tooltipPosition.y,
-              transformOrigin: getTransformOrigin()
+              transformOrigin: getTransformOrigin(),
+              zIndex: Z_INDEX.TOOLTIP
             }}
           >
             {content}

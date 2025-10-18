@@ -46,7 +46,9 @@ export interface ResultadoSimulacao {
   totalInvestido: number;
   totalJuros: number;
   valorFinal: number;
-  saldoFinal?: number; // Mantido para compatibilidade
+  saldoFinal: number; // Alias para valorFinal - sempre presente
+  rendimentoTotal: number; // Alias para totalJuros - sempre presente
+  jurosGanhos: number; // Alias para totalJuros - sempre presente
   ganhoDiario: number;
   ganhoMensal: number;
   ganhoAnual: number;

@@ -220,7 +220,7 @@ const ConfiguracoesNotificacoes: React.FC<ConfiguracoesNotificacoesProps> = ({
   );
 };
 
-export const CentroNotificacoes: React.FC = () => {
+const CentroNotificacoes: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [showConfiguracoes, setShowConfiguracoes] = useState(false);
   const [filtroTipo, setFiltroTipo] = useState<string>('todas');
@@ -389,3 +389,5 @@ export const CentroNotificacoes: React.FC = () => {
     </>
   );
 };
+
+export default CentroNotificacoes;
