@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 import {
   Settings,
   Shield,
@@ -255,7 +255,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     setExpandedSection(expandedSection === sectionTitle ? null : sectionTitle);
   };
 
-  const sidebarVariants = {
+  const sidebarVariants: Variants = {
     open: {
       x: 0,
       transition: {
@@ -274,7 +274,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const overlayVariants = {
+  const overlayVariants: Variants = {
     open: {
       opacity: 1,
       transition: { duration: 0.2 }
@@ -285,7 +285,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     open: {
       opacity: 1,
       height: 'auto',

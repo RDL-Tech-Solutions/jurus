@@ -16,10 +16,10 @@ function App() {
   const { useKeyboardNavigation } = useAccessibility();
   
   // Inicializar sistema de temas
-  const { temaAtivo, aplicarTema } = useTemas();
+  const { temaAtual, aplicarTema } = useTemas();
   
   console.log('📊 Configurações inicializadas:', isInitialized);
-  console.log('🎨 Tema ativo:', temaAtivo?.nome || 'Nenhum');
+  console.log('🎨 Tema ativo:', temaAtual?.nome || 'Nenhum');
   console.log('🎨 Sistema de temas carregado!');
   
   // Monitorar mudanças nas configurações
@@ -30,11 +30,11 @@ function App() {
 
   // Aplicar tema ativo na inicialização
   useEffect(() => {
-    if (temaAtivo) {
-      console.log('🎨 Aplicando tema:', temaAtivo.nome);
-      aplicarTema(temaAtivo);
+    if (temaAtual) {
+      console.log('🎨 Aplicando tema:', temaAtual.nome);
+      aplicarTema(temaAtual);
     }
-  }, [temaAtivo, aplicarTema]);
+  }, [temaAtual, aplicarTema]);
 
   // Validar persistência das configurações após inicialização
   useEffect(() => {

@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { Z_INDEX } from '../constants/zIndex';
-import { useEffect, forwardRef } from 'react';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -35,7 +34,7 @@ const toastVariants = {
 
 const iconMap = {
   success: CheckCircle,
-  error: XCircle,
+  error: AlertTriangle,
   warning: AlertCircle,
   info: Info
 };
