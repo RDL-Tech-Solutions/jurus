@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
 import { Calculator, TrendingUp, Target, BarChart3, Settings, Download, Zap, Heart, Brain, GraduationCap, HelpCircle, Bell, Accessibility, Users, Shield, Smartphone, Menu } from 'lucide-react';
 import { Z_INDEX } from '../constants/zIndex';
+import { Breadcrumbs } from './Breadcrumbs';
+import { Home as HomeIcon } from 'lucide-react';
 import { useSimulacao, useUI } from '../store/useAppStore';
 import { useToast } from '../hooks/useToast';
 import { useNotificacoes } from '../hooks/useNotificacoes';
@@ -23,6 +25,7 @@ import { useProfiles } from '../hooks/useProfiles';
 import { FormularioEntrada } from './FormularioEntrada';
 import { ResultadoSimulacao } from './ResultadoSimulacao';
 import { GraficoInterativo } from './GraficoInterativo';
+import { PeriodoVisualizacao } from './PeriodoSwitch';
 import { NavigationEnhanced } from './NavigationEnhanced';
 import { SkeletonLoader, SkeletonCard, SkeletonChart, SkeletonDashboard } from './SkeletonLoader';
 import { LazyWrapper, LazyViewport } from './LazyWrapper';
@@ -117,6 +120,9 @@ export const Home = memo(() => {
   const [showProfileManager, setShowProfileManager] = useState(false);
   const [showBackupManager, setShowBackupManager] = useState(false);
   const [showPWAManager, setShowPWAManager] = useState(false);
+  
+  // Estado para período de visualização
+  const [periodoVisualizacao, setPeriodoVisualizacao] = useState<PeriodoVisualizacao>('anual');
   
   // Estado global do Zustand
   const {
@@ -495,9 +501,13 @@ export const Home = memo(() => {
     }
   ];
 
-  // Breadcrumbs
+  // Breadcrumbs melhorados
   const getBreadcrumbs = () => {
-    const breadcrumbs = [{ label: 'Início', path: 'home' }];
+    const breadcrumbs = [{ 
+      label: 'Início', 
+      path: 'home',
+      icon: <HomeIcon className="w-4 h-4" />
+    }];
     
     const tabLabels: Record<string, string> = {
       simulacao: 'Simulação',
@@ -522,51 +532,63 @@ export const Home = memo(() => {
     return breadcrumbs;
   };
 
+  // Handler para navegação dos breadcrumbs
+  const handleBreadcrumbClick = (item: { label: string; path: string; icon?: React.ReactNode }) => {
+    if (item.path === 'home') {
+      setActiveTab('simulacao');
+    } else {
+      setActiveTab(item.path as any);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-      {/* Header Simplificado */}
+      {/* Header Responsivo e Fixo */}
       <header 
-        className="fixed top-0 left-0 right-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-4 py-3"
+        className="fixed top-0 left-0 right-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 lg:px-6 py-2 sm:py-3 z-50"
         style={{ zIndex: Z_INDEX.STICKY_HEADER }}
       >
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="flex items-center justify-between max-w-7xl mx-auto h-12 sm:h-14">
           {/* Lado Esquerdo - Logo e Menu */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             {/* Botão Menu Sidebar */}
             <motion.button
               onClick={() => setShowSidebar(!showSidebar)}
-              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors flex-shrink-0"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               title="Menu (Ctrl+B)"
+              aria-label="Abrir menu lateral"
             >
-              <Menu className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-300" />
             </motion.button>
 
             {/* Logo/Título */}
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <Calculator className="w-4 h-4 text-white" />
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Calculator className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
               </div>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white hidden sm:block">
-                Jurus
+              <h1 className="text-sm sm:text-lg font-bold text-gray-900 dark:text-white truncate">
+                <span className="hidden sm:inline">Jurus</span>
+                <span className="sm:hidden">J</span>
               </h1>
             </div>
           </div>
 
           {/* Lado Direito - Perfil e Notificações */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {/* Botão de Notificações */}
             <motion.button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="relative p-1.5 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               title="Notificações (Ctrl+N)"
+              aria-label="Abrir notificações"
             >
-              <Bell className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-gray-700 dark:text-gray-300" />
               {notifications.filter(n => !n.read && !n.archived).length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                <span className="absolute -top-0.5 -right-0.5 w-3 h-3 sm:w-4 sm:h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
                   {notifications.filter(n => !n.read && !n.archived).length}
                 </span>
               )}
@@ -578,13 +600,14 @@ export const Home = memo(() => {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowProfileManager(!showProfileManager)}
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="flex items-center gap-1 sm:gap-2 p-1 sm:p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors min-w-0"
                 title={`Perfil: ${currentProfile.name} (Ctrl+P)`}
+                aria-label={`Perfil de ${currentProfile.name}`}
               >
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-semibold flex-shrink-0">
                   {currentProfile.avatar || currentProfile.name.charAt(0).toUpperCase()}
                 </div>
-                <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300 max-w-20 truncate">
+                <span className="hidden md:block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 max-w-16 lg:max-w-20 truncate">
                   {currentProfile.name}
                 </span>
               </motion.button>
@@ -619,37 +642,24 @@ export const Home = memo(() => {
         }}
       />
 
-      {/* Navigation Tabs - Completely Responsive */}
+      {/* Navigation Tabs - Completamente Responsivo */}
       <nav 
-        className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 sticky top-16 mt-16 w-full"
+        className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 sticky top-14 sm:top-16 w-full z-10"
         style={{ zIndex: Z_INDEX.NAVIGATION }}
       >
         <div className="w-full max-w-7xl mx-auto">
           <div className="px-3 sm:px-4 lg:px-6 xl:px-8">
-            {/* Breadcrumbs - Mobile First Design */}
-            <div className="flex flex-wrap items-center gap-1 sm:gap-2 py-2 sm:py-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400 border-b border-gray-100 dark:border-gray-800">
-              {getBreadcrumbs().map((crumb, index) => (
-                <div key={crumb.path} className="flex items-center">
-                  {index > 0 && (
-                    <span className="mx-1 text-gray-400 dark:text-gray-600 select-none">/</span>
-                  )}
-                  <span 
-                    className={`
-                      truncate max-w-[120px] sm:max-w-none
-                      ${index === getBreadcrumbs().length - 1 
-                        ? 'text-blue-600 dark:text-blue-400 font-medium' 
-                        : 'hover:text-gray-800 dark:hover:text-gray-200 transition-colors'
-                      }
-                    `}
-                    title={crumb.label}
-                  >
-                    {crumb.label}
-                  </span>
-                </div>
-              ))}
+            {/* Breadcrumbs Melhorados */}
+            <div className="py-2 sm:py-3 border-b border-gray-100 dark:border-gray-800">
+              <Breadcrumbs
+                items={getBreadcrumbs()}
+                maxItems={3}
+                onItemClick={handleBreadcrumbClick}
+                className="w-full"
+              />
             </div>
 
-            {/* Enhanced Navigation - Fully Responsive Container */}
+            {/* Enhanced Navigation - Container Totalmente Responsivo */}
             <div className="py-2 sm:py-3 lg:py-4">
               <div className="w-full overflow-hidden">
                 <MemoizedNavigationEnhanced 
@@ -664,8 +674,8 @@ export const Home = memo(() => {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+      {/* Main Content - Adicionado padding-top para compensar header fixo */}
+      <main className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8 pt-28 sm:pt-32 lg:pt-36">
         {/* Welcome Section - Only show when no tab is active or on simulacao */}
         {activeTab === 'simulacao' && !resultado && (
           <AnimatedContainer variant="fadeIn" className="mb-8">
@@ -749,10 +759,15 @@ export const Home = memo(() => {
                         <MemoizedResultadoSimulacao 
                           resultado={resultado} 
                           simulacao={simulacao}
+                          periodoVisualizacao={periodoVisualizacao}
+                          onPeriodoChange={setPeriodoVisualizacao}
                         />
                       </AnimatedItem>
                       <AnimatedItem>
-                        <MemoizedGraficoInterativo dados={resultado.evolucaoMensal} />
+                        <MemoizedGraficoInterativo 
+                          dados={resultado.evolucaoMensal} 
+                          periodoVisualizacao={periodoVisualizacao}
+                        />
                       </AnimatedItem>
                     </StaggeredContainer>
                   </LoadingOverlay>

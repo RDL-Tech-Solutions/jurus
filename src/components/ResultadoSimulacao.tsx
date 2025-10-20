@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingDown, BarChart3, PieChart, Download, Activity, Brain } from 'lucide-react';
 import { ResultadoSimulacao as ResultadoType, SimulacaoInput } from '../types';
@@ -7,10 +7,14 @@ import { TabelaDetalhada } from './TabelaDetalhada';
 import { AnimatedContainer } from './AnimatedContainer';
 import { AnimatedButton } from './AnimatedButton';
 import { StaggeredContainer } from './AnimatedContainer';
+import { PeriodoSwitch, PeriodoVisualizacao } from './PeriodoSwitch';
+import { PeriodoConversor } from '../utils/periodoConversao';
 
 interface ResultadoSimulacaoProps {
   resultado: ResultadoType;
   simulacao?: SimulacaoInput;
+  periodoVisualizacao?: PeriodoVisualizacao;
+  onPeriodoChange?: (periodo: PeriodoVisualizacao) => void;
   onMostrarInflacao?: () => void;
   onMostrarCenarios?: () => void;
   onMostrarAnaliseAvancada?: () => void;
@@ -19,12 +23,35 @@ interface ResultadoSimulacaoProps {
   onMostrarPerformance?: () => void;
 }
 
-const ResultadoSimulacao = memo(function ResultadoSimulacao({ resultado, simulacao, onMostrarInflacao,
+const ResultadoSimulacao = memo(function ResultadoSimulacao({ 
+  resultado, 
+  simulacao, 
+  periodoVisualizacao: periodoVisualizacaoExterno,
+  onPeriodoChange,
+  onMostrarInflacao,
   onMostrarCenarios,
   onMostrarAnaliseAvancada,
   onMostrarDashboard,
   onMostrarExportacao,
-  onMostrarPerformance }: ResultadoSimulacaoProps) {
+  onMostrarPerformance 
+}: ResultadoSimulacaoProps) {
+  
+  // Usar estado externo se disponível, senão usar estado interno
+  const [periodoVisualizacaoInterno, setPeriodoVisualizacaoInterno] = useState<PeriodoVisualizacao>('anual');
+  const periodoVisualizacao = periodoVisualizacaoExterno ?? periodoVisualizacaoInterno;
+  
+  const handlePeriodoChange = (novoPeriodo: PeriodoVisualizacao) => {
+    if (onPeriodoChange) {
+      onPeriodoChange(novoPeriodo);
+    } else {
+      setPeriodoVisualizacaoInterno(novoPeriodo);
+    }
+  };
+  
+  // Converte o resultado baseado no período selecionado
+  const resultadoConvertido = PeriodoConversor.converterResultadoSimulacao(resultado, periodoVisualizacao);
+  const evolucaoConvertida = PeriodoConversor.converterEvolucaoMensal(resultado.evolucaoMensal, periodoVisualizacao);
+  
   return (
     <AnimatedContainer
       variant="slideUp"
@@ -32,12 +59,33 @@ const ResultadoSimulacao = memo(function ResultadoSimulacao({ resultado, simulac
       className="space-y-6"
     >
       <StaggeredContainer>
+        {/* Switch de Período */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="flex justify-center mb-6"
+        >
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-4 shadow-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Visualizar por:
+              </span>
+              <PeriodoSwitch
+                valor={periodoVisualizacao}
+                onChange={handlePeriodoChange}
+                size="md"
+              />
+            </div>
+          </div>
+        </motion.div>
+
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <CardsResumo resultado={resultado} />
+          <CardsResumo resultado={resultadoConvertido} periodoVisualizacao={periodoVisualizacao} />
         </motion.div>
         
         {/* Botões de Análises Avançadas */}
@@ -122,7 +170,10 @@ const ResultadoSimulacao = memo(function ResultadoSimulacao({ resultado, simulac
            animate={{ opacity: 1, y: 0 }}
            transition={{ delay: 0.3 }}
          >
-           <TabelaDetalhada dados={resultado.evolucaoMensal} />
+           <TabelaDetalhada 
+             dados={evolucaoConvertida} 
+             periodoVisualizacao={periodoVisualizacao}
+           />
          </motion.div>
        </StaggeredContainer>
      </AnimatedContainer>

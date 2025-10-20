@@ -9,7 +9,7 @@ const DashboardExecutivoAvancado = lazy(() => import('../components/DashboardExe
 const RelatoriosAvancados = lazy(() => import('../components/RelatoriosAvancados'));
 const RecomendacoesIA = lazy(() => import('../components/RecomendacoesIA'));
 const SimuladorCenarios = lazy(() => import('../components/SimuladorCenarios'));
-const SistemaTemas = lazy(() => import('../components/SistemaTemas'));
+const SistemaTemasAvancado = lazy(() => import('../components/SistemaTemasAvancado'));
 const SistemaEducacao = lazy(() => import('../components/SistemaEducacao'));
 const CentroNotificacoes = lazy(() => import('../components/CentroNotificacoes'));
 const ConfiguracoesAcessibilidade = lazy(() => import('../components/ConfiguracoesAcessibilidade').then(module => ({ default: module.ConfiguracoesAcessibilidade })));
@@ -130,7 +130,9 @@ export function AppRouter() {
             path="sistema-temas" 
             element={
               <Suspense fallback={<PageLoader />}>
-                <SistemaTemas onFechar={() => {}} />
+                <div className="min-h-screen bg-gray-50 p-4">
+                  <SistemaTemasAvancado onFechar={() => window.history.back()} />
+                </div>
               </Suspense>
             } 
           />

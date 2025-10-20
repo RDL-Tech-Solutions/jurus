@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import {
   Settings,
@@ -21,7 +21,7 @@ import {
   Home
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Z_INDEX } from '../constants/zIndex';
+import { getZIndexClass, Z_INDEX } from '../constants/zIndex';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -58,7 +58,57 @@ const Sidebar: React.FC<SidebarProps> = ({
   onHelpClick
 }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>('Ferramentas');
+  const [isMobile, setIsMobile] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  // Detectar tema escuro
+  useEffect(() => {
+    const checkDarkMode = () => {
+      const isDark = document.documentElement.classList.contains('dark');
+      setIsDarkMode(isDark);
+      console.log('🎨 Tema detectado:', isDark ? 'ESCURO' : 'CLARO');
+    };
+    
+    checkDarkMode();
+    
+    // Observer para mudanças no tema
+    const observer = new MutationObserver(checkDarkMode);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+    
+    return () => observer.disconnect();
+  }, []);
+
+  // Debug da sidebar
+  useEffect(() => {
+    if (isOpen) {
+      console.log('🔧 SIDEBAR DEBUG:', {
+        isOpen,
+        isDarkMode,
+        isMobile,
+        expandedSection,
+        sidebarRef: sidebarRef.current
+      });
+      
+
+    }
+  }, [isOpen, isDarkMode, isMobile, expandedSection]);
+
+  // Detectar se é mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Persistir estado da sidebar no localStorage
   useEffect(() => {
@@ -71,6 +121,44 @@ const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     localStorage.setItem('sidebar-open', isOpen.toString());
   }, [isOpen]);
+
+  // Fechar sidebar ao clicar fora (apenas em mobile)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        isMobile &&
+        isOpen &&
+        sidebarRef.current &&
+        !sidebarRef.current.contains(event.target as Node)
+      ) {
+        onToggle();
+      }
+    };
+
+    if (isOpen && isMobile) {
+      // Adicionar delay para evitar fechamento imediato
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 100);
+
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [isOpen, isMobile, onToggle]);
+
+  // Fechar sidebar com ESC
+  useEffect(() => {
+    const handleEscKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onToggle();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscKey);
+    return () => document.removeEventListener('keydown', handleEscKey);
+  }, [isOpen, onToggle]);
 
   // Atalho de teclado Ctrl+B para toggle
   useEffect(() => {
@@ -85,13 +173,26 @@ const Sidebar: React.FC<SidebarProps> = ({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onToggle]);
 
+  // Prevenir scroll do body quando sidebar está aberta em mobile
+  useEffect(() => {
+    if (isMobile && isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = 'unset';
+      };
+    }
+  }, [isMobile, isOpen]);
+
   // Auto-close em mobile após seleção
   const handleItemClick = useCallback((onClick: () => void) => {
     onClick();
-    if (window.innerWidth < 1024) { // lg breakpoint
-      onToggle();
+    if (isMobile) {
+      // Pequeno delay para melhor UX
+      setTimeout(() => {
+        onToggle();
+      }, 150);
     }
-  }, [onToggle]);
+  }, [isMobile, onToggle]);
 
   const sections: SidebarSection[] = [
     {
@@ -216,7 +317,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           description: 'Gerenciar dados e backups',
           icon: <Database className="w-4 h-4" />,
           onClick: onBackupClick,
-          shortcut: 'Ctrl+B'
+          shortcut: 'Ctrl+Shift+B'
         }
       ]
     },
@@ -260,16 +361,18 @@ const Sidebar: React.FC<SidebarProps> = ({
       x: 0,
       transition: {
         type: 'spring',
-        stiffness: 300,
-        damping: 30
+        stiffness: 400,
+        damping: 30,
+        duration: 0.3
       }
     },
     closed: {
       x: '-100%',
       transition: {
         type: 'spring',
-        stiffness: 300,
-        damping: 30
+        stiffness: 400,
+        damping: 30,
+        duration: 0.3
       }
     }
   };
@@ -277,11 +380,17 @@ const Sidebar: React.FC<SidebarProps> = ({
   const overlayVariants: Variants = {
     open: {
       opacity: 1,
-      transition: { duration: 0.2 }
+      transition: { 
+        duration: 0.2,
+        ease: 'easeOut'
+      }
     },
     closed: {
       opacity: 0,
-      transition: { duration: 0.2 }
+      transition: { 
+        duration: 0.2,
+        ease: 'easeIn'
+      }
     }
   };
 
@@ -305,120 +414,285 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   return (
-    <AnimatePresence>
+    <>
       {isOpen && (
         <>
-          {/* Overlay para mobile */}
-          <motion.div
-            className="fixed inset-0 bg-black/50 lg:hidden"
-            style={{ zIndex: Z_INDEX.BASE }}
-            variants={overlayVariants}
-            initial="closed"
-            animate="open"
-            exit="closed"
-            onClick={onToggle}
-          />
+          {/* Overlay simplificado apenas para mobile */}
+          {isMobile && (
+            <div
+              onClick={onToggle}
+              style={{
+                position: 'fixed',
+                top: '0',
+                left: '0',
+                right: '0',
+                bottom: '0',
+                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                zIndex: '9998',
+                pointerEvents: 'auto',
+                cursor: 'pointer'
+              }}
+            />
+          )}
 
           {/* Sidebar */}
-          <motion.aside
-            className="fixed top-0 left-0 h-full w-80 bg-white dark:bg-gray-800 shadow-xl lg:shadow-lg border-r border-gray-200 dark:border-gray-700 flex flex-col"
-            style={{ zIndex: Z_INDEX.SIDEBAR }}
-            variants={sidebarVariants}
-            initial="closed"
-            animate="open"
-            exit="closed"
+          <aside
+            ref={sidebarRef}
+            style={{
+              position: 'fixed',
+              top: '0',
+              left: '0',
+              height: '100vh',
+              width: isMobile ? '320px' : '320px',
+              maxWidth: isMobile ? '85vw' : 'none',
+              backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              borderRight: isDarkMode ? '1px solid #4b5563' : '1px solid #e5e7eb',
+              display: 'flex',
+              flexDirection: 'column',
+              zIndex: '9999',
+              pointerEvents: 'auto',
+              opacity: '1',
+              overflow: 'hidden'
+            }}
           >
             {/* Header da Sidebar */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            <div 
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px',
+                borderBottom: isDarkMode ? '1px solid #4b5563' : '1px solid #e5e7eb',
+                backgroundColor: isDarkMode ? '#374151' : '#f9fafb',
+                pointerEvents: 'auto'
+              }}
+            >
+              <h2 
+                style={{
+                  fontSize: '18px',
+                  fontWeight: '600',
+                  color: isDarkMode ? '#ffffff' : '#111827',
+                  margin: '0'
+                }}
+              >
                 Menu de Navegação
               </h2>
               <button
                 onClick={onToggle}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 aria-label="Fechar menu lateral"
+                style={{ 
+                  pointerEvents: 'auto',
+                  padding: '8px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background-color 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = isDarkMode ? '#4b5563' : '#e5e7eb';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
               >
-                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                <X 
+                  style={{
+                    width: '20px',
+                    height: '20px',
+                    color: isDarkMode ? '#9ca3af' : '#6b7280'
+                  }}
+                />
               </button>
             </div>
 
             {/* Conteúdo da Sidebar */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-2">
+            <div 
+              style={{
+                flex: '1',
+                overflowY: 'auto',
+                padding: '16px',
+                pointerEvents: 'auto',
+                backgroundColor: 'transparent'
+              }}
+            >
               {sections.map((section) => (
-                <div key={section.title} className="space-y-1">
+                <div key={section.title} style={{ marginBottom: '8px' }}>
                   {/* Cabeçalho da Seção */}
                   <button
-                    onClick={() => toggleSection(section.title)}
-                    className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <span className="text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
+                      onClick={() => toggleSection(section.title)}
+                      style={{ 
+                        pointerEvents: 'auto',
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '12px',
+                        textAlign: 'left',
+                        borderRadius: '8px',
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s ease',
+                        marginBottom: '4px'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = isDarkMode ? '#4b5563' : '#f3f4f6';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
+                    >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ color: isDarkMode ? '#9ca3af' : '#6b7280' }}>
                         {section.icon}
                       </span>
-                      <span className="font-medium text-gray-900 dark:text-white">
+                      <span style={{ 
+                        fontWeight: '500', 
+                        color: isDarkMode ? '#ffffff' : '#111827' 
+                      }}>
                         {section.title}
                       </span>
                     </div>
                     <ChevronRight
-                      className={`w-4 h-4 text-gray-400 transition-transform ${
-                        expandedSection === section.title ? 'rotate-90' : ''
-                      }`}
+                      style={{
+                        width: '16px',
+                        height: '16px',
+                        color: '#9ca3af',
+                        transform: expandedSection === section.title ? 'rotate(90deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s ease'
+                      }}
                     />
                   </button>
 
                   {/* Items da Seção */}
-                  <AnimatePresence>
-                    {expandedSection === section.title && (
-                      <motion.div
-                        variants={itemVariants}
-                        initial="closed"
-                        animate="open"
-                        exit="closed"
-                        className="ml-4 space-y-1"
-                      >
+                  {expandedSection === section.title && (
+                    <div style={{ marginLeft: '16px', marginTop: '4px' }}>
                         {section.items.map((item) => (
                           <button
                             key={item.id}
                             onClick={() => handleItemClick(item.onClick)}
-                            className="w-full flex items-start space-x-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors group text-left"
+                            style={{ 
+                              pointerEvents: 'auto',
+                              width: '100%',
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: '12px',
+                              padding: '12px',
+                              borderRadius: '8px',
+                              border: 'none',
+                              backgroundColor: 'transparent',
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                              transition: 'background-color 0.2s ease',
+                              marginBottom: '4px'
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.backgroundColor = isDarkMode ? '#4b5563' : '#f9fafb';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
                           >
-                            <span className="text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors mt-0.5">
+                            <span style={{ 
+                              color: isDarkMode ? '#9ca3af' : '#6b7280',
+                              marginTop: '2px',
+                              flexShrink: 0,
+                              width: '16px',
+                              height: '16px'
+                            }}>
                               {item.icon}
                             </span>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <p className="text-sm font-medium text-gray-900 dark:text-white group-hover:text-gray-900 dark:group-hover:text-white">
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <p style={{ 
+                                  fontSize: '14px',
+                                  fontWeight: '500',
+                                  color: isDarkMode ? '#ffffff' : '#111827',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap'
+                                }}>
                                   {item.title}
                                 </p>
                                 {item.shortcut && (
-                                  <span className="text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                                  <span style={{ 
+                                    fontSize: '12px',
+                                    color: isDarkMode ? '#6b7280' : '#9ca3af',
+                                    backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px',
+                                    marginLeft: '8px',
+                                    flexShrink: 0
+                                  }}>
                                     {item.shortcut}
                                   </span>
                                 )}
                               </div>
-                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              <p style={{ 
+                                fontSize: '12px',
+                                color: isDarkMode ? '#9ca3af' : '#6b7280',
+                                marginTop: '4px',
+                                overflow: 'hidden',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical'
+                              }}>
                                 {item.description}
                               </p>
                             </div>
                           </button>
                         ))}
-                      </motion.div>
+                      </div>
                     )}
-                  </AnimatePresence>
                 </div>
               ))}
             </div>
 
             {/* Footer da Sidebar */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                <p>Pressione <kbd className="px-1 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">Ctrl+B</kbd> para alternar</p>
+            <div style={{
+                padding: '16px',
+                borderTop: isDarkMode ? '1px solid #4b5563' : '1px solid #e5e7eb',
+                backgroundColor: isDarkMode ? '#1f2937' : '#f9fafb',
+                pointerEvents: 'auto'
+              }}
+            >
+              <div style={{ 
+                fontSize: '12px',
+                color: isDarkMode ? '#9ca3af' : '#6b7280',
+                textAlign: 'center'
+              }}>
+                <p>
+                  Pressione{' '}
+                  <kbd style={{ 
+                    padding: '2px 6px',
+                    backgroundColor: isDarkMode ? '#374151' : '#e5e7eb',
+                    borderRadius: '4px',
+                    color: isDarkMode ? '#d1d5db' : '#374151',
+                    fontFamily: 'monospace'
+                  }}>
+                    Ctrl+B
+                  </kbd>{' '}
+                  para alternar
+                </p>
+                {isMobile && (
+                  <p style={{ 
+                    color: isDarkMode ? '#6b7280' : '#9ca3af',
+                    marginTop: '4px'
+                  }}>
+                    Deslize para a esquerda ou toque fora para fechar
+                  </p>
+                )}
               </div>
             </div>
-          </motion.aside>
+          </aside>
         </>
       )}
-    </AnimatePresence>
+    </>
   );
 };
 

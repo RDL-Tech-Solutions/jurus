@@ -8,20 +8,27 @@ import { useSkeletonLoading } from '../hooks/useLoadingStates';
 import { SkeletonCard } from './SkeletonLoader';
 import { StaggerContainer, StaggerItem } from './AnimatedWrapper';
 import { cardHoverVariants, transitions } from '../utils/animations';
+import { PeriodoVisualizacao } from './PeriodoSwitch';
+import { PeriodoConversor } from '../utils/periodoConversao';
 
 interface CardsResumoProps {
   resultado: ResultadoSimulacao | null;
   isLoading?: boolean;
   showSkeleton?: boolean;
+  periodoVisualizacao?: PeriodoVisualizacao;
 }
 
-const CardsResumoComponent = ({ resultado, isLoading = false, showSkeleton = false }: CardsResumoProps) => {
+const CardsResumoComponent = ({ resultado, isLoading = false, showSkeleton = false, periodoVisualizacao = 'anual' }: CardsResumoProps) => {
   const { showSkeleton: internalSkeleton } = useSkeletonLoading(150);
   const shouldShowSkeleton = showSkeleton || internalSkeleton;
 
   if (isLoading || !resultado || shouldShowSkeleton) {
     return <SkeletonCard />;
   }
+
+  // Calcula os ganhos baseados no período selecionado
+  const ganhos = PeriodoConversor.calcularGanhosPorPeriodo(resultado, periodoVisualizacao);
+  const sufixo = PeriodoConversor.obterSufixoMonetario(periodoVisualizacao);
 
   const cards = [
     {
@@ -55,9 +62,19 @@ const CardsResumoComponent = ({ resultado, isLoading = false, showSkeleton = fal
       destaque: false
     },
     {
+      titulo: ganhos.labelGanho,
+      valor: formatarMoeda(ganhos.ganhoPrincipal),
+      icone: Percent,
+      cor: periodoVisualizacao === 'mensal' ? 'from-blue-500 to-cyan-600' : 'from-green-500 to-emerald-600',
+      corHover: periodoVisualizacao === 'mensal' ? 'from-blue-600 to-cyan-700' : 'from-green-600 to-emerald-700',
+      descricao: `Rendimento ${sufixo.replace('/', '')}`,
+      tooltip: `Valor que você ganha ${sufixo} com este investimento. ${ganhos.ganhoSecundario ? `${ganhos.labelSecundario}: ${formatarMoeda(ganhos.ganhoSecundario)}` : ''}`,
+      destaque: false
+    },
+    {
       titulo: 'Rentabilidade',
       valor: formatarPercentual(resultado.rentabilidadeTotal),
-      icone: Percent,
+      icone: Target,
       cor: 'from-orange-500 to-red-600',
       corHover: 'from-orange-600 to-red-700',
       descricao: 'Retorno sobre investimento',

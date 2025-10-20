@@ -15,11 +15,14 @@ import {
 } from 'recharts';
 import { ResultadoMensal, ComparacaoInvestimento } from '../types';
 import { formatarMoeda, formatarNumeroGrande } from '../utils/calculations';
+import { PeriodoVisualizacao } from './PeriodoSwitch';
+import { PeriodoConversor } from '../utils/periodoConversao';
 
 interface GraficoInterativoProps {
   dados: ResultadoMensal[];
   comparacoes?: ComparacaoInvestimento[];
   titulo?: string;
+  periodoVisualizacao?: PeriodoVisualizacao;
 }
 
 type TipoGrafico = 'linha' | 'area';
@@ -27,7 +30,8 @@ type TipoGrafico = 'linha' | 'area';
 export function GraficoInterativo({ 
   dados, 
   comparacoes = [], 
-  titulo = "Evolução do Investimento" 
+  titulo = "Evolução do Investimento",
+  periodoVisualizacao = 'anual'
 }: GraficoInterativoProps) {
   const [tipoGrafico, setTipoGrafico] = useState<TipoGrafico>('area');
 
@@ -82,40 +86,45 @@ export function GraficoInterativo({
     );
   }
 
-  // Preparar dados para comparação
-  const dadosComparacao = comparacoes.length > 0 ? 
-    dados.map((item, index) => {
-      // Calcular total investido acumulado até este mês
-      const totalInvestidoAcumulado = dados.slice(0, index + 1).reduce((acc, curr) => acc + (curr.contribuicao || 0), 0);
-      const jurosAcumulados = Math.max(0, item.saldoAcumulado - totalInvestidoAcumulado);
-      
-      const dadosItem: any = {
-        mes: item.mes,
-        saldo: item.saldoAcumulado || 0,
-        totalInvestido: totalInvestidoAcumulado || 0,
-        jurosAcumulados: jurosAcumulados || 0
-      };
+  // Converter dados baseado no período selecionado
+  const dadosConvertidos = PeriodoConversor.converterEvolucaoMensal(dados, periodoVisualizacao);
 
-      // Adicionar dados de cada comparação
-      comparacoes.forEach((comp, compIndex) => {
-        if (comp.resultado?.evolucaoMensal?.[index]) {
-          dadosItem[`saldo_${compIndex}`] = comp.resultado.evolucaoMensal[index].saldoAcumulado || 0;
+  // Preparar dados para o gráfico
+  const dadosComparacao = comparacoes.length > 0 ? dadosConvertidos.map((item, index) => {
+    // Calcular total investido acumulado até este período
+    const totalInvestidoAcumulado = dadosConvertidos.slice(0, index + 1).reduce((acc, curr) => acc + (curr.contribuicao || 0), 0);
+    const jurosAcumulados = Math.max(0, item.saldoAcumulado - totalInvestidoAcumulado);
+    
+    const dadosItem: any = {
+      mes: item.mes,
+      saldo: item.saldoAcumulado || 0,
+      totalInvestido: totalInvestidoAcumulado || 0,
+      jurosAcumulados: jurosAcumulados || 0
+    };
+
+    // Adicionar dados de cada comparação (convertidos também)
+    comparacoes.forEach((comp, compIndex) => {
+      if (comp.resultado?.evolucaoMensal) {
+        const evolucaoConvertida = PeriodoConversor.converterEvolucaoMensal(comp.resultado.evolucaoMensal, periodoVisualizacao);
+        if (evolucaoConvertida[index]) {
+          dadosItem[`saldo_${compIndex}`] = evolucaoConvertida[index].saldoAcumulado || 0;
         }
-      });
-
-      return dadosItem;
-    }) : dados.map((item, index) => {
-      // Calcular total investido acumulado até este mês
-      const totalInvestidoAcumulado = dados.slice(0, index + 1).reduce((acc, curr) => acc + (curr.contribuicao || 0), 0);
-      const jurosAcumulados = Math.max(0, item.saldoAcumulado - totalInvestidoAcumulado);
-      
-      return {
-        mes: item.mes,
-        saldo: item.saldoAcumulado || 0,
-        totalInvestido: totalInvestidoAcumulado || 0,
-        jurosAcumulados: jurosAcumulados || 0
-      };
+      }
     });
+
+    return dadosItem;
+  }) : dadosConvertidos.map((item, index) => {
+    // Calcular total investido acumulado até este período
+    const totalInvestidoAcumulado = dadosConvertidos.slice(0, index + 1).reduce((acc, curr) => acc + (curr.contribuicao || 0), 0);
+    const jurosAcumulados = Math.max(0, item.saldoAcumulado - totalInvestidoAcumulado);
+    
+    return {
+      mes: item.mes,
+      saldo: item.saldoAcumulado || 0,
+      totalInvestido: totalInvestidoAcumulado || 0,
+      jurosAcumulados: jurosAcumulados || 0
+    };
+  });
 
   // Debug: Log dos dados preparados (apenas em desenvolvimento)
   if (process.env.NODE_ENV === 'development' && dadosComparacao.length > 0) {
@@ -131,7 +140,7 @@ export function GraficoInterativo({
       return (
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg border border-gray-200 dark:border-gray-600 z-50">
           <p className="font-semibold text-gray-900 dark:text-white mb-2">
-            Mês {label}
+            {PeriodoConversor.formatarTooltipPeriodo(label, periodoVisualizacao)}
           </p>
           {payload.map((entry: any, index: number) => (
             <p key={`tooltip-${index}`} className="text-sm mb-1" style={{ color: entry.color }}>
@@ -146,6 +155,10 @@ export function GraficoInterativo({
 
   const formatarEixoY = (value: number) => {
     return formatarNumeroGrande(value);
+  };
+
+  const formatarEixoX = (value: number) => {
+    return value.toString();
   };
 
   return (
@@ -216,6 +229,7 @@ export function GraficoInterativo({
                 dataKey="mes" 
                 className="text-gray-600 dark:text-gray-400"
                 tick={{ fontSize: 12 }}
+                tickFormatter={formatarEixoX}
               />
               <YAxis 
                 className="text-gray-600 dark:text-gray-400"
@@ -262,6 +276,7 @@ export function GraficoInterativo({
                 dataKey="mes" 
                 className="text-gray-600 dark:text-gray-400"
                 tick={{ fontSize: 12 }}
+                tickFormatter={formatarEixoX}
               />
               <YAxis 
                 className="text-gray-600 dark:text-gray-400"

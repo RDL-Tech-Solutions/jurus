@@ -10,7 +10,8 @@ import {
   PiggyBank,
   ChevronRight,
   Keyboard,
-  X
+  X,
+  ChevronLeft
 } from 'lucide-react';
 import { useHoverPreload } from '../hooks/usePreloadComponents';
 import { getZIndexClass, Z_INDEX } from '../constants/zIndex';
@@ -94,61 +95,63 @@ export function NavigationEnhanced({ activeTab, onTabChange, onTabHover, classNa
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const hoverPreload = useHoverPreload();
   
   // Refs para os containers de navegação
-  const mobileNavRef = useRef<HTMLElement>(null);
-  const tabletNavRef = useRef<HTMLElement>(null);
-  const desktopNavRef = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLElement>(null);
+
+  // Função para verificar se pode fazer scroll
+  const checkScrollability = useCallback(() => {
+    if (navRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = navRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1);
+    }
+  }, []);
+
+  // Função para scroll horizontal suave
+  const scrollHorizontal = useCallback((direction: 'left' | 'right') => {
+    if (navRef.current) {
+      const scrollAmount = 200;
+      const newScrollLeft = direction === 'left' 
+        ? navRef.current.scrollLeft - scrollAmount
+        : navRef.current.scrollLeft + scrollAmount;
+      
+      navRef.current.scrollTo({
+        left: newScrollLeft,
+        behavior: 'smooth'
+      });
+    }
+  }, []);
 
   // Função melhorada para scroll horizontal com mouse wheel
   const handleWheelScroll = useCallback((e: WheelEvent) => {
-    // Verificar se o scroll é horizontal ou se deve ser convertido
-    if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
-      // Scroll horizontal nativo
-      return;
-    }
-    
-    // Converter scroll vertical em horizontal
-    e.preventDefault();
-    const container = e.currentTarget as HTMLElement;
+    if (!navRef.current) return;
     
     // Verificar se há conteúdo para fazer scroll
-    if (container.scrollWidth <= container.clientWidth) {
+    if (navRef.current.scrollWidth <= navRef.current.clientWidth) {
       return;
     }
     
-    const scrollAmount = e.deltaY * 0.8; // Multiplicador para suavizar
-    container.scrollLeft += scrollAmount;
-    
-    // Debug log
-    console.log('Scroll horizontal aplicado:', {
-      deltaY: e.deltaY,
-      scrollAmount,
-      newScrollLeft: container.scrollLeft,
-      scrollWidth: container.scrollWidth,
-      clientWidth: container.clientWidth
-    });
+    // Converter scroll vertical em horizontal se necessário
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      const scrollAmount = e.deltaY * 0.8;
+      navRef.current.scrollLeft += scrollAmount;
+    }
   }, []);
 
   // Função para detectar scroll da página
   const handlePageScroll = useCallback(() => {
-    const newScrollY = window.scrollY;
-    setScrollY(newScrollY);
-    
-    // Debug log
-    console.log('Page scroll detectado:', {
-      scrollY: newScrollY,
-      shouldMinimize: newScrollY > 100
-    });
+    setScrollY(window.scrollY);
   }, []);
 
-  // Effect para detectar mobile e adicionar listeners de scroll
+  // Effect para detectar mobile e adicionar listeners
   useEffect(() => {
     const checkMobile = () => {
-      const isMobileNow = window.innerWidth < 768;
-      setIsMobile(isMobileNow);
-      console.log('Mobile check:', isMobileNow);
+      setIsMobile(window.innerWidth < 768);
     };
     
     checkMobile();
@@ -161,40 +164,24 @@ export function NavigationEnhanced({ activeTab, onTabChange, onTabHover, classNa
     };
   }, [handlePageScroll]);
 
-  // Effect melhorado para adicionar event listeners de scroll horizontal
+  // Effect para adicionar event listeners de scroll
   useEffect(() => {
-    const addWheelListeners = () => {
-      const refs = [
-        { ref: mobileNavRef, name: 'mobile' },
-        { ref: tabletNavRef, name: 'tablet' },
-        { ref: desktopNavRef, name: 'desktop' }
-      ];
+    const navElement = navRef.current;
+    if (navElement) {
+      navElement.addEventListener('wheel', handleWheelScroll, { passive: false });
+      navElement.addEventListener('scroll', checkScrollability, { passive: true });
       
-      refs.forEach(({ ref, name }) => {
-        if (ref.current) {
-          console.log(`Adicionando wheel listener para ${name} nav`);
-          ref.current.addEventListener('wheel', handleWheelScroll, { passive: false });
-        }
-      });
-
+      // Verificar scrollability inicial
+      checkScrollability();
+      
       return () => {
-        refs.forEach(({ ref, name }) => {
-          if (ref.current) {
-            console.log(`Removendo wheel listener para ${name} nav`);
-            ref.current.removeEventListener('wheel', handleWheelScroll);
-          }
-        });
+        navElement.removeEventListener('wheel', handleWheelScroll);
+        navElement.removeEventListener('scroll', checkScrollability);
       };
-    };
+    }
+  }, [handleWheelScroll, checkScrollability]);
 
-    // Adicionar listeners após um pequeno delay para garantir que os refs estão prontos
-    const timeoutId = setTimeout(addWheelListeners, 100);
-    
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [handleWheelScroll]);
-
+  // Effect para atalhos de teclado
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey) {
@@ -221,6 +208,7 @@ export function NavigationEnhanced({ activeTab, onTabChange, onTabHover, classNa
       onTabHover(tabId);
     }
 
+    // Preload baseado na aba
     switch (tabId) {
       case 'simulacao':
         hoverPreload.preloadSimulacao();
@@ -249,25 +237,15 @@ export function NavigationEnhanced({ activeTab, onTabChange, onTabHover, classNa
     }
   };
 
-  const currentTab = tabs.find(tab => tab.id === activeTab);
-  
   // Determinar se deve estar minimizado baseado no scroll
   const shouldMinimize = isMinimized || scrollY > 100;
-  
-  // Debug log para shouldMinimize
-  console.log('shouldMinimize:', {
-    isMinimized,
-    scrollY,
-    shouldMinimize
-  });
 
   return (
     <motion.div 
-      className={`w-full transition-all duration-300 ${className} ${shouldMinimize ? 'transform-gpu' : ''}`}
+      className={`w-full transition-all duration-300 ${className}`}
       animate={{
-        scale: shouldMinimize ? 0.9 : 1,
-        opacity: shouldMinimize ? 0.7 : 1,
-        y: shouldMinimize ? -5 : 0,
+        scale: shouldMinimize ? 0.95 : 1,
+        opacity: shouldMinimize ? 0.8 : 1,
       }}
       transition={{ 
         type: "spring", 
@@ -276,9 +254,9 @@ export function NavigationEnhanced({ activeTab, onTabChange, onTabHover, classNa
         duration: 0.3
       }}
     >
-      {/* Responsive Navigation Container */}
+      {/* Container de Navegação Responsivo */}
       <div className="relative w-full">
-        {/* Keyboard Shortcuts Button - Top Right */}
+        {/* Botão de Atalhos - Canto Superior Direito */}
         <div className="absolute top-0 right-0 z-10">
           <motion.button
             onClick={() => setShowShortcuts(true)}
@@ -286,100 +264,64 @@ export function NavigationEnhanced({ activeTab, onTabChange, onTabHover, classNa
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             title="Atalhos de teclado (Ctrl+K)"
+            aria-label="Mostrar atalhos de teclado"
           >
             <Keyboard className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
             <span className="hidden sm:inline">Atalhos</span>
           </motion.button>
         </div>
 
-        {/* Navigation Tabs - Fully Responsive */}
+        {/* Container Principal de Navegação */}
         <div className="w-full pr-16 sm:pr-20">
-          {/* Mobile Navigation (< 640px) */}
-          <div className="block sm:hidden">
-            <div className="relative">
-              <nav 
-                ref={mobileNavRef}
-                className={`flex gap-1 overflow-x-auto scrollbar-hide scroll-smooth pb-1 transition-all duration-300 ${
-                  shouldMinimize ? 'py-1' : 'py-2'
-                }`}
-                style={{ 
-                  cursor: 'grab',
-                  scrollbarWidth: 'none',
-                  msOverflowStyle: 'none'
-                }}
-                onMouseDown={(e) => {
-                  e.currentTarget.style.cursor = 'grabbing';
-                  console.log('Mouse down em mobile nav');
-                }}
-                onMouseUp={(e) => {
-                  e.currentTarget.style.cursor = 'grab';
-                  console.log('Mouse up em mobile nav');
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.cursor = 'grab';
-                }}
+          <div className="relative">
+            {/* Botão de Scroll Esquerda */}
+            {canScrollLeft && !isMobile && (
+              <motion.button
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                onClick={() => scrollHorizontal('left')}
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-md hover:shadow-lg transition-all"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                aria-label="Scroll para esquerda"
               >
-                {tabs.map((tab) => (
-                  <motion.button
-                    key={tab.id}
-                    onClick={() => onTabChange(tab.id)}
-                    className={`
-                      relative flex flex-col items-center justify-center gap-1 px-2 py-2 rounded-lg text-xs font-medium transition-all duration-200 min-w-[60px] flex-shrink-0
-                      ${activeTab === tab.id
-                        ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800'
-                      }
-                    `}
-                    whileTap={{ scale: 0.95 }}
-                    title={tab.description}
-                  >
-                    <div className="text-base">{tab.icon}</div>
-                    <span className="text-center leading-tight text-[10px] font-medium">
-                      {tab.label.split(' ')[0]}
-                    </span>
-                    
-                    {/* Active indicator for mobile */}
-                    {activeTab === tab.id && (
-                      <motion.div
-                        layoutId="activeTabMobile"
-                        className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-blue-500 dark:bg-blue-400 rounded-full"
-                        initial={false}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      />
-                    )}
-                  </motion.button>
-                ))}
-              </nav>
-              
-              {/* Scroll indicators for mobile */}
-              <div className="absolute left-0 top-0 bottom-1 w-3 bg-gradient-to-r from-white dark:from-gray-900 to-transparent pointer-events-none opacity-60"></div>
-              <div className="absolute right-0 top-0 bottom-1 w-3 bg-gradient-to-l from-white dark:from-gray-900 to-transparent pointer-events-none opacity-60"></div>
-            </div>
-          </div>
+                <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              </motion.button>
+            )}
 
-          {/* Tablet Navigation (640px - 1024px) */}
-          <div className="hidden sm:block lg:hidden">
-            <div className={`bg-gray-100 dark:bg-gray-800 rounded-lg transition-all duration-300 ${
-              shouldMinimize ? 'p-0.5' : 'p-1'
-            }`}>
+            {/* Botão de Scroll Direita */}
+            {canScrollRight && !isMobile && (
+              <motion.button
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                onClick={() => scrollHorizontal('right')}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-md hover:shadow-lg transition-all"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                aria-label="Scroll para direita"
+              >
+                <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+              </motion.button>
+            )}
+
+            {/* Container de Navegação Unificado */}
+            <div className={`
+              bg-gray-100 dark:bg-gray-800 rounded-lg transition-all duration-300 
+              ${shouldMinimize ? 'p-0.5' : 'p-1'}
+              ${canScrollLeft || canScrollRight ? 'px-8' : ''}
+            `}>
               <nav 
-                ref={tabletNavRef}
-                className="flex gap-1 overflow-x-auto scrollbar-hide scroll-smooth"
+                ref={navRef}
+                className={`
+                  flex gap-1 overflow-x-auto scroll-smooth transition-all duration-300
+                  ${isMobile ? 'pb-1' : ''}
+                  scrollbar-hide
+                `}
                 style={{ 
-                  cursor: 'grab',
                   scrollbarWidth: 'none',
                   msOverflowStyle: 'none'
-                }}
-                onMouseDown={(e) => {
-                  e.currentTarget.style.cursor = 'grabbing';
-                  console.log('Mouse down em tablet nav');
-                }}
-                onMouseUp={(e) => {
-                  e.currentTarget.style.cursor = 'grab';
-                  console.log('Mouse up em tablet nav');
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.cursor = 'grab';
                 }}
               >
                 {tabs.map((tab) => (
@@ -388,8 +330,11 @@ export function NavigationEnhanced({ activeTab, onTabChange, onTabHover, classNa
                     onClick={() => onTabChange(tab.id)}
                     onMouseEnter={() => handleTabHover(tab.id)}
                     className={`
-                      relative flex items-center gap-2 rounded-md text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
-                      ${shouldMinimize ? 'px-2 py-1' : 'px-3 py-2'}
+                      relative flex items-center justify-center gap-2 rounded-md font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0
+                      ${isMobile 
+                        ? `flex-col text-xs min-w-[60px] ${shouldMinimize ? 'px-2 py-1.5' : 'px-2 py-2'}`
+                        : `text-sm ${shouldMinimize ? 'px-2 py-1.5' : 'px-3 py-2'}`
+                      }
                       ${activeTab === tab.id
                         ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-700/50'
@@ -398,80 +343,38 @@ export function NavigationEnhanced({ activeTab, onTabChange, onTabHover, classNa
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     title={`${tab.description} (Ctrl+${tab.shortcut})`}
+                    aria-label={`${tab.label} - ${tab.description}`}
                   >
-                    {tab.icon}
-                    <span className="text-sm">{tab.label.split(' ')[0]}</span>
+                    <div className={isMobile ? 'text-base' : ''}>{tab.icon}</div>
                     
-                    {/* Active indicator for tablet */}
-                    {activeTab === tab.id && (
-                      <motion.div
-                        layoutId="activeTabTablet"
-                        className="absolute inset-0 bg-blue-500/10 dark:bg-blue-400/10 rounded-md"
-                        initial={false}
-                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      />
-                    )}
-                  </motion.button>
-                ))}
-              </nav>
-            </div>
-          </div>
-
-          {/* Desktop Navigation (>= 1024px) */}
-          <div className="hidden lg:block">
-            <div className={`bg-gray-100 dark:bg-gray-800 rounded-lg transition-all duration-300 ${
-              shouldMinimize ? 'p-0.5' : 'p-1'
-            }`}>
-              <nav 
-                ref={desktopNavRef}
-                className="flex gap-1 overflow-x-auto scrollbar-hide scroll-smooth"
-                style={{ 
-                  cursor: 'grab',
-                  scrollbarWidth: 'none',
-                  msOverflowStyle: 'none'
-                }}
-                onMouseDown={(e) => {
-                  e.currentTarget.style.cursor = 'grabbing';
-                  console.log('Mouse down em desktop nav');
-                }}
-                onMouseUp={(e) => {
-                  e.currentTarget.style.cursor = 'grab';
-                  console.log('Mouse up em desktop nav');
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.cursor = 'grab';
-                }}
-              >
-                {tabs.map((tab) => (
-                  <motion.button
-                    key={tab.id}
-                    onClick={() => onTabChange(tab.id)}
-                    onMouseEnter={() => handleTabHover(tab.id)}
-                    className={`
-                      relative flex items-center gap-2 rounded-md text-sm font-medium transition-all duration-200 whitespace-nowrap
-                      ${shouldMinimize ? 'px-3 py-1.5' : 'px-4 py-2.5'}
-                      ${activeTab === tab.id
-                        ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-gray-700/50'
-                      }
-                    `}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    title={`${tab.description} (Ctrl+${tab.shortcut})`}
-                  >
-                    {tab.icon}
-                    <span className={shouldMinimize ? 'hidden sm:inline' : ''}>{tab.label}</span>
-                    {tab.shortcut && !shouldMinimize && (
-                      <span className="text-xs opacity-60 ml-1 hidden xl:inline">
-                        ⌘{tab.shortcut}
+                    {isMobile ? (
+                      <span className="text-center leading-tight text-[10px] font-medium">
+                        {tab.label.split(' ')[0]}
                       </span>
+                    ) : (
+                      <>
+                        <span className={shouldMinimize ? 'hidden sm:inline' : ''}>
+                          {tab.label}
+                        </span>
+                        {tab.shortcut && !shouldMinimize && (
+                          <span className="text-xs opacity-60 ml-1 hidden xl:inline">
+                            ⌘{tab.shortcut}
+                          </span>
+                        )}
+                      </>
                     )}
                     
-                    {/* Active indicator for desktop */}
+                    {/* Indicador de Aba Ativa */}
                     {activeTab === tab.id && (
                       <motion.div
-                        layoutId="activeTabDesktop"
-                        className="absolute inset-0 bg-blue-500/10 dark:bg-blue-400/10 rounded-md"
+                        layoutId="activeTab"
+                        className={`
+                          absolute bg-blue-500/10 dark:bg-blue-400/10 rounded-md
+                          ${isMobile 
+                            ? 'bottom-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-blue-500 dark:bg-blue-400'
+                            : 'inset-0'
+                          }
+                        `}
                         initial={false}
                         transition={{ type: "spring", stiffness: 500, damping: 30 }}
                       />
@@ -480,11 +383,19 @@ export function NavigationEnhanced({ activeTab, onTabChange, onTabHover, classNa
                 ))}
               </nav>
             </div>
+
+            {/* Indicadores de Scroll para Mobile */}
+            {isMobile && (
+              <>
+                <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-gray-100 dark:from-gray-800 to-transparent pointer-events-none opacity-60 rounded-l-lg"></div>
+                <div className="absolute right-0 top-0 bottom-0 w-4 bg-gradient-to-l from-gray-100 dark:from-gray-800 to-transparent pointer-events-none opacity-60 rounded-r-lg"></div>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Modal de atalhos */}
+      {/* Modal de Atalhos */}
       <AnimatePresence>
         {showShortcuts && (
           <motion.div
@@ -508,12 +419,13 @@ export function NavigationEnhanced({ activeTab, onTabChange, onTabHover, classNa
                 <button
                   onClick={() => setShowShortcuts(false)}
                   className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  aria-label="Fechar modal de atalhos"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-80 overflow-y-auto">
                 {tabs.map((tab) => (
                   <div key={tab.id} className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">

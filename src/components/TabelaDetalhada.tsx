@@ -6,13 +6,16 @@ import { useState } from 'react';
 import { AnimatedContainer } from './AnimatedContainer';
 import { AnimatedButton } from './AnimatedButton';
 import { StaggeredContainer, useStaggeredAnimation } from './AnimatedContainer';
+import { PeriodoVisualizacao } from './PeriodoSwitch';
+import { PeriodoConversor } from '../utils/periodoConversao';
 
 interface TabelaDetalhadaProps {
   dados: ResultadoMensal[];
   onExportarCSV?: () => void;
+  periodoVisualizacao?: PeriodoVisualizacao;
 }
 
-export function TabelaDetalhada({ dados, onExportarCSV }: TabelaDetalhadaProps) {
+export function TabelaDetalhada({ dados, onExportarCSV, periodoVisualizacao = 'anual' }: TabelaDetalhadaProps) {
   const [mostrarTodos, setMostrarTodos] = useState(false);
   const [colunaOrdenacao, setColunaOrdenacao] = useState<keyof ResultadoMensal | null>(null);
   const [direcaoOrdenacao, setDirecaoOrdenacao] = useState<'asc' | 'desc'>('asc');
@@ -97,10 +100,10 @@ export function TabelaDetalhada({ dados, onExportarCSV }: TabelaDetalhadaProps) 
             </motion.div>
             <div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Evolução Mensal
+                Evolução {periodoVisualizacao === 'mensal' ? 'Mensal' : 'Anual'}
               </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {dados.length} meses de simulação
+                {dados.length} {periodoVisualizacao === 'mensal' ? 'meses' : 'anos'} de simulação
               </p>
             </div>
           </div>
@@ -147,7 +150,7 @@ export function TabelaDetalhada({ dados, onExportarCSV }: TabelaDetalhadaProps) 
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                   onClick={() => handleOrdenar('mes')}
                 >
-                  Mês {obterIconeOrdenacao('mes')}
+                  {PeriodoConversor.obterLabelEixoX(periodoVisualizacao)} {obterIconeOrdenacao('mes')}
                 </th>
               <th 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -165,7 +168,7 @@ export function TabelaDetalhada({ dados, onExportarCSV }: TabelaDetalhadaProps) 
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => handleOrdenar('juros')}
               >
-                Juros do Mês {obterIconeOrdenacao('juros')}
+                Juros do {periodoVisualizacao === 'mensal' ? 'Mês' : 'Ano'} {obterIconeOrdenacao('juros')}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Juros Acumulados
