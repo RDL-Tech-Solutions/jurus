@@ -61,6 +61,315 @@ export interface EducationPreferences {
   autoSave: boolean;
 }
 
+// === NOVOS TIPOS PARA EXPANSÃO ===
+
+// Tipos básicos
+export type DifficultyLevel = 'easy' | 'medium' | 'hard' | 'basic' | 'intermediate' | 'advanced' | 'beginner';
+export type ContentType = 'article' | 'video' | 'interactive' | 'calculator' | 'quiz' | 'podcast';
+export type BadgeRarity = 'common' | 'rare' | 'epic' | 'legendary';
+export type QuestionType = 'multiple_choice' | 'multiple_select' | 'true_false' | 'text' | 'numeric' | 'drag_drop';
+
+// Sistema de Gamificação
+export interface UserProgress {
+  id: string;
+  xp: number;
+  level: number;
+  completedModules: string[];
+  completedTracks: string[];
+  completedQuizzes: string[];
+  badges: Badge[];
+  certificates: Certificate[];
+  streakDays: number;
+  currentTrack?: string;
+  lastActivity: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  rarity: BadgeRarity;
+  condition?: AchievementCondition;
+  unlockedAt?: Date;
+  category: 'progress' | 'activity' | 'special' | 'seasonal';
+}
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  condition: AchievementCondition;
+  xpReward: number;
+  badge?: Badge;
+  isSecret?: boolean;
+}
+
+export interface AchievementCondition {
+  type: 'modules_completed' | 'xp_earned' | 'streak_days' | 'quiz_score' | 'time_spent';
+  target: number;
+  operator: 'gte' | 'lte' | 'eq';
+}
+
+// Sistema de Aprendizado
+export interface LearningTrack {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: DifficultyLevel;
+  estimatedTime: number; // em minutos
+  modules: Module[];
+  prerequisites: string[];
+  xpReward: number;
+  badge?: Badge;
+  category: 'basics' | 'investments' | 'planning' | 'entrepreneurship' | 'retirement' | 'credit' | 'business';
+  isLocked?: boolean;
+  isCompleted?: boolean;
+  isUnlocked?: boolean;
+  progress?: number;
+}
+
+export interface Module {
+  id: string;
+  title: string;
+  description: string;
+  content: Content[] | string;
+  quiz?: Quiz;
+  estimatedTime: number;
+  xpReward: number;
+  order: number;
+  isCompleted?: boolean;
+  progress?: number;
+}
+
+export interface Content {
+  id: string;
+  type: ContentType;
+  title: string;
+  description?: string;
+  content?: string;
+  url?: string;
+  duration?: number;
+  xpReward?: number;
+  data: any; // Específico para cada tipo de conteúdo
+  estimatedTime: number;
+  isCompleted?: boolean;
+}
+
+// Sistema de Avaliação
+export interface Quiz {
+  id: string;
+  title: string;
+  description: string;
+  questions: Question[];
+  timeLimit?: number; // em minutos
+  passingScore: number; // porcentagem
+  xpReward: number;
+  attempts?: number;
+  maxAttempts?: number;
+}
+
+export interface Question {
+  id: string;
+  text?: string; // Made optional for backward compatibility
+  title: string;
+  description?: string;
+  image?: string;
+  type: QuestionType;
+  difficulty: DifficultyLevel;
+  options?: QuestionOption[];
+  correctAnswer: QuestionAnswer;
+  explanation?: string;
+  hint?: string;
+  tolerance?: number;
+  unit?: string;
+  points: number;
+  timeLimit?: number;
+  tags?: string[];
+}
+
+export interface QuestionOption {
+  id?: string;
+  value: string;
+  text: string;
+  explanation?: string;
+  isCorrect?: boolean;
+}
+
+export interface QuestionAnswer {
+  value: string | number | string[];
+  type?: QuestionType;
+}
+
+export interface QuestionResult {
+  questionId: string;
+  answer: any;
+  value: string | number | string[];
+  type?: QuestionType;
+  isCorrect: boolean;
+  timeSpent: number;
+}
+
+export interface QuizResult {
+  id: string;
+  quizId: string;
+  userId: string;
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  totalPoints: number;
+  maxPoints: number;
+  timeSpent: number;
+  answers: QuestionResult[];
+  questionResults: QuestionResultSummary[];
+  completedAt: Date;
+  passed: boolean;
+}
+
+export interface QuestionResultSummary {
+  questionId: string;
+  isCorrect: boolean;
+  userAnswer: QuestionAnswer;
+  correctAnswer: QuestionAnswer;
+  points: number;
+}
+
+// Sistema de Certificação
+export interface Certificate {
+  id: string;
+  title: string;
+  description: string;
+  trackId?: string;
+  moduleId?: string;
+  userId: string;
+  issuedAt: Date;
+  verificationCode: string;
+  template: CertificateTemplate;
+}
+
+export interface CertificateTemplate {
+  id: string;
+  name: string;
+  background: string;
+  layout: 'modern' | 'classic' | 'minimal';
+  colors: {
+    primary: string;
+    secondary: string;
+    text: string;
+  };
+}
+
+// Calculadoras Avançadas
+export interface CalculatorConfig {
+  id: string;
+  type: 'retirement' | 'loan' | 'investment' | 'comparison';
+  title: string;
+  description: string;
+  inputs: CalculatorInput[];
+  outputs: CalculatorOutput[];
+}
+
+export interface CalculatorInput {
+  id: string;
+  label: string;
+  type: 'number' | 'percentage' | 'currency' | 'date' | 'select';
+  required: boolean;
+  defaultValue?: any;
+  validation?: ValidationRule[];
+  placeholder?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
+export interface CalculatorOutput {
+  id: string;
+  label: string;
+  type: 'currency' | 'percentage' | 'number' | 'text' | 'chart';
+  format?: string;
+}
+
+export interface ValidationRule {
+  type: 'min' | 'max' | 'required' | 'pattern';
+  value: any;
+  message: string;
+}
+
+// Biblioteca de Conteúdo
+export interface Article {
+  id: string;
+  title: string;
+  content: string;
+  author: string;
+  publishedAt: Date;
+  readTime: number;
+  category: string;
+  tags: string[];
+  difficulty: DifficultyLevel;
+  isFavorite?: boolean;
+}
+
+export interface Video {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  thumbnail: string;
+  duration: number;
+  category: string;
+  difficulty: DifficultyLevel;
+  transcript?: string;
+  watchProgress?: number;
+}
+
+export interface Podcast {
+  id: string;
+  title: string;
+  description: string;
+  audioUrl: string;
+  duration: number;
+  publishedAt: Date;
+  category: string;
+  transcript?: string;
+  playProgress?: number;
+}
+
+// Comparador de Produtos
+export interface FinancialProduct {
+  id: string;
+  name: string;
+  type: 'investment' | 'credit_card' | 'bank_account' | 'insurance' | 'loan';
+  provider: string;
+  features: Record<string, any>;
+  rates: {
+    annual?: number;
+    monthly?: number;
+    fees?: number[];
+  };
+  pros: string[];
+  cons: string[];
+  rating: number;
+  updatedAt: Date;
+}
+
+export interface ProductComparison {
+  id: string;
+  products: FinancialProduct[];
+  criteria: ComparisonCriteria[];
+  createdAt: Date;
+}
+
+export interface ComparisonCriteria {
+  id: string;
+  name: string;
+  weight: number;
+  type: 'higher_better' | 'lower_better' | 'boolean';
+}
+
+// === TIPOS EXISTENTES ===
+
 // Resultado do cálculo do cofrinho
 export interface CofrinhoResult {
   valorFinal: number;
@@ -72,6 +381,8 @@ export interface CofrinhoResult {
   crescimentoMensal: Array<{
     mes: number;
     valor: number;
+    ganho?: number;
+    totalInvestido?: number;
   }>;
 }
 
@@ -136,13 +447,22 @@ export interface EducationSection {
   anchor: string;
 }
 
+// === CONSTANTES E CONFIGURAÇÕES ===
+
 // LocalStorage Keys para Educação Financeira
 export const EDUCATION_STORAGE_KEYS = {
   SIMULADOR_CONFIG: 'jurus:educacao:simulador-config',
   COFRINHO_HISTORY: 'jurus:educacao:cofrinho-history',
   DEBT_PROGRESS: 'jurus:educacao:debt-progress',
   EDUCATION_PROGRESS: 'jurus:educacao:progress',
-  EDUCATION_PREFERENCES: 'jurus:educacao:preferences'
+  EDUCATION_PREFERENCES: 'jurus:educacao:preferences',
+  // Novas chaves
+  USER_PROGRESS: 'jurus:educacao:user-progress',
+  BADGES: 'jurus:educacao:badges',
+  QUIZ_RESULTS: 'jurus:educacao:quiz-results',
+  CERTIFICATES: 'jurus:educacao:certificates',
+  FAVORITES: 'jurus:educacao:favorites',
+  LEARNING_TRACKS: 'jurus:educacao:learning-tracks'
 } as const;
 
 // Configuração padrão do simulador 50-30-20
@@ -188,6 +508,80 @@ export const DEBT_STRATEGIES: Record<string, DebtStrategy> = {
     color: '#10B981'
   }
 };
+
+// Sistema de XP e Níveis
+export const XP_SYSTEM = {
+  LEVEL_BASE: 1000, // XP base por nível
+  LEVEL_MULTIPLIER: 1.2, // Multiplicador por nível
+  ACTIVITIES: {
+    MODULE_COMPLETION: {
+      basic: 100,
+      intermediate: 200,
+      advanced: 300
+    },
+    QUIZ_COMPLETION: 50,
+    QUIZ_PERFECT_SCORE: 100,
+    DAILY_STREAK: 25,
+    FIRST_CERTIFICATE: 500,
+    TRACK_COMPLETION: 1000
+  }
+};
+
+// Badges padrão do sistema
+export const DEFAULT_BADGES: Badge[] = [
+  {
+    id: 'first-steps',
+    name: 'Primeiros Passos',
+    description: 'Complete seu primeiro módulo',
+    icon: '👶',
+    rarity: 'common',
+    category: 'progress',
+    condition: {
+      type: 'modules_completed',
+      target: 1,
+      operator: 'gte'
+    }
+  },
+  {
+    id: 'quiz-master',
+    name: 'Mestre dos Quizzes',
+    description: 'Complete 10 quizzes com nota máxima',
+    icon: '🧠',
+    rarity: 'rare',
+    category: 'activity',
+    condition: {
+      type: 'quiz_score',
+      target: 10,
+      operator: 'gte'
+    }
+  },
+  {
+    id: 'streak-warrior',
+    name: 'Guerreiro da Consistência',
+    description: 'Mantenha uma sequência de 30 dias',
+    icon: '🔥',
+    rarity: 'epic',
+    category: 'activity',
+    condition: {
+      type: 'streak_days',
+      target: 30,
+      operator: 'gte'
+    }
+  },
+  {
+    id: 'financial-expert',
+    name: 'Expert Financeiro',
+    description: 'Complete todas as trilhas de aprendizado',
+    icon: '🏆',
+    rarity: 'legendary',
+    category: 'special',
+    condition: {
+      type: 'modules_completed',
+      target: 50,
+      operator: 'gte'
+    }
+  }
+];
 
 // Cards de educação financeira
 export const EDUCATION_CARDS: EducationCard[] = [
@@ -235,7 +629,7 @@ export const EDUCATION_CARDS: EducationCard[] = [
   }
 ];
 
-// Seções da página de educação
+// Seções da página de educação (expandidas)
 export const EDUCATION_SECTIONS: EducationSection[] = [
   {
     id: 'educacao',
@@ -249,7 +643,7 @@ export const EDUCATION_SECTIONS: EducationSection[] = [
     id: 'simulador',
     title: 'Simulador 50-30-20',
     description: 'Planeje seu orçamento com a regra 50-30-20',
-    icon: 'PieChart',
+    icon: 'ChartPie',
     component: 'Simulador5030',
     anchor: 'simulador'
   },
@@ -268,5 +662,53 @@ export const EDUCATION_SECTIONS: EducationSection[] = [
     icon: 'Coins',
     component: 'CofrinhoInteligente',
     anchor: 'cofrinho'
+  }
+];
+
+// Trilhas de aprendizado padrão
+export const DEFAULT_LEARNING_TRACKS: LearningTrack[] = [
+  {
+    id: 'basics',
+    title: 'Fundamentos Financeiros',
+    description: 'Aprenda os conceitos básicos de educação financeira',
+    difficulty: 'basic',
+    estimatedTime: 120,
+    modules: [],
+    prerequisites: [],
+    xpReward: 500,
+    category: 'basics'
+  },
+  {
+    id: 'investments',
+    title: 'Mundo dos Investimentos',
+    description: 'Descubra como fazer seu dinheiro trabalhar para você',
+    difficulty: 'intermediate',
+    estimatedTime: 180,
+    modules: [],
+    prerequisites: ['basics'],
+    xpReward: 750,
+    category: 'investments'
+  },
+  {
+    id: 'planning',
+    title: 'Planejamento Financeiro',
+    description: 'Organize suas finanças e planeje seu futuro',
+    difficulty: 'intermediate',
+    estimatedTime: 150,
+    modules: [],
+    prerequisites: ['basics'],
+    xpReward: 650,
+    category: 'planning'
+  },
+  {
+    id: 'retirement',
+    title: 'Aposentadoria Inteligente',
+    description: 'Planeje sua aposentadoria com estratégias eficazes',
+    difficulty: 'advanced',
+    estimatedTime: 200,
+    modules: [],
+    prerequisites: ['basics', 'investments'],
+    xpReward: 1000,
+    category: 'retirement'
   }
 ];

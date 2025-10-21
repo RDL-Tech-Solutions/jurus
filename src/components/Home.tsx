@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, memo } from 'react';
 import { motion } from 'framer-motion';
-import { Calculator, TrendingUp, Target, BarChart3, Settings, Download, Zap, Heart, Brain, GraduationCap, HelpCircle, Bell, Accessibility, Users, Shield, Smartphone, Menu } from 'lucide-react';
+import { Calculator, TrendingUp, Target, BarChart3, Settings, Download, Zap, Heart, Brain, GraduationCap, HelpCircle, Bell, Users, Shield, Smartphone, Menu } from 'lucide-react';
 import { Z_INDEX } from '../constants/zIndex';
 import { Breadcrumbs } from './Breadcrumbs';
 import type { BreadcrumbItem } from './Breadcrumbs';
@@ -9,15 +9,11 @@ import { useSimulacao, useUI } from '../store/useAppStore';
 import { useToast } from '../hooks/useToast';
 import { useNotificacoes } from '../hooks/useNotificacoes';
 import { usePreloadComponents, useIntelligentPreload, useHoverPreload } from '../hooks/usePreloadComponents';
-import { useOnboarding } from '../hooks/useOnboarding';
-import { useContextualTutorials } from './ContextualTutorial';
 import { useContextualHelp } from './ContextualHelp';
 import { useNotificationSystem } from './NotificationSystem';
-import { OnboardingTour } from './OnboardingTour';
-import { ContextualTutorial } from './ContextualTutorial';
 import { ContextualHelp } from './ContextualHelp';
 import { NotificationSystem } from './NotificationSystem';
-import { AccessibilityPanel } from './AccessibilityPanel';
+
 import GlobalSettings from './GlobalSettings';
 import ProfileManager from './ProfileManager';
 import BackupManager from './BackupManager';
@@ -61,7 +57,7 @@ import Sidebar from './Sidebar';
 // Performance and accessibility hooks
 import { usePerformanceMonitor, useDebounce, useIntersectionObserver } from '../hooks/usePerformance';
 import { useBreakpoint, useResponsiveValue, useDeviceCapabilities } from '../hooks/useResponsive';
-import { useFocusManagement, useScreenReader, useReducedMotion } from '../hooks/useAccessibility';
+
 import { useScrollDirection } from '../hooks/useScrollDirection';
 import { ComponentErrorBoundary } from './ErrorBoundary';
 
@@ -84,8 +80,6 @@ export const Home = memo(() => {
   const metrics = usePerformanceMonitor();
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
   const { isTouch, prefersReducedMotion, prefersDark } = useDeviceCapabilities();
-  const { announce } = useScreenReader();
-  const shouldReduceMotion = useReducedMotion();
   
   // Responsive values
   const headerHeight = useResponsiveValue({ sm: '56px', md: '64px', lg: '72px' }, '64px');
@@ -94,26 +88,9 @@ export const Home = memo(() => {
   // Scroll direction hook for auto-hide navigation on mobile
   const { isHidden } = useScrollDirection({ threshold: 15 });
   
-  // Hook de onboarding
-  const {
-    isActive: isOnboardingActive,
-    currentTour,
-    startTour,
-    completeTour,
-    skipTour,
-    hasCompletedTour
-  } = useOnboarding();
+
 
   // Hooks dos novos sistemas
-  const {
-    activeTutorial,
-    startTutorial,
-    completeTutorial,
-    skipTutorial,
-    closeTutorial,
-    isCompleted: isTutorialCompleted,
-    refreshCompletedTutorials
-  } = useContextualTutorials();
 
   const {
     isHelpOpen,
@@ -138,7 +115,7 @@ export const Home = memo(() => {
   // Estado para controlar painéis
   const [showSidebar, setShowSidebar] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showAccessibility, setShowAccessibility] = useState(false);
+
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
   const [showProfileManager, setShowProfileManager] = useState(false);
   const [showBackupManager, setShowBackupManager] = useState(false);
@@ -295,13 +272,7 @@ export const Home = memo(() => {
     }
   }, [activeTab, temSimulacaoValida, quantidadeComparacoes, capturarSimulacaoAtual]);
 
-  // Efeito para sincronizar estados de tutorial na inicialização
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      refreshCompletedTutorials();
-    }, 100);
-    return () => clearTimeout(timer);
-  }, [refreshCompletedTutorials]);
+
 
   // Teste de persistência do localStorage na inicialização
   useEffect(() => {
@@ -488,70 +459,7 @@ export const Home = memo(() => {
     }
   };
 
-  // Função para iniciar tutorial contextual
-  const startContextualTutorial = (tutorialType: string) => {
-    const tutorials = {
-      'simulacao-basica': {
-        id: 'simulacao-basica',
-        title: 'Tutorial: Simulação Básica',
-        description: 'Aprenda a fazer sua primeira simulação',
-        category: 'beginner' as const,
-        estimatedTime: 5,
-        steps: [
-          {
-            id: 'step-1',
-            title: 'Valor Inicial',
-            content: 'Digite o valor que você tem para investir inicialmente',
-            target: '[data-tutorial="valor-inicial"]',
-            position: 'bottom' as const,
-            highlight: true,
-            tips: ['Use valores realistas', 'Considere sua reserva de emergência']
-          },
-          {
-            id: 'step-2',
-            title: 'Aporte Mensal',
-            content: 'Defina quanto você pode investir mensalmente',
-            target: '[data-tutorial="aporte-mensal"]',
-            position: 'bottom' as const,
-            highlight: true,
-            tips: ['Seja consistente', 'Comece com valores menores se necessário']
-          },
-          {
-            id: 'step-3',
-            title: 'Taxa de Juros',
-            content: 'Escolha uma taxa de juros realista para seu investimento',
-            target: '[data-tutorial="taxa-juros"]',
-            position: 'bottom' as const,
-            highlight: true,
-            tips: ['CDI atual: ~13% ao ano', 'Renda fixa: 10-14% ao ano', 'Renda variável: histórico de 15% ao ano']
-          },
-          {
-            id: 'step-4',
-            title: 'Período',
-            content: 'Defina por quanto tempo você vai investir',
-            target: '[data-tutorial="periodo"]',
-            position: 'bottom' as const,
-            highlight: true,
-            tips: ['Quanto mais tempo, maior o efeito dos juros compostos']
-          },
-          {
-            id: 'step-5',
-            title: 'Calcular',
-            content: 'Clique em calcular para ver os resultados',
-            target: '[data-tutorial="calcular"]',
-            position: 'top' as const,
-            highlight: true,
-            action: 'click' as const
-          }
-        ]
-      }
-    };
 
-    const tutorial = tutorials[tutorialType as keyof typeof tutorials];
-    if (tutorial) {
-      startTutorial(tutorial);
-    }
-  };
 
   // Função para abrir ajuda contextual
   const openContextualHelp = (context?: string) => {
@@ -619,19 +527,7 @@ export const Home = memo(() => {
     }
   }, [resultado, simulacao, verificarMetasProximas, verificarOportunidadesMercado, criarLembreteAporte, verificarPerformance, addNotification]);
 
-  // Efeito para mostrar tutorial para novos usuários
-  useEffect(() => {
-    if (!hasCompletedTour('welcome') && !isOnboardingActive && !isTutorialCompleted('simulacao-basica')) {
-      // Mostrar tutorial após 2 segundos para novos usuários
-      const timer = setTimeout(() => {
-        if (activeTab === 'simulacao') {
-          startContextualTutorial('simulacao-basica');
-        }
-      }, 2000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [activeTab, hasCompletedTour, isOnboardingActive, isTutorialCompleted]);
+
 
   // Atalhos de teclado
   useEffect(() => {
@@ -662,10 +558,7 @@ export const Home = memo(() => {
              event.preventDefault();
              setShowNotifications(!showNotifications);
              break;
-           case 'a':
-             event.preventDefault();
-             setShowAccessibility(!showAccessibility);
-             break;
+
            case 's':
              if (event.ctrlKey) {
                event.preventDefault();
@@ -702,7 +595,7 @@ export const Home = memo(() => {
 
     window.addEventListener('keydown', handleKeyDown);
        return () => window.removeEventListener('keydown', handleKeyDown);
-     }, [activeTab, isLoading, setActiveTab, showNotifications, showAccessibility, showGlobalSettings, showProfileManager, showBackupManager, openContextualHelp]);
+     }, [activeTab, isLoading, setActiveTab, showNotifications, showGlobalSettings, showProfileManager, showBackupManager, openContextualHelp]);
 
   const quickActions = [
     {
@@ -790,11 +683,7 @@ export const Home = memo(() => {
     }
   }, [metrics]);
 
-  // Announce navigation changes to screen readers
-  useEffect(() => {
-    const tabLabel = tabs.find(t => t.id === activeTab)?.label || 'Simulação';
-    announce(`Navegou para ${tabLabel}`);
-  }, [activeTab, announce]);
+
 
   return (
     <ComponentErrorBoundary>
@@ -894,20 +783,12 @@ export const Home = memo(() => {
       <Sidebar
         isOpen={showSidebar}
         onToggle={() => setShowSidebar(!showSidebar)}
-        onAccessibilityClick={() => {
-          setShowAccessibility(!showAccessibility);
-          setShowSidebar(false);
-        }}
         onGlobalSettingsClick={() => {
           setShowGlobalSettings(!showGlobalSettings);
           setShowSidebar(false);
         }}
         onBackupClick={() => {
           setShowBackupManager(!showBackupManager);
-          setShowSidebar(false);
-        }}
-        onTutorialClick={() => {
-          startContextualTutorial('simulacao-basica');
           setShowSidebar(false);
         }}
         onHelpClick={() => {
@@ -1345,43 +1226,7 @@ export const Home = memo(() => {
         </div>
       )}
 
-      {/* Sistemas de Tutorial, Ajuda e Notificações */}
-       <ContextualTutorial
-         tutorial={activeTutorial}
-         isActive={!!activeTutorial}
-         onComplete={() => {
-           if (activeTutorial) {
-             // Garantir que o tutorial seja marcado como completado
-             completeTutorial(activeTutorial.id);
-             
-             // Forçar uma atualização do estado para garantir persistência
-             setTimeout(() => {
-               refreshCompletedTutorials();
-             }, 50);
-             
-             addNotification({
-               title: 'Tutorial Concluído! 🎓',
-               message: `Você completou o tutorial "${activeTutorial.title}"`,
-               type: 'success',
-               priority: 'medium',
-               category: 'educacao'
-             });
-           }
-         }}
-         onSkip={() => {
-           skipTutorial();
-           addNotification({
-             title: 'Tutorial Ignorado',
-             message: 'Você pode acessar tutoriais a qualquer momento na central de ajuda',
-             type: 'info',
-             priority: 'low',
-             category: 'educacao'
-           });
-         }}
-         onClose={closeTutorial}
-         autoPlay={false}
-         showProgress={true}
-       />
+      {/* Sistemas de Ajuda e Notificações */}
 
        <ContextualHelp
          isOpen={isHelpOpen}
@@ -1402,10 +1247,7 @@ export const Home = memo(() => {
          onUpdateSettings={updateNotificationSettings}
        />
 
-       <AccessibilityPanel
-         isOpen={showAccessibility}
-         onClose={() => setShowAccessibility(false)}
-       />
+
 
        <GlobalSettings
           isOpen={showGlobalSettings}
@@ -1422,33 +1264,7 @@ export const Home = memo(() => {
            onClose={() => setShowBackupManager(false)}
          />
 
-        {/* Onboarding Tour (mantido para compatibilidade) */}
-       {isOnboardingActive && currentTour && (
-         <OnboardingTour
-           steps={currentTour.steps}
-           isActive={isOnboardingActive}
-           onComplete={() => {
-             completeTour();
-             addNotification({
-               title: 'Bem-vindo ao Jurus! 🚀',
-               message: 'Você completou o tour de boas-vindas. Explore todas as funcionalidades!',
-               type: 'success',
-               priority: 'medium',
-               category: 'onboarding'
-             });
-           }}
-           onSkip={() => {
-             skipTour();
-             addNotification({
-               title: 'Tour Ignorado',
-               message: 'Você pode refazer o tour a qualquer momento nas configurações',
-               type: 'info',
-               priority: 'low',
-               category: 'onboarding'
-             });
-           }}
-         />
-       )}
+
        </div>
      </ComponentErrorBoundary>
    );

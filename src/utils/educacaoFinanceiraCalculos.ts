@@ -416,10 +416,27 @@ export const calcularCofrinhoInteligente = (
   const taxaMensal = cdiConfig.taxaMensal;
   let valorAtual = valorInicial;
   let totalInvestido = valorInicial;
+  const crescimentoMensal = [];
   
-  for (let i = 0; i < meses; i++) {
+  // Adicionar o valor inicial (mês 0)
+  crescimentoMensal.push({
+    mes: 0,
+    valor: valorInicial,
+    ganho: 0,
+    totalInvestido: valorInicial
+  });
+  
+  for (let i = 1; i <= meses; i++) {
     valorAtual = valorAtual * (1 + taxaMensal) + aporteMensal;
     totalInvestido += aporteMensal;
+    const ganho = valorAtual - totalInvestido;
+    
+    crescimentoMensal.push({
+      mes: i,
+      valor: valorAtual,
+      ganho: ganho,
+      totalInvestido: totalInvestido
+    });
   }
   
   const ganhoTotal = valorAtual - totalInvestido;
@@ -432,20 +449,36 @@ export const calcularCofrinhoInteligente = (
     totalInvestido,
     taxaEfetiva: ((valorAtual / valorInicial) - 1) * 100,
     meses,
-    crescimentoMensal: []
+    crescimentoMensal
   };
 };
 
 // Função para gerar dados do gráfico de crescimento
 export const gerarDadosGraficoCrescimento = (result: CofrinhoResult): any[] => {
+  // Se temos dados de crescimento mensal, usar eles
+  if (result.crescimentoMensal && result.crescimentoMensal.length > 0) {
+    return result.crescimentoMensal.map(item => ({
+      mes: item.mes,
+      valor: Math.round(item.valor * 100) / 100,
+      rendimento: Math.round(item.ganho * 100) / 100,
+      totalInvestido: Math.round(item.totalInvestido * 100) / 100
+    }));
+  }
+  
+  // Fallback: calcular dados básicos se não temos crescimentoMensal
   const dados = [];
-  const valorMensal = result.valorFinal / result.meses;
+  const aportePorMes = result.totalInvestido / (result.meses + 1);
   
   for (let i = 0; i <= result.meses; i++) {
+    const totalInvestidoAteOMes = aportePorMes * (i + 1);
+    const valorProjetado = (result.valorFinal / result.meses) * i;
+    const rendimento = Math.max(0, valorProjetado - totalInvestidoAteOMes);
+    
     dados.push({
       mes: i,
-      valor: valorMensal * i,
-      rendimento: (valorMensal * i) - (result.totalInvestido * (i / result.meses))
+      valor: Math.round(valorProjetado * 100) / 100,
+      rendimento: Math.round(rendimento * 100) / 100,
+      totalInvestido: Math.round(totalInvestidoAteOMes * 100) / 100
     });
   }
   

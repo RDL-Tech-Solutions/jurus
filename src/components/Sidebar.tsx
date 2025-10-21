@@ -5,7 +5,6 @@ import {
   HelpCircle,
   X,
   ChevronRight,
-  Accessibility,
   Database,
   GraduationCap,
   LifeBuoy,
@@ -16,16 +15,14 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { getZIndexClass, Z_INDEX } from '../constants/zIndex';
 import { useResponsiveNavigation, useBreakpoint } from '../hooks/useResponsive';
-import { useFocusManagement, useKeyboardNavigation, useAriaAttributes } from '../hooks/useAccessibility';
+
 import { ComponentErrorBoundary } from './ErrorBoundary';
 
 interface SidebarProps {
   isOpen: boolean;
   onToggle: () => void;
-  onAccessibilityClick: () => void;
   onGlobalSettingsClick: () => void;
   onBackupClick: () => void;
-  onTutorialClick: () => void;
   onHelpClick: () => void;
 }
 
@@ -47,10 +44,8 @@ interface SidebarItem {
 const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onToggle,
-  onAccessibilityClick,
   onGlobalSettingsClick,
   onBackupClick,
-  onTutorialClick,
   onHelpClick
 }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>('Ferramentas');
@@ -62,9 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const { shouldShowMobileMenu, shouldCollapseSidebar, navigationMode } = useResponsiveNavigation();
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
 
-  // Accessibility hooks
-  const { trapFocus, pushFocus, popFocus } = useFocusManagement();
-  const { setAriaExpanded, setAriaHidden } = useAriaAttributes();
+
 
   // Detectar tema escuro
   useEffect(() => {
@@ -97,13 +90,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     localStorage.setItem('sidebar-open', isOpen.toString());
   }, [isOpen]);
 
-  // Focus management
-  useEffect(() => {
-    if (isOpen && sidebarRef.current) {
-      const cleanup = trapFocus(sidebarRef.current);
-      return cleanup;
-    }
-  }, [isOpen, trapFocus]);
+
 
   // Fechar sidebar ao clicar fora (apenas em mobile)
   useEffect(() => {
@@ -241,14 +228,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           onClick: onGlobalSettingsClick,
           shortcut: 'Ctrl+,'
         },
-        {
-          id: 'accessibility',
-          title: 'Acessibilidade',
-          description: 'Opções de acessibilidade',
-          icon: <Accessibility className="w-4 h-4" />,
-          onClick: onAccessibilityClick,
-          shortcut: 'Alt+A'
-        },
+
         {
           id: 'backup',
           title: 'Backup e Restauração',

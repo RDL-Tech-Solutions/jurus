@@ -458,8 +458,9 @@ export const CofrinhoInteligente: React.FC = () => {
       </div>
 
       {/* Gráfico de Crescimento */}
-      {calculations && calculations.result && calculations.result.crescimentoMensal && (
+      {calculations && calculations.chartData && calculations.chartData.length > 0 && (
         <motion.div
+          className="mt-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.8 }}
@@ -471,7 +472,7 @@ export const CofrinhoInteligente: React.FC = () => {
             <CardContent>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={calculations.result.crescimentoMensal}>
+                  <AreaChart data={calculations.chartData}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis 
                       dataKey="mes" 
@@ -484,7 +485,7 @@ export const CofrinhoInteligente: React.FC = () => {
                     <Tooltip content={<CustomTooltip />} />
                     <Area 
                       type="monotone" 
-                      dataKey="cofrinho" 
+                      dataKey="valor" 
                       stackId="1"
                       stroke="#3B82F6" 
                       fill="#3B82F6"
