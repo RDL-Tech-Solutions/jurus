@@ -128,9 +128,8 @@ const initialFiltrosFavoritos: FiltrosFavoritos = {
   apenasFavoritas: false
 };
 
-export const useAppStore = create<AppState>()(
-  persist(
-    (set, get) => ({
+const createAppStore = () => create<AppState>()(
+  persist((set, get) => ({
       // Estado inicial
       simulacao: initialSimulacao,
       resultado: null,
@@ -536,33 +535,29 @@ export const useAppStore = create<AppState>()(
       },
       
       limparFavoritos: () => {
-        set({ 
-          simulacoesFavoritas: [], 
-          comparacoesSimulacoes: [], 
-          tags: [],
-          filtrosFavoritos: initialFiltrosFavoritos
-        });
+        set(state => ({
+          ...state,
+          simulacoesFavoritas: [],
+          comparacoesSimulacoes: [],
+          tags: []
+        }));
       }
-    }),
-    {
+    }), {
       name: 'jurus-app-storage',
       partialize: (state) => ({
         simulacao: state.simulacao,
         theme: state.theme,
         configuracoes: state.configuracoes,
-        historico: state.historico.slice(0, 10), // Persistir apenas os últimos 10 do histórico
         metas: state.metas,
-        notificacoesMetas: state.notificacoesMetas.slice(0, 50), // Persistir apenas as últimas 50 notificações
-        simulacoesIR: state.simulacoesIR.slice(0, 20), // Persistir apenas as últimas 20 simulações de IR
-        comparacoesIR: state.comparacoesIR.slice(0, 10), // Persistir apenas as últimas 10 comparações
-        simulacoesFavoritas: state.simulacoesFavoritas.slice(0, 100), // Persistir apenas as últimas 100 simulações favoritas
-        comparacoesSimulacoes: state.comparacoesSimulacoes.slice(0, 20), // Persistir apenas as últimas 20 comparações
+        simulacoesIR: state.simulacoesIR,
+        simulacoesFavoritas: state.simulacoesFavoritas,
         tags: state.tags,
         filtrosFavoritos: state.filtrosFavoritos
       })
-    }
-  )
-);
+    })
+  );
+
+export const useAppStore = createAppStore();
 
 // Hooks especializados para diferentes partes do estado
 export const useSimulacao = () => {
