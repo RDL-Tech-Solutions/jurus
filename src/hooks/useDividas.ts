@@ -20,7 +20,7 @@ export const useDividas = () => {
   // Estados locais
   const [valorDivida, setValorDivida] = useState<string>('');
   const [rendaMensal, setRendaMensal] = useState<string>('');
-  const [estrategiaSelecionada, setEstrategiaSelecionada] = useState<DebtStrategy>(DEBT_STRATEGIES[0]);
+  const [estrategiaSelecionada, setEstrategiaSelecionada] = useState<DebtStrategy>(Object.values(DEBT_STRATEGIES)[0]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -237,7 +237,7 @@ export const useDividas = () => {
   const clearAll = useCallback(() => {
     setValorDivida('');
     setRendaMensal('');
-    setEstrategiaSelecionada(DEBT_STRATEGIES[0]);
+    setEstrategiaSelecionada(Object.values(DEBT_STRATEGIES)[0]);
     setErrors({});
   }, []);
 

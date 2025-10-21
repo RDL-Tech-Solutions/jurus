@@ -800,7 +800,7 @@ export const CalculadoraAposentadoria: React.FC = () => {
                        </label>
                        <input
                          type="number"
-                         defaultValue={10}
+                         placeholder="Digite a taxa de juros (ex: 10)"
                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                          min="0"
                          max="30"
@@ -814,7 +814,7 @@ export const CalculadoraAposentadoria: React.FC = () => {
                        </label>
                        <input
                          type="number"
-                         defaultValue={4}
+                         placeholder="Digite a inflação padrão (ex: 4)"
                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                          min="0"
                          max="15"
@@ -828,7 +828,7 @@ export const CalculadoraAposentadoria: React.FC = () => {
                        </label>
                        <input
                          type="number"
-                         defaultValue={85}
+                         placeholder="Digite a expectativa de vida (ex: 85)"
                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                          min="70"
                          max="100"
@@ -845,7 +845,6 @@ export const CalculadoraAposentadoria: React.FC = () => {
                        <label className="flex items-center gap-3">
                          <input
                            type="checkbox"
-                           defaultChecked
                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                          />
                          <span className="text-sm text-gray-700">Salvar simulações automaticamente</span>
@@ -856,7 +855,6 @@ export const CalculadoraAposentadoria: React.FC = () => {
                        <label className="flex items-center gap-3">
                          <input
                            type="checkbox"
-                           defaultChecked
                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                          />
                          <span className="text-sm text-gray-700">Mostrar valores em tempo real</span>

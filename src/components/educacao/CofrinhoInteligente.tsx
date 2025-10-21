@@ -174,9 +174,9 @@ export const CofrinhoInteligente: React.FC = () => {
                   <Input
                     id="valorInicial"
                     type="text"
-                    value={formattedData.valorInicial}
+                    value={valorInicial}
                     onChange={(e) => setValorInicial(e.target.value)}
-                    placeholder="R$ 0,00"
+                    placeholder="Digite o valor inicial (ex: 1000)"
                   />
                 </div>
 
@@ -185,9 +185,9 @@ export const CofrinhoInteligente: React.FC = () => {
                   <Input
                     id="contribuicao"
                     type="text"
-                    value={formattedData.aporteMensal}
+                    value={aporteMensal}
                     onChange={(e) => setAporteMensal(e.target.value)}
-                    placeholder="R$ 0,00"
+                    placeholder="Digite o aporte mensal (ex: 500)"
                   />
                 </div>
 

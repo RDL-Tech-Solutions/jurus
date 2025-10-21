@@ -47,15 +47,15 @@ const SistemaTemas: React.FC<SistemaTemasProps> = ({ onClose }) => {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2">Cor Primária</label>
-                <input type="color" className="w-full h-10 rounded border" defaultValue="#3B82F6" />
+                <input type="color" className="w-full h-10 rounded border" placeholder="Selecione a cor primária" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Cor Secundária</label>
-                <input type="color" className="w-full h-10 rounded border" defaultValue="#6366F1" />
+                <input type="color" className="w-full h-10 rounded border" placeholder="Selecione a cor secundária" />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2">Cor de Fundo</label>
-                <input type="color" className="w-full h-10 rounded border" defaultValue="#FFFFFF" />
+                <input type="color" className="w-full h-10 rounded border" placeholder="Selecione a cor de fundo" />
               </div>
             </div>
           </div>
@@ -72,11 +72,11 @@ const SistemaTemas: React.FC<SistemaTemasProps> = ({ onClose }) => {
               </div>
               <div className="flex items-center justify-between">
                 <span>Transições suaves</span>
-                <input type="checkbox" className="rounded" defaultChecked />
+                <input type="checkbox" className="rounded" />
               </div>
               <div className="flex items-center justify-between">
                 <span>Salvar preferências</span>
-                <input type="checkbox" className="rounded" defaultChecked />
+                <input type="checkbox" className="rounded" />
               </div>
             </div>
           </div>

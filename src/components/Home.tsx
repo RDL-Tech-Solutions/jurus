@@ -62,6 +62,7 @@ import Sidebar from './Sidebar';
 import { usePerformanceMonitor, useDebounce, useIntersectionObserver } from '../hooks/usePerformance';
 import { useBreakpoint, useResponsiveValue, useDeviceCapabilities } from '../hooks/useResponsive';
 import { useFocusManagement, useScreenReader, useReducedMotion } from '../hooks/useAccessibility';
+import { useScrollDirection } from '../hooks/useScrollDirection';
 import { ComponentErrorBoundary } from './ErrorBoundary';
 
 export const Home = memo(() => {
@@ -89,6 +90,9 @@ export const Home = memo(() => {
   // Responsive values
   const headerHeight = useResponsiveValue({ sm: '56px', md: '64px', lg: '72px' }, '64px');
   const sidebarWidth = useResponsiveValue({ sm: '85vw', md: '300px', lg: '320px' }, '300px');
+  
+  // Scroll direction hook for auto-hide navigation on mobile
+  const { isHidden } = useScrollDirection({ threshold: 15 });
   
   // Hook de onboarding
   const {
@@ -912,13 +916,28 @@ export const Home = memo(() => {
         }}
       />
 
-      {/* Navigation Tabs - Completamente Responsivo */}
+      {/* Navigation Tabs - Completamente Responsivo com Auto-hide Mobile */}
       <nav 
         className="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 sticky top-14 sm:top-16 w-full z-10"
         style={{ zIndex: Z_INDEX.NAVIGATION }}
       >
         <div className="w-full max-w-7xl mx-auto">
-          <div className="px-3 sm:px-4 lg:px-6 xl:px-8">
+          <div 
+            className={`px-3 sm:px-4 lg:px-6 xl:px-8 transition-all duration-300 ease-in-out ${
+              isMobile && isHidden 
+                ? 'opacity-0 h-0 overflow-hidden pointer-events-none' 
+                : 'opacity-100 h-auto overflow-visible pointer-events-auto'
+            }`}
+            style={{
+              ...(isMobile && isHidden && {
+                maxHeight: '0',
+                paddingTop: '0',
+                paddingBottom: '0',
+                marginTop: '0',
+                marginBottom: '0'
+              })
+            }}
+          >
             {/* Breadcrumbs Melhorados com Contexto */}
             <div className="py-2 sm:py-3 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center justify-between">

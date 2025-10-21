@@ -13,11 +13,6 @@ import { useDividas } from '../../hooks/useDividas';
 import { formatCurrency, formatPercentage } from '../../utils/educacaoFinanceiraCalculos';
 import type { DebtStrategy } from '../../types/educacaoFinanceira';
 
-const ESTRATEGIAS = [
-  { value: 'bola_neve', label: 'Bola de Neve', description: 'Quite primeiro as menores dívidas' },
-  { value: 'avalanche', label: 'Avalanche', description: 'Quite primeiro as dívidas com maior juros' },
-  { value: 'minimo', label: 'Pagamento Mínimo', description: 'Pague apenas o mínimo de cada dívida' }
-];
 
 const MOTIVATIONAL_MESSAGES = [
   "Cada pagamento te aproxima da liberdade financeira! 💪",
@@ -65,7 +60,8 @@ export const SolucoesDividas: React.FC = () => {
     calculations,
     statistics,
     recommendations,
-    formattedData
+    formattedData,
+    strategies
   } = useDividas();
 
   const [showProgressHistory, setShowProgressHistory] = useState(false);
@@ -146,9 +142,9 @@ export const SolucoesDividas: React.FC = () => {
                   <Input
                     id="divida"
                     type="text"
-                    value={formattedData.valorDivida}
+                    value={valorDivida}
                     onChange={(e) => updateValorDivida(e.target.value)}
-                    placeholder="R$ 0,00"
+                    placeholder="Digite o valor da dívida (ex: 15000)"
                     className={errors.valorDivida ? 'border-red-500' : ''}
                   />
                 </div>
@@ -158,24 +154,24 @@ export const SolucoesDividas: React.FC = () => {
                   <Input
                     id="renda"
                     type="text"
-                    value={formattedData.rendaMensal}
+                    value={rendaMensal}
                     onChange={(e) => updateRendaMensal(e.target.value)}
-                    placeholder="R$ 0,00"
+                    placeholder="Digite sua renda mensal (ex: 5000)"
                     className={errors.rendaMensal ? 'border-red-500' : ''}
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="estrategia">Estratégia de Quitação</Label>
-                  <Select value={estrategiaSelecionada as unknown as string} onValueChange={(value) => updateEstrategia(value as unknown as DebtStrategy)}>
+                  <Select value={estrategiaSelecionada.id} onValueChange={(value) => updateEstrategia(strategies[value])}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione uma estratégia" />
                     </SelectTrigger>
                     <SelectContent>
-                      {ESTRATEGIAS.map((estrategia) => (
-                        <SelectItem key={estrategia.value} value={estrategia.value}>
+                      {Object.values(strategies).map((estrategia) => (
+                        <SelectItem key={estrategia.id} value={estrategia.id}>
                           <div>
-                            <div className="font-medium">{estrategia.label}</div>
+                            <div className="font-medium">{estrategia.name}</div>
                             <div className="text-sm text-gray-500">{estrategia.description}</div>
                           </div>
                         </SelectItem>

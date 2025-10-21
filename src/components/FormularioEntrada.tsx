@@ -195,31 +195,35 @@ const FormularioEntrada = memo(function FormularioEntrada({
     setFieldTouched(field, true);
   };
 
-  const formatarMoeda = (valor: string) => {
-    const numero = valor.replace(/\D/g, '');
-    const valorNumerico = Number(numero) / 100;
-    
-    return valorNumerico.toLocaleString('pt-BR', {
+  const formatarMoeda = (valor: number) => {
+    if (valor === 0) return '';
+    return valor.toLocaleString('pt-BR', {
       style: 'currency',
       currency: 'BRL'
     });
   };
 
   const handleValorInicialChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const valor = e.target.value.replace(/\D/g, '');
-    const valorNumerico = Number(valor) / 100;
-    setValorInicialInput(valorNumerico);
+    const valor = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+    const valorNumerico = valor === '' ? 0 : Number(valor);
+    if (!isNaN(valorNumerico)) {
+      setValorInicialInput(valorNumerico);
+    }
   };
 
   const handleAporteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const valor = e.target.value.replace(/\D/g, '');
-    const valorNumerico = Number(valor) / 100;
-    setValorMensalInput(valorNumerico);
+    const valor = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+    const valorNumerico = valor === '' ? 0 : Number(valor);
+    if (!isNaN(valorNumerico)) {
+      setValorMensalInput(valorNumerico);
+    }
   };
 
   const handlePeriodoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const valor = Number(e.target.value);
-    setPeriodoInput(valor);
+    const valor = e.target.value === '' ? 0 : Number(e.target.value);
+    if (!isNaN(valor)) {
+      setPeriodoInput(valor);
+    }
   };
 
   const handleCalcular = async () => {
@@ -292,11 +296,11 @@ const FormularioEntrada = memo(function FormularioEntrada({
             </label>
             <AnimatedInput
               type="text"
-              value={formatarMoeda(String(valorInicialInput * 100))}
+              value={valorInicialInput === 0 ? '' : valorInicialInput.toString()}
               onChange={handleValorInicialChange}
               onBlur={() => handleFieldBlur('valorInicial')}
               className={inputClassName('valorInicial')}
-              placeholder="R$ 0,00"
+              placeholder="Digite o valor inicial (ex: 1000)"
               icon={<DollarSign className="w-4 h-4" />}
               error={getFieldError('valorInicial')}
             />
@@ -320,11 +324,11 @@ const FormularioEntrada = memo(function FormularioEntrada({
             </label>
             <AnimatedInput
               type="text"
-              value={formatarMoeda(String(valorMensalInput * 100))}
+              value={valorMensalInput === 0 ? '' : valorMensalInput.toString()}
               onChange={handleAporteChange}
               onBlur={() => handleFieldBlur('valorMensal')}
               className={inputClassName('valorMensal')}
-              placeholder="R$ 0,00"
+              placeholder="Digite o aporte mensal (ex: 500)"
               icon={<TrendingUp className="w-4 h-4" />}
               error={getFieldError('valorMensal')}
             />
@@ -348,13 +352,13 @@ const FormularioEntrada = memo(function FormularioEntrada({
             </label>
             <AnimatedInput
               type="number"
-              value={periodoInput}
+              value={periodoInput === 0 ? '' : periodoInput}
               onChange={handlePeriodoChange}
               onBlur={() => handleFieldBlur('periodo')}
               min="1"
               max="600"
               className={inputClassName('periodo')}
-              placeholder="12"
+              placeholder="Digite o período em meses (ex: 12)"
               icon={<Calendar className="w-4 h-4" />}
               error={getFieldError('periodo')}
             />

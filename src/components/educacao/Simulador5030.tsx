@@ -122,9 +122,9 @@ export const Simulador5030: React.FC = () => {
                 <Input
                   id="renda"
                   type="text"
-                  value={formattedData.renda}
+                  value={rendaMensal}
                   onChange={(e) => updateRendaMensal(e.target.value)}
-                  placeholder="R$ 0,00"
+                  placeholder="Digite sua renda mensal (ex: 5000)"
                   className={errors.rendaMensal ? 'border-red-500' : ''}
                 />
                 {errors.rendaMensal && (
