@@ -15,11 +15,33 @@ import {
   formatarMoeda
 } from '../utils/educacaoFinanceiraCalculos';
 
+interface CustomCategory {
+  id: string;
+  name: string;
+  estimatedValue: number;
+}
+
+interface ComparisonScenario {
+  name: string;
+  renda: number;
+  config: SimuladorConfig;
+}
+
 export const useSimulador5030 = () => {
   // Estados locais
   const [rendaMensal, setRendaMensal] = useState<string>('');
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [customCategories, setCustomCategories] = useState<{
+    necessidades: CustomCategory[];
+    desejos: CustomCategory[];
+    poupanca: CustomCategory[];
+  }>({
+    necessidades: [],
+    desejos: [],
+    poupanca: []
+  });
+  const [comparisonScenarios, setComparisonScenarios] = useState<ComparisonScenario[]>([]);
 
   // Configuração persistida
   const [config, setConfig] = useLocalStorage<SimuladorConfig>(
@@ -175,12 +197,65 @@ export const useSimulador5030 = () => {
     }
   }, [rendaMensal, errors.rendaMensal]);
 
+  // Funções para categorias customizadas
+  const addCustomCategory = useCallback((type: keyof typeof customCategories) => {
+    const newCategory: CustomCategory = {
+      id: Date.now().toString(),
+      name: '',
+      estimatedValue: 0
+    };
+    setCustomCategories(prev => ({
+      ...prev,
+      [type]: [...prev[type], newCategory]
+    }));
+  }, []);
+
+  const updateCustomCategory = useCallback((
+    type: keyof typeof customCategories,
+    id: string,
+    field: keyof CustomCategory,
+    value: string | number
+  ) => {
+    setCustomCategories(prev => ({
+      ...prev,
+      [type]: prev[type].map(cat => 
+        cat.id === id ? { ...cat, [field]: value } : cat
+      )
+    }));
+  }, []);
+
+  const removeCustomCategory = useCallback((type: keyof typeof customCategories, id: string) => {
+    setCustomCategories(prev => ({
+      ...prev,
+      [type]: prev[type].filter(cat => cat.id !== id)
+    }));
+  }, []);
+
+  // Funções para cenários de comparação
+  const addComparisonScenario = useCallback((name: string) => {
+    const rendaNumeric = parseFloat(rendaMensal.replace(',', '.')) || 0;
+    if (rendaNumeric > 0) {
+      const newScenario: ComparisonScenario = {
+        name,
+        renda: rendaNumeric,
+        config: { ...config }
+      };
+      setComparisonScenarios(prev => [...prev, newScenario]);
+    }
+  }, [rendaMensal, config]);
+
   // Função para limpar todos os dados
   const clearAll = useCallback(() => {
     setRendaMensal('');
     setConfig(DEFAULT_SIMULADOR_CONFIG);
     setErrors({});
     setIsEditing(false);
+    setCustomCategories({
+      necessidades: [],
+      desejos: [],
+      poupanca: []
+    });
+    setComparisonScenarios([]);
   }, [setConfig]);
 
   return {
@@ -189,15 +264,27 @@ export const useSimulador5030 = () => {
     config,
     isEditing,
     errors,
+    customCategories,
+    comparisonScenarios,
     
     // Setters
     setRendaMensal: updateRendaMensal,
     setIsEditing,
+    setCustomCategories,
+    setComparisonScenarios,
     
     // Funções de configuração
     updateConfig,
     resetToDefault,
     applyCustomConfig,
+    
+    // Funções de categorias
+    addCustomCategory,
+    updateCustomCategory,
+    removeCustomCategory,
+    
+    // Funções de cenários
+    addComparisonScenario,
     
     // Funções de ação
     saveSimulation,

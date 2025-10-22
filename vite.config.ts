@@ -40,7 +40,7 @@ export default defineConfig({
     __BUILD_TIME__: JSON.stringify(new Date().toISOString())
   },
   esbuild: {
-    drop: ['console', 'debugger'],
+    drop: ['debugger'],
     legalComments: 'none',
     keepNames: true
   }

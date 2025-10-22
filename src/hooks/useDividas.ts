@@ -16,15 +16,40 @@ import {
   formatarPorcentagem
 } from '../utils/educacaoFinanceiraCalculos';
 
+// Interfaces para novas funcionalidades
+interface DebtItem {
+  id: string;
+  name: string;
+  amount: number;
+  interestRate: number;
+  minimumPayment: number;
+  type: string;
+}
+
+interface RenegotiationOption {
+  id: string;
+  name: string;
+  description: string;
+  discountPercentage: number;
+  installments: number;
+  conditions: string[];
+}
+
 export const useDividas = () => {
   // Estados locais
-  const [valorDivida, setValorDivida] = useState<string>('');
-  const [rendaMensal, setRendaMensal] = useState<string>('');
+  const [valorDivida, setValorDivida] = useState('');
+  const [rendaMensal, setRendaMensal] = useState('');
   const [estrategiaSelecionada, setEstrategiaSelecionada] = useState<DebtStrategy>(Object.values(DEBT_STRATEGIES)[0]);
   const [isCalculating, setIsCalculating] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Dados persistidos
+  
+  // Novos estados para funcionalidades avançadas
+  const [debtItems, setDebtItems] = useState<DebtItem[]>([]);
+  const [selectedAdvancedStrategy, setSelectedAdvancedStrategy] = useState<any>(null);
+  const [renegotiationAmount, setRenegotiationAmount] = useState('');
+  const [reminders, setReminders] = useState(false);
+  
+  // Persistência de dados
   const [debtProgress, setDebtProgress] = useLocalStorage<DebtProgress[]>(
     EDUCATION_STORAGE_KEYS.DEBT_PROGRESS,
     []
@@ -233,12 +258,77 @@ export const useDividas = () => {
     validateInputs();
   }, [validateInputs]);
 
+  // Funções para gerenciar itens de dívida individuais
+  const addDebtItem = useCallback((item: Omit<DebtItem, 'id'>) => {
+    const newItem: DebtItem = {
+      ...item,
+      id: Date.now().toString()
+    };
+    setDebtItems(prev => [...prev, newItem]);
+    return newItem.id;
+  }, []);
+
+  const updateDebtItem = useCallback((id: string, updates: Partial<DebtItem>) => {
+    setDebtItems(prev => prev.map(item => 
+      item.id === id ? { ...item, ...updates } : item
+    ));
+  }, []);
+
+  const removeDebtItem = useCallback((id: string) => {
+    setDebtItems(prev => prev.filter(item => item.id !== id));
+  }, []);
+
+  // Função para calcular comparação de estratégias
+  const calculateStrategyComparison = useCallback(() => {
+    const divida = parseFloat(valorDivida.replace(',', '.')) || 0;
+    const renda = parseFloat(rendaMensal.replace(',', '.')) || 0;
+    
+    if (divida <= 0 || renda <= 0) return [];
+
+    const strategies = [
+      { id: 'conservative', name: 'Conservadora', percentage: 10, color: 'blue', icon: 'Shield' },
+      { id: 'moderate', name: 'Moderada', percentage: 20, color: 'green', icon: 'TrendingUp' },
+      { id: 'aggressive', name: 'Agressiva', percentage: 30, color: 'red', icon: 'Zap' }
+    ];
+
+    return strategies.map(strategy => {
+      const monthlyPayment = (renda * strategy.percentage) / 100;
+      const months = Math.ceil(divida / monthlyPayment);
+      const totalPaid = monthlyPayment * months;
+      
+      return {
+        ...strategy,
+        monthlyPayment,
+        months,
+        totalPaid,
+        icon: strategy.icon as any
+      };
+    });
+  }, [valorDivida, rendaMensal]);
+
+  // Função para calcular opções de renegociação
+  const calculateRenegotiation = useCallback((originalAmount: number, option: RenegotiationOption) => {
+    const discountedAmount = originalAmount * (1 - option.discountPercentage / 100);
+    const totalSavings = originalAmount - discountedAmount;
+    const monthlyPayment = option.installments > 1 ? discountedAmount / option.installments : discountedAmount;
+    
+    return {
+      discountedAmount,
+      totalSavings,
+      monthlyPayment
+    };
+  }, []);
+
   // Função para limpar todos os dados
   const clearAll = useCallback(() => {
     setValorDivida('');
     setRendaMensal('');
     setEstrategiaSelecionada(Object.values(DEBT_STRATEGIES)[0]);
     setErrors({});
+    setDebtItems([]);
+    setSelectedAdvancedStrategy(null);
+    setRenegotiationAmount('');
+    setReminders(false);
   }, []);
 
   return {
@@ -249,21 +339,34 @@ export const useDividas = () => {
     isCalculating,
     errors,
     debtProgress,
+    debtItems,
+    selectedAdvancedStrategy,
+    renegotiationAmount,
+    reminders,
     
     // Setters
     setValorDivida: updateValorDivida,
     setRendaMensal: updateRendaMensal,
     setEstrategiaSelecionada,
+    setDebtItems,
+    setSelectedAdvancedStrategy,
+    setRenegotiationAmount,
+    setReminders,
     
     // Funções de cálculo
     calculateDebtStrategy,
     validateInputs,
+    calculateStrategyComparison,
+    calculateRenegotiation,
     
     // Funções de gerenciamento
     saveDebtProgress,
     updateDebtProgress,
     removeDebt,
     markDebtAsPaid,
+    addDebtItem,
+    updateDebtItem,
+    removeDebtItem,
     clearAll,
     
     // Dados computados

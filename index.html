@@ -71,6 +71,15 @@
         } catch (error) {
           console.warn('Erro ao carregar configurações iniciais:', error);
         }
+        
+        // Debug para produção - capturar erros de carregamento
+        window.addEventListener('error', function(e) {
+          console.error('Erro de carregamento:', e.error || e.message);
+        });
+        
+        window.addEventListener('unhandledrejection', function(e) {
+          console.error('Promise rejeitada:', e.reason);
+        });
       })();
     </script>
     

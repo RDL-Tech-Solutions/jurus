@@ -27,7 +27,7 @@ import { Button } from '../components/ui/button';
 import SistemaEducacao from '../components/SistemaEducacao';
 import { Simulador5030 } from '../components/educacao/Simulador5030';
 import { SolucoesDividas } from '../components/educacao/SolucoesDividas';
-import { CofrinhoInteligente as CofrinhoVirtual } from '../components/educacao/CofrinhoInteligente';
+import { CofrinhoInteligente } from '../components/educacao/CofrinhoInteligente';
 
 // Import new gamification components
 // Gamification components removed
@@ -136,7 +136,7 @@ export default function EducacaoFinanceira() {
       case 'dividas':
         return <SolucoesDividas />;
       case 'cofrinho':
-        return <CofrinhoVirtual />;
+        return <CofrinhoInteligente />;
       default:
         return (
           <div className="text-center py-12">
