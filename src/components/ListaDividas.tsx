@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useDividas } from '../hooks/useDividas';
 import { useFluxoCaixa } from '../hooks/useFluxoCaixa';
+import { useModal } from '../hooks/useModal';
 import { NovaDivida } from '../types/fluxoCaixa';
 import { formatarMoeda } from '../utils/calculos';
 import { cn } from '../utils/cn';
@@ -84,11 +85,19 @@ function ModalDivida({ aberto, onFechar, onSalvar, dividaInicial, titulo }: Moda
         }
     };
 
+    // Hook para ocultar navbar
+    useModal(aberto);
+
     if (!aberto) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onFechar();
+            }}
+        >
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] sm:max-h-[90vh] overflow-y-auto animate-in zoom-in-95 fade-in duration-200">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{titulo}</h3>
@@ -209,11 +218,19 @@ interface ModalConfirmacaoProps {
 }
 
 function ModalConfirmacao({ aberto, onFechar, onConfirmar, titulo, mensagem, tipo = 'danger' }: ModalConfirmacaoProps) {
+    // Hook para ocultar navbar
+    useModal(aberto);
+
     if (!aberto) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onFechar();
+            }}
+        >
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 fade-in duration-200">
                 <div className="p-6 text-center">
                     <div className={cn(
                         "w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center",

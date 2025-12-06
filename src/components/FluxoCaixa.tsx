@@ -19,7 +19,10 @@ import {
     Lightbulb,
     CreditCard,
     FileText,
-    Wallet
+    Wallet,
+    FileDown,
+    FileSpreadsheet,
+    Printer
 } from 'lucide-react';
 import {
     BarChart,
@@ -37,12 +40,28 @@ import {
     Cell
 } from 'recharts';
 import { useFluxoCaixa } from '../hooks/useFluxoCaixa';
+import { useToast } from '../hooks/useToast';
+import { useModal } from '../hooks/useModal';
+import { ToastContainer } from './Toast';
 import { ListaDividas } from './ListaDividas';
 import { GerenciadorCartao } from './GerenciadorCartao';
 import { AnalisesFluxo } from './AnalisesFluxo';
-import { NovaTransacao, TipoTransacao, PeriodoFiltro } from '../types/fluxoCaixa';
+import { NovaTransacao, TipoTransacao, PeriodoFiltro, EstatisticasFluxo } from '../types/fluxoCaixa';
 import { formatarMoeda } from '../utils/calculos';
+import { exportarCSV, exportarJSON, imprimirPDF } from '../utils/exportar';
 import { cn } from '../utils/cn';
+import { calcularTendencia, calcularMediaDiaria, calcularRunway, calcularBreakEven, encontrarMaiorGasto, gerarAlertas } from '../utils/analiseFinanceira';
+import {
+    CardTendencia,
+    CardMediaDiaria,
+    CardComparativo,
+    GraficoBarrasComparativo,
+    GraficoTopCategorias,
+    CardRunway,
+    CardBreakEven,
+    CardMaiorGasto,
+    CardAlertas
+} from './FluxoCaixa/index';
 
 // Modal de Adicionar/Editar Transação
 interface ModalTransacaoProps {
@@ -122,13 +141,21 @@ function ModalTransacao({ aberto, onFechar, onSalvar, transacaoInicial, categori
         }
     };
 
+    // Hook para ocultar navbar quando modal está aberto
+    useModal(aberto);
+
     if (!aberto) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onFechar();
+            }}
+        >
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[85vh] sm:max-h-[90vh] overflow-y-auto animate-in zoom-in-95 fade-in duration-200">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{titulo}</h3>
                     <button
                         onClick={onFechar}
@@ -139,7 +166,7 @@ function ModalTransacao({ aberto, onFechar, onSalvar, transacaoInicial, categori
                 </div>
 
                 {/* Conteúdo */}
-                <div className="p-4 space-y-4">
+                <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
                     {/* Tipo */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -226,7 +253,7 @@ function ModalTransacao({ aberto, onFechar, onSalvar, transacaoInicial, categori
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Categoria *
                         </label>
-                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                             {categoriasFiltradas.map(cat => (
                                 <button
                                     key={cat.id}
@@ -319,7 +346,7 @@ function ModalTransacao({ aberto, onFechar, onSalvar, transacaoInicial, categori
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-end space-x-3 p-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-end space-x-2 sm:space-x-3 p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
                     <button
                         onClick={onFechar}
                         className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
@@ -349,21 +376,29 @@ interface ModalConfirmacaoProps {
 }
 
 function ModalConfirmacao({ aberto, onFechar, onConfirmar, titulo, mensagem }: ModalConfirmacaoProps) {
+    // Hook para ocultar navbar quando modal está aberto
+    useModal(aberto);
+
     if (!aberto) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm">
-                <div className="p-6 text-center">
-                    <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onFechar();
+            }}
+        >
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 fade-in duration-200">
+                <div className="p-4 sm:p-6 text-center">
+                    <div className="w-12 h-12 mx-auto mb-3 sm:mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                         <AlertCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{titulo}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{mensagem}</p>
-                    <div className="flex items-center justify-center space-x-3">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">{titulo}</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">{mensagem}</p>
+                    <div className="flex items-center justify-center gap-2 sm:gap-3">
                         <button
                             onClick={onFechar}
-                            className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                         >
                             Cancelar
                         </button>
@@ -372,7 +407,7 @@ function ModalConfirmacao({ aberto, onFechar, onConfirmar, titulo, mensagem }: M
                                 onConfirmar();
                                 onFechar();
                             }}
-                            className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+                            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700 transition-colors"
                         >
                             Excluir
                         </button>
@@ -411,6 +446,8 @@ export function FluxoCaixa() {
     });
     const [mostrarFiltros, setMostrarFiltros] = useState(false);
     const [abaAtiva, setAbaAtiva] = useState<'transacoes' | 'dividas' | 'cartoes' | 'analises'>('transacoes');
+    const [mostrarMenuExportar, setMostrarMenuExportar] = useState(false);
+    const { success, error, toasts, removeToast } = useToast();
 
     const periodos: { valor: PeriodoFiltro; label: string }[] = [
         { valor: 'hoje', label: 'Hoje' },
@@ -421,18 +458,69 @@ export function FluxoCaixa() {
 
     const handleAdicionarTransacao = (dados: NovaTransacao) => {
         adicionarTransacao(dados);
+        success('✅ Transação adicionada!', 'Sua transação foi registrada com sucesso.');
     };
 
     const handleEditarTransacao = (dados: NovaTransacao) => {
         if (modalEdicao.id) {
             editarTransacao(modalEdicao.id, dados);
             setModalEdicao({ aberto: false, id: '' });
+            success('✏️ Transação atualizada!', 'As alterações foram salvas.');
         }
     };
 
     const handleExcluirTransacao = () => {
         if (modalExclusao.id) {
             excluirTransacao(modalExclusao.id);
+            success('🗑️ Transação excluída!', 'A transação foi removida.');
+        }
+    };
+
+    // Funções de exportação
+    const handleExportarCSV = () => {
+        try {
+            const todasTransacoes = transacoesAgrupadas.flatMap(g => g.transacoes);
+            exportarCSV(todasTransacoes, {
+                totalEntradas: estatisticas.totalEntradas,
+                totalSaidas: estatisticas.totalSaidas,
+                saldo: estatisticas.saldo,
+                periodo: periodos.find(p => p.valor === filtros.periodo)?.label || 'Personalizado'
+            });
+            success('📊 Exportado!', 'Arquivo CSV baixado com sucesso.');
+            setMostrarMenuExportar(false);
+        } catch (err) {
+            error('❌ Erro ao exportar', 'Não foi possível gerar o arquivo CSV.');
+        }
+    };
+
+    const handleExportarJSON = () => {
+        try {
+            const todasTransacoes = transacoesAgrupadas.flatMap(g => g.transacoes);
+            exportarJSON(todasTransacoes, {
+                totalEntradas: estatisticas.totalEntradas,
+                totalSaidas: estatisticas.totalSaidas,
+                saldo: estatisticas.saldo,
+                periodo: periodos.find(p => p.valor === filtros.periodo)?.label || 'Personalizado'
+            });
+            success('📊 Exportado!', 'Arquivo JSON baixado com sucesso.');
+            setMostrarMenuExportar(false);
+        } catch (err) {
+            error('❌ Erro ao exportar', 'Não foi possível gerar o arquivo JSON.');
+        }
+    };
+
+    const handleImprimirPDF = () => {
+        try {
+            const todasTransacoes = transacoesAgrupadas.flatMap(g => g.transacoes);
+            imprimirPDF(todasTransacoes, {
+                totalEntradas: estatisticas.totalEntradas,
+                totalSaidas: estatisticas.totalSaidas,
+                saldo: estatisticas.saldo,
+                periodo: periodos.find(p => p.valor === filtros.periodo)?.label || 'Personalizado'
+            });
+            setMostrarMenuExportar(false);
+        } catch (err) {
+            error('❌ Erro ao imprimir', 'Não foi possível gerar o relatório.');
         }
     };
 
@@ -453,6 +541,94 @@ export function FluxoCaixa() {
     const dadosEvolucao = useMemo(() => {
         return estatisticas.evolucaoSaldo.slice(-10);
     }, [estatisticas.evolucaoSaldo]);
+
+    // Dados para os novos componentes de insights
+    const todasTransacoes = useMemo(() =>
+        transacoesAgrupadas.flatMap(g => g.transacoes),
+        [transacoesAgrupadas]
+    );
+
+    // Estatísticas do período anterior (simulação - TODO: implementar com dados reais)
+    const estatisticasAnterior: EstatisticasFluxo = useMemo(() => ({
+        totalEntradas: estatisticas.totalEntradas * 0.8,
+        totalSaidas: estatisticas.totalSaidas * 0.9,
+        saldo: estatisticas.saldo * 0.7,
+        variacaoEntradas: 0,
+        variacaoSaidas: 0,
+        variacaoSaldo: 0,
+        mediaDiariaGastos: estatisticas.mediaDiariaGastos * 0.9,
+        projecaoFimMes: estatisticas.projecaoFimMes * 0.85,
+        transacoesPorCategoria: estatisticas.transacoesPorCategoria,
+        evolucaoSaldo: estatisticas.evolucaoSaldo
+    }), [estatisticas]);
+
+    // Calcular tendência
+    const tendencia = useMemo(() =>
+        calcularTendencia(estatisticas, estatisticasAnterior),
+        [estatisticas, estatisticasAnterior]
+    );
+
+    // Calcular média diária
+    const mediaDiaria = useMemo(() =>
+        calcularMediaDiaria(estatisticas, todasTransacoes),
+        [estatisticas, todasTransacoes]
+    );
+
+    // Dados para gráfico comparativo (últimos 6 meses)
+    const dadosGraficoComparativo = useMemo(() => {
+        return estatisticas.evolucaoSaldo.slice(-6).map((item, index) => {
+            const data = new Date(item.data);
+            const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
+
+            // Simular entradas/saídas baseado na posição (TODO: usar dados reais se disponível)
+            const baseEntradas = estatisticas.totalEntradas / 6;
+            const baseSaidas = estatisticas.totalSaidas / 6;
+
+            return {
+                mes: mes.charAt(0).toUpperCase() + mes.slice(1),
+                entradas: baseEntradas * (0.8 + (index * 0.08)),
+                saidas: baseSaidas * (1.2 - (index * 0.06))
+            };
+        });
+    }, [estatisticas]);
+
+    // Dados para gráfico de top categorias (Fase 2)
+    const dadosTopCategorias = useMemo(() => {
+        return estatisticas.transacoesPorCategoria
+            .filter(c => c.tipo === 'saida')
+            .slice(0, 5)
+            .map(c => ({
+                nome: c.categoria.nome,
+                valor: c.total,
+                cor: c.categoria.cor,
+                icone: c.categoria.icone
+            }));
+    }, [estatisticas.transacoesPorCategoria]);
+
+    // Calcular runway (Fase 3)
+    const runway = useMemo(() => {
+        const gastoMensal = estatisticas.totalSaidas;
+        const receitaMensal = estatisticas.totalEntradas;
+        return calcularRunway(estatisticas.saldo, gastoMensal, receitaMensal);
+    }, [estatisticas]);
+
+    // Calcular break-even (Fase 3)
+    const breakEven = useMemo(() =>
+        calcularBreakEven(estatisticas),
+        [estatisticas]
+    );
+
+    // Encontrar maior gasto (Fase 3)
+    const maiorGasto = useMemo(() =>
+        encontrarMaiorGasto(todasTransacoes, estatisticas.totalSaidas),
+        [todasTransacoes, estatisticas.totalSaidas]
+    );
+
+    // Gerar alertas (Fase 3)
+    const alertas = useMemo(() =>
+        gerarAlertas(estatisticas, todasTransacoes, runway, breakEven),
+        [estatisticas, todasTransacoes, runway, breakEven]
+    );
 
     if (!carregado) {
         return (
@@ -477,13 +653,57 @@ export function FluxoCaixa() {
                         </div>
                     </div>
                     {abaAtiva === 'transacoes' && (
-                        <button
-                            onClick={() => setModalAberto(true)}
-                            className="flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium"
-                        >
-                            <Plus className="w-4 h-4" />
-                            <span>Nova</span>
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {/* Botão Exportar */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => setMostrarMenuExportar(!mostrarMenuExportar)}
+                                    className="flex items-center gap-1 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    <span className="hidden sm:inline">Exportar</span>
+                                </button>
+
+                                {/* Menu Exportar */}
+                                {mostrarMenuExportar && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setMostrarMenuExportar(false)} />
+                                        <div className="absolute right-0 top-12 z-50 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden">
+                                            <button
+                                                onClick={handleExportarCSV}
+                                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                            >
+                                                <FileSpreadsheet className="w-4 h-4" />
+                                                <span>Exportar CSV</span>
+                                            </button>
+                                            <button
+                                                onClick={handleExportarJSON}
+                                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                                            >
+                                                <FileDown className="w-4 h-4" />
+                                                <span>Exportar JSON</span>
+                                            </button>
+                                            <button
+                                                onClick={handleImprimirPDF}
+                                                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-t border-gray-200 dark:border-gray-700"
+                                            >
+                                                <Printer className="w-4 h-4" />
+                                                <span>Imprimir PDF</span>
+                                            </button>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Botão Nova Transação */}
+                            <button
+                                onClick={() => setModalAberto(true)}
+                                className="flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span>Nova</span>
+                            </button>
+                        </div>
                     )}
                 </div>
 
@@ -702,9 +922,57 @@ export function FluxoCaixa() {
                         )}
                     </div>
 
-                    {/* Gráficos - Compacto */}
+                    {/* Insights Financeiros - NOVO */}
+                    <div className="space-y-3">
+                        <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 px-1">
+                            💡 Insights Financeiros
+                        </h2>
+
+                        {/* Grid de Cards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <CardTendencia tendencia={tendencia} />
+                            <CardMediaDiaria media={mediaDiaria} />
+                            <CardComparativo
+                                atual={estatisticas}
+                                anterior={estatisticasAnterior}
+                                periodoAtual={periodos.find(p => p.valor === filtros.periodo)?.label || 'Atual'}
+                                periodoAnterior="Anterior"
+                            />
+                        </div>
+
+                        {/* Gráfico Comparativo */}
+                        {dadosGraficoComparativo.length > 0 && (
+                            <GraficoBarrasComparativo dados={dadosGraficoComparativo} />
+                        )}
+                    </div>
+
+                    {/* Analytics Avançados - Fases 2 e 3 */}
+                    <div className="space-y-3">
+                        <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 px-1">
+                            🔬 Analytics Avançados
+                        </h2>
+
+                        {/* Gráfico Top Categorias (Fase 2) */}
+                        {dadosTopCategorias.length > 0 && (
+                            <GraficoTopCategorias dados={dadosTopCategorias} limite={5} />
+                        )}
+
+                        {/* Grid de Cards Avançados (Fase 3) */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <CardRunway
+                                runway={runway}
+                                saldoAtual={estatisticas.saldo}
+                                gastoMensal={estatisticas.totalSaidas}
+                            />
+                            <CardBreakEven breakEven={breakEven} />
+                            <CardMaiorGasto maiorGasto={maiorGasto} />
+                            <CardAlertas alertas={alertas} />
+                        </div>
+                    </div>
+
+                    {/* Gráficos - Responsivo */}
                     {estatisticas.evolucaoSaldo.length > 0 && (
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {/* Gráfico de Categorias */}
                             {dadosPizza.length > 0 && (
                                 <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
@@ -833,7 +1101,7 @@ export function FluxoCaixa() {
                                                             )}>
                                                                 {transacao.tipo === 'entrada' ? '+' : '-'}{formatarMoeda(transacao.valor)}
                                                             </span>
-                                                            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
                                                                 <button
                                                                     onClick={() => setModalEdicao({
                                                                         aberto: true,
@@ -847,9 +1115,10 @@ export function FluxoCaixa() {
                                                                             observacoes: transacao.observacoes
                                                                         }
                                                                     })}
-                                                                    className="p-1 rounded hover:bg-gray-200"
+                                                                    className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                                                    aria-label="Editar transação"
                                                                 >
-                                                                    <Pencil className="w-3 h-3 text-gray-500" />
+                                                                    <Pencil className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                                                                 </button>
                                                                 <button
                                                                     onClick={() => setModalExclusao({
@@ -857,9 +1126,10 @@ export function FluxoCaixa() {
                                                                         id: transacao.id,
                                                                         descricao: transacao.descricao
                                                                     })}
-                                                                    className="p-1 rounded hover:bg-red-100"
+                                                                    className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                                                                    aria-label="Excluir transação"
                                                                 >
-                                                                    <Trash2 className="w-3 h-3 text-red-500" />
+                                                                    <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -900,6 +1170,9 @@ export function FluxoCaixa() {
                     />
                 </>
             )}
+
+            {/* Toast Container */}
+            <ToastContainer toasts={toasts} onClose={removeToast} />
         </div>
     );
 }

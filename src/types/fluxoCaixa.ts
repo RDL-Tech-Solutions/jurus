@@ -121,7 +121,88 @@ export interface MetaGasto {
     limite: number;
     mes: number;
     ano: number;
+    alertar80: boolean; // Alertar ao atingir 80%
+    alertar100: boolean; // Alertar ao ultrapassar
+    criadoEm: string;
 }
+
+// ==========================================
+// TIPOS PARA TRANSAÇÕES RECORRENTES
+// ==========================================
+
+export interface TransacaoRecorrente {
+    id: string;
+    descricao: string;
+    valor: number;
+    tipo: TipoTransacao;
+    categoriaId: string;
+    frequencia: RecorrenciaTransacao;
+    diaDoMes?: number; // Para mensal (1-31)
+    diaDaSemana?: number; // Para semanal (0-6, domingo=0)
+    proximaData: string;
+    ativa: boolean;
+    dataInicio: string;
+    dataFim?: string;
+    observacoes?: string;
+    criadoEm: string;
+}
+
+export interface NovaTransacaoRecorrente {
+    descricao: string;
+    valor: number;
+    tipo: TipoTransacao;
+    categoriaId: string;
+    frequencia: RecorrenciaTransacao;
+    diaDoMes?: number;
+    diaDaSemana?: number;
+    dataInicio: string;
+    dataFim?: string;
+    observacoes?: string;
+}
+
+// ==========================================
+// TIPOS PARA DASHBOARD PERSONALIZÁVEL
+// ==========================================
+
+export interface DashboardConfig {
+    insights: {
+        tendencia: boolean;
+        mediaDiaria: boolean;
+        comparativo: boolean;
+    };
+    analytics: {
+        runway: boolean;
+        breakEven: boolean;
+        maiorGasto: boolean;
+        alertas: boolean;
+        topCategorias: boolean;
+    };
+    graficos: {
+        barrasComparativo: boolean;
+        pizza: boolean;
+        evolucao: boolean;
+    };
+}
+
+export const DASHBOARD_CONFIG_PADRAO: DashboardConfig = {
+    insights: {
+        tendencia: true,
+        mediaDiaria: true,
+        comparativo: true
+    },
+    analytics: {
+        runway: true,
+        breakEven: true,
+        maiorGasto: true,
+        alertas: true,
+        topCategorias: true
+    },
+    graficos: {
+        barrasComparativo: true,
+        pizza: true,
+        evolucao: true
+    }
+};
 
 // ==========================================
 // TIPOS PARA CLASSIFICAÇÃO 50/30/20

@@ -13,6 +13,7 @@ import {
     CheckCircle2
 } from 'lucide-react';
 import { useCartaoCredito } from '../hooks/useCartaoCredito';
+import { useModal } from '../hooks/useModal';
 import { NovoCartao, NovoGastoCartao, CartaoCredito, CORES_CARTAO, BANDEIRAS_CARTAO, CATEGORIAS_PADRAO } from '../types/fluxoCaixa';
 import { formatarMoeda } from '../utils/calculos';
 import { cn } from '../utils/cn';
@@ -76,19 +77,27 @@ function ModalCartao({ aberto, onFechar, onSalvar, cartaoInicial, titulo }: Moda
         }
     };
 
+    // Hook para ocultar navbar
+    useModal(aberto);
+
     if (!aberto) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onFechar();
+            }}
+        >
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] sm:max-h-[90vh] overflow-y-auto animate-in zoom-in-95 fade-in duration-200">
+                <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{titulo}</h3>
                     <button onClick={onFechar} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
                 </div>
 
-                <div className="p-4 space-y-4">
+                <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
                     {/* Nome */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nome do Cartão *</label>
@@ -105,7 +114,7 @@ function ModalCartao({ aberto, onFechar, onSalvar, cartaoInicial, titulo }: Moda
                     {/* Bandeira */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Bandeira</label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             {BANDEIRAS_CARTAO.map(b => (
                                 <button
                                     key={b.id}
@@ -183,7 +192,7 @@ function ModalCartao({ aberto, onFechar, onSalvar, cartaoInicial, titulo }: Moda
                     </div>
                 </div>
 
-                <div className="flex items-center justify-end space-x-3 p-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-end gap-2 sm:gap-3 p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
                     <button onClick={onFechar} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
                         Cancelar
                     </button>
@@ -245,19 +254,27 @@ function ModalGasto({ aberto, onFechar, onSalvar, cartaoId }: ModalGastoProps) {
         }
     };
 
+    // Hook para ocultar navbar
+    useModal(aberto);
+
     if (!aberto) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md">
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onFechar();
+            }}
+        >
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md max-h-[85vh] sm:max-h-[90vh] overflow-y-auto animate-in zoom-in-95 fade-in duration-200">
+                <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Novo Gasto</h3>
                     <button onClick={onFechar} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                         <X className="w-5 h-5 text-gray-500" />
                     </button>
                 </div>
 
-                <div className="p-4 space-y-4">
+                <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descrição *</label>
                         <input
@@ -312,7 +329,7 @@ function ModalGasto({ aberto, onFechar, onSalvar, cartaoId }: ModalGastoProps) {
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Categoria</label>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                             {categoriasSaida.slice(0, 8).map(cat => (
                                 <button
                                     key={cat.id}
@@ -333,7 +350,7 @@ function ModalGasto({ aberto, onFechar, onSalvar, cartaoId }: ModalGastoProps) {
                     </div>
                 </div>
 
-                <div className="flex items-center justify-end space-x-3 p-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-end gap-2 sm:gap-3 p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
                     <button onClick={onFechar} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
                         Cancelar
                     </button>
@@ -356,33 +373,49 @@ function ModalConfirmacao({ aberto, onFechar, onConfirmar, titulo, mensagem, tip
     mensagem: string;
     tipo?: 'danger' | 'success';
 }) {
+    // Hook para ocultar navbar
+    useModal(aberto);
+
     if (!aberto) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
-                <div className={cn(
-                    "w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center",
-                    tipo === 'danger' ? "bg-red-100 dark:bg-red-900/30" : "bg-green-100 dark:bg-green-900/30"
-                )}>
-                    {tipo === 'danger' ? (
-                        <AlertCircle className="w-6 h-6 text-red-600" />
-                    ) : (
-                        <CheckCircle2 className="w-6 h-6 text-green-600" />
-                    )}
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">{titulo}</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">{mensagem}</p>
-                <div className="flex items-center justify-center space-x-3">
-                    <button onClick={onFechar} className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300">
-                        Cancelar
-                    </button>
-                    <button
-                        onClick={() => { onConfirmar(); onFechar(); }}
-                        className={cn("px-4 py-2 rounded-lg text-white", tipo === 'danger' ? "bg-red-600" : "bg-green-600")}
-                    >
-                        Confirmar
-                    </button>
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onFechar();
+            }}
+        >
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-sm animate-in zoom-in-95 fade-in duration-200">
+                <div className="p-4 sm:p-6 text-center">
+                    <div className={cn(
+                        "w-12 h-12 mx-auto mb-3 sm:mb-4 rounded-full flex items-center justify-center",
+                        tipo === 'danger' ? "bg-red-100 dark:bg-red-900/30" : "bg-green-100 dark:bg-green-900/30"
+                    )}>
+                        {tipo === 'danger' ? (
+                            <AlertCircle className="w-6 h-6 text-red-600" />
+                        ) : (
+                            <CheckCircle2 className="w-6 h-6 text-green-600" />
+                        )}
+                    </div>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-2">{titulo}</h3>
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-4 sm:mb-6">{mensagem}</p>
+                    <div className="flex items-center justify-center gap-2 sm:gap-3">
+                        <button
+                            onClick={onFechar}
+                            className="flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm text-gray-700 dark:text-gray-300"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={() => { onConfirmar(); onFechar(); }}
+                            className={cn(
+                                "flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-lg text-white text-sm",
+                                tipo === 'danger' ? "bg-red-600" : "bg-green-600"
+                            )}
+                        >
+                            Confirmar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
