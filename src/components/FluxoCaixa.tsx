@@ -585,9 +585,9 @@ export function FluxoCaixa() {
             {abaAtiva === 'transacoes' && (
                 <>
                     {/* Cards de Resumo - Compacto */}
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="flex sm:grid sm:grid-cols-3 gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 snap-x hide-scrollbar">
                         {/* Entradas */}
-                        <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                        <div className="min-w-[130px] sm:min-w-0 snap-center p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
                             <TrendingUp className="w-5 h-5 text-green-600 mb-1" />
                             <p className="text-[10px] text-green-600 font-medium">Entradas</p>
                             <p className="text-sm font-bold text-green-700 dark:text-green-400">
@@ -596,7 +596,7 @@ export function FluxoCaixa() {
                         </div>
 
                         {/* Saídas */}
-                        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                        <div className="min-w-[130px] sm:min-w-0 snap-center p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
                             <TrendingDown className="w-5 h-5 text-red-600 mb-1" />
                             <p className="text-[10px] text-red-600 font-medium">Saídas</p>
                             <p className="text-sm font-bold text-red-700 dark:text-red-400">
@@ -606,7 +606,7 @@ export function FluxoCaixa() {
 
                         {/* Saldo */}
                         <div className={cn(
-                            "p-3 rounded-xl border",
+                            "min-w-[130px] sm:min-w-0 snap-center p-3 rounded-xl border",
                             estatisticas.saldo >= 0
                                 ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
                                 : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"

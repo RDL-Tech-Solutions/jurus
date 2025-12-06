@@ -216,7 +216,7 @@ export function Comparacao() {
         </div>
         <div className="flex items-end justify-between">
           <div>
-            <p className="text-xl font-bold">
+            <p className="text-lg sm:text-xl font-bold">
               {abaAtiva === 'bancos'
                 ? `${melhorBanco?.banco.logo} ${melhorBanco?.banco.nome}`
                 : melhorModalidade?.modalidade.nome
@@ -227,7 +227,7 @@ export function Comparacao() {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold">
+            <p className="text-xl sm:text-2xl font-bold">
               {formatarMoeda(abaAtiva === 'bancos' ? melhorBanco?.totalFinal || 0 : melhorModalidade?.totalFinal || 0)}
             </p>
             <p className="text-[10px] text-white/70">Total Final</p>

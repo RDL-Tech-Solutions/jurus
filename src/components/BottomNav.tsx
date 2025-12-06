@@ -25,7 +25,7 @@ export function BottomNav() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200/50 dark:border-gray-800/50 pb-safe lg:hidden shadow-[0_-4px_20px_-5px_rgba(0,0,0,0.1)]">
-      <div className="flex items-center justify-around h-[60px] px-1">
+      <div className="flex items-center justify-around h-16 px-1 max-[360px]:px-0">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
@@ -58,7 +58,7 @@ export function BottomNav() {
                   isActive ? "stroke-[2.5px] drop-shadow-sm" : "stroke-2"
                 )} />
                 <span className={cn(
-                  "text-[10px] font-medium leading-none transition-all duration-300",
+                  "text-[10px] max-[360px]:text-[9px] font-medium leading-none transition-all duration-300",
                   isActive ? "font-bold" : "font-medium"
                 )}>
                   {item.label}

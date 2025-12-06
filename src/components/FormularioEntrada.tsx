@@ -90,7 +90,7 @@ export function FormularioEntrada() {
       </div>
 
       {/* Campos principais - Sempre visíveis */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
             Valor Inicial (R$)
@@ -123,7 +123,7 @@ export function FormularioEntrada() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 min-[380px]:grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
             Período (meses)

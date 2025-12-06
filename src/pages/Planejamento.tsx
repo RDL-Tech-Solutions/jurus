@@ -98,7 +98,7 @@ export function Planejamento() {
       </div>
 
       {/* Abas */}
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 snap-x hide-scrollbar">
         {ferramentas.map((f) => {
           const Icon = f.icone;
           const isActive = ferramentaAtiva === f.id;
@@ -107,7 +107,7 @@ export function Planejamento() {
               key={f.id}
               onClick={() => setFerramentaAtiva(f.id as FerramentaAtiva)}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all',
+                'flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all snap-start',
                 isActive
                   ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700'
                   : 'border-gray-200 dark:border-gray-700 text-gray-500'

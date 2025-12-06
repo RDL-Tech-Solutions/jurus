@@ -360,14 +360,14 @@ export function Metas() {
       )}
 
       <div className="card-mobile">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
           <div className="flex items-center space-x-2">
             <Bell className="w-5 h-5 text-amber-500" />
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Notificações</h2>
           </div>
-          <div className="space-x-2">
-            <button className="btn" onClick={() => verificarNotificacoesPendentes()}>Verificar</button>
-            <button className="btn" onClick={limparNotificacoesMetas}>Limpar</button>
+          <div className="flex space-x-2 w-full sm:w-auto">
+            <button className="btn flex-1 sm:flex-none justify-center" onClick={() => verificarNotificacoesPendentes()}>Verificar</button>
+            <button className="btn flex-1 sm:flex-none justify-center" onClick={limparNotificacoesMetas}>Limpar</button>
           </div>
         </div>
         {notificacoesMetas.length === 0 ? (
