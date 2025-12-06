@@ -1,13 +1,21 @@
-import { TrendingUp, DollarSign, Calendar, Percent } from 'lucide-react';
+import { TrendingUp, DollarSign, Calendar, Percent, FileDown } from 'lucide-react';
 import { useSimulacao } from '../store/useAppStore';
 import { formatarMoeda } from '../utils/calculos';
+import { exportarRelatorioCompleto, ExportFormat } from '../utils/exportacao';
+import { MenuExportacao } from './MenuExportacao';
 import { GraficoEvolucao } from './GraficoEvolucao';
 import { TabelaEvolucao } from './TabelaEvolucao';
 import { EstatisticasAvancadas } from './EstatisticasAvancadas';
 import { CalculadoraIR } from './CalculadoraIR';
 
 export function ResultadoSimulacao() {
-  const { resultado } = useSimulacao();
+  const { resultado, simulacao } = useSimulacao();
+
+  const handleExportarRelatorio = (formato: ExportFormat) => {
+    if (resultado && simulacao) {
+      exportarRelatorioCompleto(simulacao, resultado, formato);
+    }
+  };
 
   if (!resultado) {
     return (
@@ -25,6 +33,30 @@ export function ResultadoSimulacao() {
 
   return (
     <div className="space-y-6">
+      {/* Header com Exportação */}
+      <div className="card-mobile">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600">
+              <FileDown className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                Resultado da Simulação
+              </h2>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Período de {simulacao?.periodo} {simulacao?.unidadePeriodo}
+              </p>
+            </div>
+          </div>
+          <MenuExportacao
+            onExportar={handleExportarRelatorio}
+            label="Exportar Relatório"
+            variant="primary"
+          />
+        </div>
+      </div>
+
       {/* Cards de Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Valor Final */}
@@ -81,7 +113,7 @@ export function ResultadoSimulacao() {
             <div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Rentabilidade</p>
               <p className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                {((resultado.totalJuros / resultado.totalInvestido) * 100).toFixed(2)}%
+                {resultado.totalInvestido > 0 ? ((resultado.totalJuros / resultado.totalInvestido) * 100).toFixed(2) : '0.00'}%
               </p>
             </div>
           </div>

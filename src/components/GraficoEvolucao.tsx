@@ -61,11 +61,11 @@ export function GraficoEvolucao() {
       const periodoLabel = periodo === 'anual'
         ? `Ano ${Math.ceil(item.mes / 12)}`
         : periodo === 'trimestral'
-        ? `Trim ${Math.ceil(item.mes / 3)}`
-        : `Mês ${item.mes}`;
+          ? `Trim ${Math.ceil(item.mes / 3)}`
+          : `Mês ${item.mes}`;
 
       // Calcular rentabilidade acumulada
-      const rentabilidadeAcumulada = item.saldoAcumulado > 0
+      const rentabilidadeAcumulada = item.contribuicao > 0
         ? ((item.saldoAcumulado - item.contribuicao) / item.contribuicao) * 100
         : 0;
 
@@ -179,16 +179,16 @@ export function GraficoEvolucao() {
           <AreaChart {...propsComuns}>
             <defs>
               <linearGradient id="colorInvestido" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="colorJuros" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />

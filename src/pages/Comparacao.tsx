@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react';
-import { TrendingUp, Filter, BarChart3, Table, Eye, EyeOff, AlertTriangle, CheckCircle, Info } from 'lucide-react';
+import { TrendingUp, Filter, BarChart3, Table, Eye, EyeOff, AlertTriangle, CheckCircle, Info, Download } from 'lucide-react';
 import { useSimulacao } from '../store/useAppStore';
 import { gerarCenariosInvestimento, calcularJurosCompostos } from '../utils/calculations';
 import { formatarMoeda, formatarPercentual } from '../utils/calculos';
+import { exportarComparacao, ExportFormat } from '../utils/exportacao';
+import { MenuExportacao } from '../components/MenuExportacao';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
 
 type RiscoFilter = 'todos' | 'baixo' | 'medio' | 'alto';
@@ -182,10 +184,24 @@ export function Comparacao() {
             Comparação de Investimentos
           </h1>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <span className="text-sm text-gray-600 dark:text-gray-400">
             {cenariosFiltrados.length} cenários
           </span>
+          <MenuExportacao
+            onExportar={(formato: ExportFormat) => {
+              const dadosExportar = cenariosFiltrados.map(c => ({
+                nome: c.nome,
+                valorFinal: c.resultado.valorFinal,
+                totalJuros: c.resultado.totalJuros,
+                rentabilidade: (c.resultado.totalJuros / c.resultado.totalInvestido) * 100,
+                taxaAnual: c.taxaAnual
+              }));
+              exportarComparacao(dadosExportar, formato);
+            }}
+            label="Exportar"
+            variant="secondary"
+          />
         </div>
       </div>
 

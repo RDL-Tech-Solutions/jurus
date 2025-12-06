@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { Table, Download, ChevronDown, ChevronUp } from 'lucide-react';
+import { Table, ChevronDown, ChevronUp } from 'lucide-react';
 import { useSimulacao } from '../store/useAppStore';
 import { formatarMoeda } from '../utils/calculos';
+import { exportarEvolucaoInvestimento, ExportFormat } from '../utils/exportacao';
+import { MenuExportacao } from './MenuExportacao';
 import { cn } from '../utils/cn';
 
 export function TabelaEvolucao() {
-  const { resultado } = useSimulacao();
+  const { resultado, simulacao } = useSimulacao();
   const [filtro, setFiltro] = useState<'mensal' | 'anual'>('mensal');
   const [expandido, setExpandido] = useState(false);
 
-  if (!resultado) return null;
+  if (!resultado || !simulacao) return null;
 
   const dados = filtro === 'anual'
     ? resultado.evolucaoMensal.filter((_, index) => index % 12 === 11 || index === resultado.evolucaoMensal.length - 1)
@@ -17,23 +19,8 @@ export function TabelaEvolucao() {
 
   const dadosVisiveis = expandido ? dados : dados.slice(0, 5);
 
-  const exportarCSV = () => {
-    const headers = ['Período', 'Contribuição', 'Juros', 'Saldo Acumulado', 'Rentabilidade'];
-    const rows = resultado.evolucaoMensal.map((item) => [
-      `Mês ${item.mes}`,
-      item.contribuicao.toFixed(2),
-      item.juros.toFixed(2),
-      item.saldoAcumulado.toFixed(2),
-      ((item.juros / item.contribuicao) * 100).toFixed(2) + '%'
-    ]);
-
-    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'evolucao-investimento.csv';
-    a.click();
+  const handleExportar = (formato: ExportFormat) => {
+    exportarEvolucaoInvestimento(resultado.evolucaoMensal, simulacao, resultado, formato);
   };
 
   return (
@@ -75,13 +62,11 @@ export function TabelaEvolucao() {
           </div>
 
           {/* Exportar */}
-          <button
-            onClick={exportarCSV}
-            className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors text-sm"
-          >
-            <Download className="w-4 h-4" />
-            <span>CSV</span>
-          </button>
+          <MenuExportacao
+            onExportar={handleExportar}
+            label="Exportar"
+            variant="primary"
+          />
         </div>
       </div>
 
@@ -116,7 +101,7 @@ export function TabelaEvolucao() {
                   {formatarMoeda(item.saldoAcumulado)}
                 </td>
                 <td className="py-3 px-2 text-right text-gray-600 dark:text-gray-400">
-                  {((item.juros / item.contribuicao) * 100).toFixed(2)}%
+                  {item.contribuicao > 0 ? ((item.juros / item.contribuicao) * 100).toFixed(2) : '0.00'}%
                 </td>
               </tr>
             ))}

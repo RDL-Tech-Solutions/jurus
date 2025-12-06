@@ -89,8 +89,8 @@ export function FormularioEntrada() {
         <input
           id="valorInicial"
           type="number"
-          value={simulacao.valorInicial}
-          onChange={(e) => handleChange('valorInicial', Number(e.target.value))}
+          value={simulacao.valorInicial || ''}
+          onChange={(e) => handleChange('valorInicial', e.target.value === '' ? 0 : Number(e.target.value))}
           className="input-mobile"
           placeholder="10000"
           min="0"
@@ -109,8 +109,8 @@ export function FormularioEntrada() {
         <input
           id="valorMensal"
           type="number"
-          value={simulacao.valorMensal}
-          onChange={(e) => handleChange('valorMensal', Number(e.target.value))}
+          value={simulacao.valorMensal || ''}
+          onChange={(e) => handleChange('valorMensal', e.target.value === '' ? 0 : Number(e.target.value))}
           className="input-mobile"
           placeholder="500"
           min="0"
@@ -129,8 +129,8 @@ export function FormularioEntrada() {
         <input
           id="periodo"
           type="number"
-          value={simulacao.periodo}
-          onChange={(e) => handleChange('periodo', Number(e.target.value))}
+          value={simulacao.periodo || ''}
+          onChange={(e) => handleChange('periodo', e.target.value === '' ? 0 : Number(e.target.value))}
           className="input-mobile"
           placeholder="12"
           min="1"
@@ -167,8 +167,8 @@ export function FormularioEntrada() {
           <input
             id="taxaPersonalizada"
             type="number"
-            value={simulacao.taxaPersonalizada}
-            onChange={(e) => handleChange('taxaPersonalizada', Number(e.target.value))}
+            value={simulacao.taxaPersonalizada || ''}
+            onChange={(e) => handleChange('taxaPersonalizada', e.target.value === '' ? 0 : Number(e.target.value))}
             className="input-mobile"
             placeholder="10"
             min="0"
@@ -190,8 +190,8 @@ export function FormularioEntrada() {
           <input
             id="percentualCdi"
             type="number"
-            value={simulacao.percentualCdi}
-            onChange={(e) => handleChange('percentualCdi', Number(e.target.value))}
+            value={simulacao.percentualCdi || ''}
+            onChange={(e) => handleChange('percentualCdi', e.target.value === '' ? 0 : Number(e.target.value))}
             className="input-mobile"
             placeholder="100"
             min="0"

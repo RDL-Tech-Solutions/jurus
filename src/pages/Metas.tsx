@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Plus, PiggyBank, CalendarRange, Bell, PauseCircle, PlayCircle, Edit3, Trash2, CheckCircle2 } from 'lucide-react';
 import { useMetasFinanceiras } from '../hooks/useMetasFinanceiras';
 import { formatarMoeda } from '../utils/calculos';
+import { exportarMetas, ExportFormat } from '../utils/exportacao';
+import { MenuExportacao } from '../components/MenuExportacao';
 
 const CATEGORIAS = [
   { value: 'aposentadoria', label: 'Aposentadoria', color: '#8b5cf6' },
@@ -129,11 +131,29 @@ export function Metas() {
   return (
     <div className="page-container space-y-4">
       <div className="card-mobile">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-2">
             <PiggyBank className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Metas Financeiras</h1>
           </div>
+        </div>
+        <div className="flex items-center space-x-2">
+          {metas.length > 0 && (
+            <MenuExportacao
+              onExportar={(formato: ExportFormat) => {
+                const dadosExportar = metas.map(m => ({
+                  nome: m.nome,
+                  valorObjetivo: (m as any).valorMeta ?? (m as any).valorObjetivo ?? 0,
+                  valorAtual: m.valorAtual,
+                  dataObjetivo: (m as any).dataObjetivo || (m as any).dataLimite,
+                  categoria: m.categoria
+                }));
+                exportarMetas(dadosExportar, formato);
+              }}
+              label="Exportar"
+              variant="secondary"
+            />
+          )}
           <button className="btn btn-primary" onClick={() => setAbrirForm(v => !v)}>
             <Plus className="w-4 h-4 mr-2" /> Nova Meta
           </button>
