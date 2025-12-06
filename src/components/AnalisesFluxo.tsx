@@ -189,7 +189,10 @@ export function AnalisesFluxo({ transacoes, estatisticas }: AnalisesFluxoProps) 
                 categoriaId,
                 limite,
                 mes: mesAtual,
-                ano: anoAtual
+                ano: anoAtual,
+                alertar80: true,
+                alertar100: true,
+                criadoEm: new Date().toISOString()
             });
         }
         setMetas(novasMetas);
