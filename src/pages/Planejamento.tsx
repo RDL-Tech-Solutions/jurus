@@ -152,7 +152,7 @@ export function Planejamento() {
                 <label className="block text-[10px] text-gray-500 mb-1">Renda mensal</label>
                 <input
                   type="number"
-                  value={fundoEmergencia.rendaMensal}
+                  value={fundoEmergencia.rendaMensal || ''}
                   onChange={(e) => setFundoEmergencia(p => ({ ...p, rendaMensal: Number(e.target.value) }))}
                   className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
                 />
@@ -161,7 +161,7 @@ export function Planejamento() {
                 <label className="block text-[10px] text-gray-500 mb-1">Gastos essenciais/mês</label>
                 <input
                   type="number"
-                  value={fundoEmergencia.gastosEssenciais}
+                  value={fundoEmergencia.gastosEssenciais || ''}
                   onChange={(e) => setFundoEmergencia(p => ({ ...p, gastosEssenciais: Number(e.target.value) }))}
                   className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
                 />
@@ -170,7 +170,7 @@ export function Planejamento() {
                 <label className="block text-[10px] text-gray-500 mb-1">Valor atual do fundo</label>
                 <input
                   type="number"
-                  value={fundoEmergencia.valorAtual}
+                  value={fundoEmergencia.valorAtual || ''}
                   onChange={(e) => setFundoEmergencia(p => ({ ...p, valorAtual: Number(e.target.value) }))}
                   className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
                 />
@@ -257,7 +257,7 @@ export function Planejamento() {
                 <label className="block text-[10px] text-gray-500 mb-1">Idade atual</label>
                 <input
                   type="number"
-                  value={aposentadoria.idadeAtual}
+                  value={aposentadoria.idadeAtual || ''}
                   onChange={(e) => setAposentadoria(p => ({ ...p, idadeAtual: Number(e.target.value) }))}
                   className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
                 />
@@ -266,7 +266,7 @@ export function Planejamento() {
                 <label className="block text-[10px] text-gray-500 mb-1">Aposentar aos</label>
                 <input
                   type="number"
-                  value={aposentadoria.idadeAposentadoria}
+                  value={aposentadoria.idadeAposentadoria || ''}
                   onChange={(e) => setAposentadoria(p => ({ ...p, idadeAposentadoria: Number(e.target.value) }))}
                   className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
                 />
@@ -275,7 +275,7 @@ export function Planejamento() {
                 <label className="block text-[10px] text-gray-500 mb-1">Renda atual</label>
                 <input
                   type="number"
-                  value={aposentadoria.rendaAtual}
+                  value={aposentadoria.rendaAtual || ''}
                   onChange={(e) => setAposentadoria(p => ({ ...p, rendaAtual: Number(e.target.value) }))}
                   className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
                 />
@@ -284,7 +284,7 @@ export function Planejamento() {
                 <label className="block text-[10px] text-gray-500 mb-1">Aporte mensal</label>
                 <input
                   type="number"
-                  value={aposentadoria.aporteMensal}
+                  value={aposentadoria.aporteMensal || ''}
                   onChange={(e) => setAposentadoria(p => ({ ...p, aporteMensal: Number(e.target.value) }))}
                   className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
                 />
@@ -323,7 +323,7 @@ export function Planejamento() {
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
-                    value={aposentadoria.taxaJuros}
+                    value={aposentadoria.taxaJuros || ''}
                     onChange={(e) => setAposentadoria(p => ({ ...p, taxaJuros: Number(e.target.value) }))}
                     className="flex-1 px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
                   />
@@ -333,7 +333,7 @@ export function Planejamento() {
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
-                    value={aposentadoria.percentualCDI}
+                    value={aposentadoria.percentualCDI || ''}
                     onChange={(e) => setAposentadoria(p => ({ ...p, percentualCDI: Number(e.target.value) }))}
                     className="flex-1 px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
                   />
@@ -346,7 +346,7 @@ export function Planejamento() {
               <label className="block text-[10px] text-gray-500 mb-1">Expectativa de vida</label>
               <input
                 type="number"
-                value={aposentadoria.expectativaVida}
+                value={aposentadoria.expectativaVida || ''}
                 onChange={(e) => setAposentadoria(p => ({ ...p, expectativaVida: Number(e.target.value) }))}
                 className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
               />
@@ -410,7 +410,7 @@ export function Planejamento() {
                 <label className="block text-[10px] text-gray-500 mb-1">Valor da meta</label>
                 <input
                   type="number"
-                  value={meta.valorMeta}
+                  value={meta.valorMeta || ''}
                   onChange={(e) => setMeta(p => ({ ...p, valorMeta: Number(e.target.value) }))}
                   className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
                 />
@@ -419,7 +419,7 @@ export function Planejamento() {
                 <label className="block text-[10px] text-gray-500 mb-1">Já tenho</label>
                 <input
                   type="number"
-                  value={meta.valorAtual}
+                  value={meta.valorAtual || ''}
                   onChange={(e) => setMeta(p => ({ ...p, valorAtual: Number(e.target.value) }))}
                   className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
                 />
@@ -428,7 +428,7 @@ export function Planejamento() {
                 <label className="block text-[10px] text-gray-500 mb-1">Prazo (anos)</label>
                 <input
                   type="number"
-                  value={meta.prazoAnos}
+                  value={meta.prazoAnos || ''}
                   onChange={(e) => setMeta(p => ({ ...p, prazoAnos: Number(e.target.value) }))}
                   className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
                 />
@@ -437,7 +437,7 @@ export function Planejamento() {
                 <label className="block text-[10px] text-gray-500 mb-1">Aporte mensal</label>
                 <input
                   type="number"
-                  value={meta.aporteMensal}
+                  value={meta.aporteMensal || ''}
                   onChange={(e) => setMeta(p => ({ ...p, aporteMensal: Number(e.target.value) }))}
                   className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
                 />
@@ -446,7 +446,7 @@ export function Planejamento() {
                 <label className="block text-[10px] text-gray-500 mb-1">Taxa de rendimento (% a.a.)</label>
                 <input
                   type="number"
-                  value={meta.taxaJuros}
+                  value={meta.taxaJuros || ''}
                   onChange={(e) => setMeta(p => ({ ...p, taxaJuros: Number(e.target.value) }))}
                   className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
                 />

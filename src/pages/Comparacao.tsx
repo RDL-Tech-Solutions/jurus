@@ -173,7 +173,7 @@ export function Comparacao() {
             <label className="block text-[10px] text-gray-400 mb-0.5">Inicial</label>
             <input
               type="number"
-              value={valorInicial}
+              value={valorInicial || ''}
               onChange={(e) => setValorInicial(Number(e.target.value))}
               className="w-full px-2 py-1.5 text-sm border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600"
             />
@@ -182,7 +182,7 @@ export function Comparacao() {
             <label className="block text-[10px] text-gray-400 mb-0.5">Mensal</label>
             <input
               type="number"
-              value={aporteMensal}
+              value={aporteMensal || ''}
               onChange={(e) => setAporteMensal(Number(e.target.value))}
               className="w-full px-2 py-1.5 text-sm border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600"
             />
@@ -191,7 +191,7 @@ export function Comparacao() {
             <label className="block text-[10px] text-gray-400 mb-0.5">Meses</label>
             <input
               type="number"
-              value={prazoMeses}
+              value={prazoMeses || ''}
               onChange={(e) => setPrazoMeses(Number(e.target.value))}
               className="w-full px-2 py-1.5 text-sm border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600"
             />

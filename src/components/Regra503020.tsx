@@ -140,7 +140,7 @@ export function Regra503020() {
           </label>
           <input
             type="number"
-            value={rendaMensal}
+            value={rendaMensal === '0' ? '' : rendaMensal}
             onChange={(e) => setRendaMensal(e.target.value)}
             className="w-full px-3 py-2 border rounded-lg bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-lg font-bold"
             placeholder="5000"
@@ -235,7 +235,7 @@ export function Regra503020() {
                   <div className="flex items-center gap-1">
                     <input
                       type="number"
-                      value={cat.percentual}
+                      value={cat.percentual || ''}
                       onChange={(e) => atualizarCategoria(cat.id, 'percentual', Number(e.target.value))}
                       className="w-14 px-2 py-1 border rounded text-sm text-center"
                       min={0}

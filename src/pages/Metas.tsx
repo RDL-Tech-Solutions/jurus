@@ -169,7 +169,7 @@ export function Metas() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Valor Objetivo</label>
-              <input type="number" min={0} value={novo.valor} onChange={(e) => setNovo({ ...novo, valor: Number(e.target.value) })} className="input-mobile" />
+              <input type="number" min={0} value={novo.valor || ''} onChange={(e) => setNovo({ ...novo, valor: Number(e.target.value) })} className="input-mobile" />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Data Objetivo</label>
@@ -189,7 +189,7 @@ export function Metas() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contribuição Mensal</label>
-              <input type="number" min={0} value={novo.contribuicao} onChange={(e) => setNovo({ ...novo, contribuicao: Number(e.target.value) })} className="input-mobile" />
+              <input type="number" min={0} value={novo.contribuicao || ''} onChange={(e) => setNovo({ ...novo, contribuicao: Number(e.target.value) })} className="input-mobile" />
             </div>
             <div className="md:col-span-3">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Descrição</label>
@@ -305,7 +305,7 @@ export function Metas() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Valor Objetivo</label>
-                      <input type="number" min={0} value={edicao.valor} onChange={(e) => setEdicao({ ...edicao, valor: Number(e.target.value) })} className="input-mobile" />
+                      <input type="number" min={0} value={edicao.valor || ''} onChange={(e) => setEdicao({ ...edicao, valor: Number(e.target.value) })} className="input-mobile" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Data Objetivo</label>
@@ -313,7 +313,7 @@ export function Metas() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Contribuição Mensal</label>
-                      <input type="number" min={0} value={edicao.contribuicao} onChange={(e) => setEdicao({ ...edicao, contribuicao: Number(e.target.value) })} className="input-mobile" />
+                      <input type="number" min={0} value={edicao.contribuicao || ''} onChange={(e) => setEdicao({ ...edicao, contribuicao: Number(e.target.value) })} className="input-mobile" />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Prioridade</label>
