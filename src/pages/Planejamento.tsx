@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Target, PiggyBank, TrendingUp, Wallet, AlertTriangle, Calculator, DollarSign, Calendar, Shield, BarChart3 } from 'lucide-react';
 import { Regra503020 } from '../components/Regra503020';
+import { FluxoCaixa } from '../components/FluxoCaixa';
 import { formatarMoeda } from '../utils/calculos';
 import { cn } from '../utils/cn';
 
@@ -52,8 +53,18 @@ export function Planejamento() {
     aporteMensal: 800,
     taxaJuros: 8,
     inflacao: 3,
-    expectativaVida: 85
+    expectativaVida: 85,
+    tipoTaxa: 'manual' as 'manual' | 'cdi',
+    percentualCDI: 100 // Percentual do CDI (100%, 110%, 120%, etc)
   });
+
+  // Taxa CDI atual (pode ser atualizada via API no futuro)
+  const CDI_ATUAL = 12.25;
+
+  // Taxa efetiva considerando tipo de taxa
+  const taxaEfetiva = aposentadoria.tipoTaxa === 'cdi'
+    ? (CDI_ATUAL * aposentadoria.percentualCDI / 100)
+    : aposentadoria.taxaJuros;
 
   // Dados para metas de longo prazo
   const [metaLongoPrazo, setMetaLongoPrazo] = useState({
@@ -100,7 +111,7 @@ export function Planejamento() {
     return valorPrincipal + valorAportes;
   };
 
-  const taxaMensal = aposentadoria.taxaJuros / 100 / 12;
+  const taxaMensal = taxaEfetiva / 100 / 12;
   const valorAposentadoria = calcularValorFuturo(0, aposentadoria.aporteMensal, taxaMensal, mesesContribuicao);
   const rendaMensalAposentadoria = valorAposentadoria / ((aposentadoria.expectativaVida - aposentadoria.idadeAposentadoria) * 12);
 
@@ -293,15 +304,74 @@ export function Planejamento() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Taxa de juros (% a.a.)
+                    Tipo de Rentabilidade
                   </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={aposentadoria.taxaJuros}
-                    onChange={(e) => setAposentadoria(prev => ({ ...prev, taxaJuros: Number(e.target.value) }))}
-                    className="input-mobile"
-                  />
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <button
+                      type="button"
+                      onClick={() => setAposentadoria(prev => ({ ...prev, tipoTaxa: 'manual' }))}
+                      className={cn(
+                        'p-2 rounded-lg border-2 transition-all text-sm font-medium',
+                        aposentadoria.tipoTaxa === 'manual'
+                          ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
+                      )}
+                    >
+                      Taxa a.a.
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAposentadoria(prev => ({ ...prev, tipoTaxa: 'cdi' }))}
+                      className={cn(
+                        'p-2 rounded-lg border-2 transition-all text-sm font-medium',
+                        aposentadoria.tipoTaxa === 'cdi'
+                          ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
+                      )}
+                    >
+                      % do CDI
+                    </button>
+                  </div>
+
+                  {aposentadoria.tipoTaxa === 'manual' ? (
+                    <div className="relative">
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={aposentadoria.taxaJuros || ''}
+                        onChange={(e) => setAposentadoria(prev => ({ ...prev, taxaJuros: Number(e.target.value) || 0 }))}
+                        className="input-mobile pr-16"
+                        placeholder="Ex: 13"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">
+                        % a.a.
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <input
+                          type="number"
+                          step="1"
+                          value={aposentadoria.percentualCDI || ''}
+                          onChange={(e) => setAposentadoria(prev => ({ ...prev, percentualCDI: Number(e.target.value) || 0 }))}
+                          className="input-mobile pr-20"
+                          placeholder="Ex: 100, 110, 120"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">
+                          % do CDI
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                        <span className="text-xs text-purple-700 dark:text-purple-300">
+                          CDI atual: {CDI_ATUAL}% a.a.
+                        </span>
+                        <span className="text-sm font-semibold text-purple-800 dark:text-purple-200">
+                          = {(CDI_ATUAL * aposentadoria.percentualCDI / 100).toFixed(2)}% a.a.
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -492,72 +562,9 @@ export function Planejamento() {
           </div>
         );
 
+
       case 'fluxo':
-        return (
-          <div className="space-y-6">
-            <div className="card-mobile">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center space-x-2">
-                  <BarChart3 className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    Fluxo de Caixa
-                  </h3>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Saldo do mês</p>
-                  <p className={cn(
-                    "text-2xl font-bold",
-                    saldoFluxo >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                  )}>
-                    {formatarMoeda(saldoFluxo)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <p className="text-sm text-green-800 dark:text-green-200 font-medium">Entradas</p>
-                  <p className="text-2xl font-bold text-green-900 dark:text-green-100">
-                    {formatarMoeda(entradas)}
-                  </p>
-                </div>
-
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                  <p className="text-sm text-red-800 dark:text-red-200 font-medium">Saídas</p>
-                  <p className="text-2xl font-bold text-red-900 dark:text-red-100">
-                    {formatarMoeda(saidas)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {fluxoCaixa.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className={cn(
-                        "w-3 h-3 rounded-full",
-                        item.tipo === 'entrada' ? "bg-green-500" : "bg-red-500"
-                      )} />
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white">{item.descricao}</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">{item.categoria}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className={cn(
-                        "font-semibold",
-                        item.tipo === 'entrada' ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"
-                      )}>
-                        {item.tipo === 'entrada' ? '+' : '-'}{formatarMoeda(item.valor)}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500">{item.data}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
+        return <FluxoCaixa />;
 
       default:
         return null;
