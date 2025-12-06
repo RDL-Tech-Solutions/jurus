@@ -466,38 +466,36 @@ export function FluxoCaixa() {
         <div className="space-y-6">
             {/* Header */}
             <div className="card-mobile">
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div className="flex items-center space-x-3">
-                        <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
-                            <BarChart3 className="w-6 h-6 text-white" />
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                            <BarChart3 className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Fluxo de Caixa</h2>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Controle suas finanças
-                            </p>
+                            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Fluxo de Caixa</h2>
+                            <p className="text-xs text-gray-500">Controle financeiro</p>
                         </div>
                     </div>
                     {abaAtiva === 'transacoes' && (
                         <button
                             onClick={() => setModalAberto(true)}
-                            className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors shadow-lg shadow-primary-600/30"
+                            className="flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium"
                         >
                             <Plus className="w-4 h-4" />
-                            <span className="font-medium">Nova Transação</span>
+                            <span>Nova</span>
                         </button>
                     )}
                 </div>
 
-                {/* Abas de Navegação */}
-                <div className="flex items-center space-x-1 mt-4 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                {/* Abas de Navegação - Scroll Horizontal */}
+                <div className="flex gap-2 overflow-x-auto pb-2 mt-4 -mx-4 px-4">
                     <button
                         onClick={() => setAbaAtiva('transacoes')}
                         className={cn(
-                            'flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                            'flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all',
                             abaAtiva === 'transacoes'
-                                ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500'
                         )}
                     >
                         <Wallet className="w-4 h-4" />
@@ -506,10 +504,10 @@ export function FluxoCaixa() {
                     <button
                         onClick={() => setAbaAtiva('dividas')}
                         className={cn(
-                            'flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                            'flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all',
                             abaAtiva === 'dividas'
-                                ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500'
                         )}
                     >
                         <FileText className="w-4 h-4" />
@@ -518,10 +516,10 @@ export function FluxoCaixa() {
                     <button
                         onClick={() => setAbaAtiva('cartoes')}
                         className={cn(
-                            'flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                            'flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all',
                             abaAtiva === 'cartoes'
-                                ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500'
                         )}
                     >
                         <CreditCard className="w-4 h-4" />
@@ -530,10 +528,10 @@ export function FluxoCaixa() {
                     <button
                         onClick={() => setAbaAtiva('analises')}
                         className={cn(
-                            'flex-1 flex items-center justify-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all',
+                            'flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all',
                             abaAtiva === 'analises'
-                                ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
-                                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                                ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500'
                         )}
                     >
                         <BarChart3 className="w-4 h-4" />
@@ -586,105 +584,63 @@ export function FluxoCaixa() {
 
             {abaAtiva === 'transacoes' && (
                 <>
-                    {/* Cards de Resumo */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Cards de Resumo - Compacto */}
+                    <div className="grid grid-cols-3 gap-2">
                         {/* Entradas */}
-                        <div className="card-mobile bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200 dark:border-green-800">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-green-700 dark:text-green-300">Entradas</p>
-                                    <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
-                                        {formatarMoeda(estatisticas.totalEntradas)}
-                                    </p>
-                                </div>
-                                <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/40">
-                                    <TrendingUp className="w-6 h-6 text-green-600 dark:text-green-400" />
-                                </div>
-                            </div>
+                        <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
+                            <TrendingUp className="w-5 h-5 text-green-600 mb-1" />
+                            <p className="text-[10px] text-green-600 font-medium">Entradas</p>
+                            <p className="text-sm font-bold text-green-700 dark:text-green-400">
+                                {formatarMoeda(estatisticas.totalEntradas)}
+                            </p>
                         </div>
 
                         {/* Saídas */}
-                        <div className="card-mobile bg-gradient-to-br from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border border-red-200 dark:border-red-800">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium text-red-700 dark:text-red-300">Saídas</p>
-                                    <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
-                                        {formatarMoeda(estatisticas.totalSaidas)}
-                                    </p>
-                                </div>
-                                <div className="p-3 rounded-full bg-red-100 dark:bg-red-900/40">
-                                    <TrendingDown className="w-6 h-6 text-red-600 dark:text-red-400" />
-                                </div>
-                            </div>
+                        <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                            <TrendingDown className="w-5 h-5 text-red-600 mb-1" />
+                            <p className="text-[10px] text-red-600 font-medium">Saídas</p>
+                            <p className="text-sm font-bold text-red-700 dark:text-red-400">
+                                {formatarMoeda(estatisticas.totalSaidas)}
+                            </p>
                         </div>
 
                         {/* Saldo */}
                         <div className={cn(
-                            "card-mobile border",
+                            "p-3 rounded-xl border",
                             estatisticas.saldo >= 0
-                                ? "bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800"
-                                : "bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-amber-200 dark:border-amber-800"
+                                ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+                                : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
                         )}>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className={cn(
-                                        "text-sm font-medium",
-                                        estatisticas.saldo >= 0
-                                            ? "text-blue-700 dark:text-blue-300"
-                                            : "text-amber-700 dark:text-amber-300"
-                                    )}>Saldo</p>
-                                    <p className={cn(
-                                        "text-2xl font-bold mt-1",
-                                        estatisticas.saldo >= 0
-                                            ? "text-blue-600 dark:text-blue-400"
-                                            : "text-amber-600 dark:text-amber-400"
-                                    )}>
-                                        {formatarMoeda(estatisticas.saldo)}
-                                    </p>
-                                </div>
-                                <div className={cn(
-                                    "p-3 rounded-full",
-                                    estatisticas.saldo >= 0
-                                        ? "bg-blue-100 dark:bg-blue-900/40"
-                                        : "bg-amber-100 dark:bg-amber-900/40"
-                                )}>
-                                    <BarChart3 className={cn(
-                                        "w-6 h-6",
-                                        estatisticas.saldo >= 0
-                                            ? "text-blue-600 dark:text-blue-400"
-                                            : "text-amber-600 dark:text-amber-400"
-                                    )} />
-                                </div>
-                            </div>
+                            <BarChart3 className={cn(
+                                "w-5 h-5 mb-1",
+                                estatisticas.saldo >= 0 ? "text-blue-600" : "text-amber-600"
+                            )} />
+                            <p className={cn(
+                                "text-[10px] font-medium",
+                                estatisticas.saldo >= 0 ? "text-blue-600" : "text-amber-600"
+                            )}>Saldo</p>
+                            <p className={cn(
+                                "text-sm font-bold",
+                                estatisticas.saldo >= 0 ? "text-blue-700 dark:text-blue-400" : "text-amber-700 dark:text-amber-400"
+                            )}>
+                                {formatarMoeda(estatisticas.saldo)}
+                            </p>
                         </div>
                     </div>
 
-                    {/* Filtros */}
-                    <div className="card-mobile">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center space-x-2">
-                                <Filter className="w-4 h-4 text-gray-500" />
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filtros</span>
-                            </div>
-                            <button
-                                onClick={() => setMostrarFiltros(!mostrarFiltros)}
-                                className="text-primary-600 dark:text-primary-400 text-sm"
-                            >
-                                {mostrarFiltros ? 'Ocultar' : 'Mostrar mais'}
-                            </button>
-                        </div>
-
-                        {/* Período */}
-                        <div className="flex flex-wrap gap-2 mb-3">
+                    {/* Filtros - Compacto */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
+                        {/* Período - Scroll Horizontal */}
+                        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 mb-2">
                             {periodos.map(p => (
                                 <button
                                     key={p.valor}
                                     onClick={() => atualizarFiltros({ periodo: p.valor })}
                                     className={cn(
-                                        'px-3 py-1.5 rounded-full text-sm font-medium transition-colors',
+                                        'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
                                         filtros.periodo === p.valor
-                                            ? 'bg-primary-600 text-white'
-                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                                     )}
                                 >
                                     {p.label}
@@ -692,33 +648,36 @@ export function FluxoCaixa() {
                             ))}
                         </div>
 
+                        {/* Filtros Expandidos */}
+                        <button
+                            onClick={() => setMostrarFiltros(!mostrarFiltros)}
+                            className="flex items-center gap-1 text-xs text-gray-500"
+                        >
+                            <Filter className="w-3 h-3" />
+                            <span>{mostrarFiltros ? 'Ocultar filtros' : 'Mais filtros'}</span>
+                            <ChevronDown className={cn("w-3 h-3 transition-transform", mostrarFiltros && "rotate-180")} />
+                        </button>
+
                         {mostrarFiltros && (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                                {/* Tipo */}
+                            <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                        Tipo
-                                    </label>
+                                    <label className="block text-[10px] text-gray-500 mb-1">Tipo</label>
                                     <select
                                         value={filtros.tipo}
                                         onChange={(e) => atualizarFiltros({ tipo: e.target.value as any })}
-                                        className="input-mobile text-sm"
+                                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-gray-50 dark:bg-gray-700"
                                     >
                                         <option value="todos">Todos</option>
                                         <option value="entrada">Entradas</option>
                                         <option value="saida">Saídas</option>
                                     </select>
                                 </div>
-
-                                {/* Categoria */}
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                        Categoria
-                                    </label>
+                                    <label className="block text-[10px] text-gray-500 mb-1">Categoria</label>
                                     <select
                                         value={filtros.categoriaId || ''}
                                         onChange={(e) => atualizarFiltros({ categoriaId: e.target.value || undefined })}
-                                        className="input-mobile text-sm"
+                                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-gray-50 dark:bg-gray-700"
                                     >
                                         <option value="">Todas</option>
                                         {categorias.map(c => (
@@ -726,20 +685,16 @@ export function FluxoCaixa() {
                                         ))}
                                     </select>
                                 </div>
-
-                                {/* Busca */}
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
-                                        Buscar
-                                    </label>
+                                    <label className="block text-[10px] text-gray-500 mb-1">Buscar</label>
                                     <div className="relative">
-                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
                                         <input
                                             type="text"
                                             value={filtros.busca || ''}
                                             onChange={(e) => atualizarFiltros({ busca: e.target.value })}
-                                            className="input-mobile text-sm pl-9"
-                                            placeholder="Buscar transação..."
+                                            className="w-full pl-6 pr-2 py-1.5 border rounded-lg text-xs bg-gray-50 dark:bg-gray-700"
+                                            placeholder="Buscar..."
                                         />
                                     </div>
                                 </div>
@@ -747,26 +702,25 @@ export function FluxoCaixa() {
                         )}
                     </div>
 
-                    {/* Gráficos */}
+                    {/* Gráficos - Compacto */}
                     {estatisticas.evolucaoSaldo.length > 0 && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 gap-3">
                             {/* Gráfico de Categorias */}
                             {dadosPizza.length > 0 && (
-                                <div className="card-mobile">
-                                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
+                                    <h3 className="text-xs font-semibold text-gray-900 dark:text-white mb-2">
                                         Gastos por Categoria
                                     </h3>
-                                    <div className="h-[200px]">
+                                    <div className="h-[140px]">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <PieChart>
                                                 <Pie
                                                     data={dadosPizza}
                                                     cx="50%"
                                                     cy="50%"
-                                                    innerRadius={40}
-                                                    outerRadius={70}
+                                                    innerRadius={30}
+                                                    outerRadius={50}
                                                     dataKey="value"
-                                                    label={({ name, percent }: any) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                                                     labelLine={false}
                                                 >
                                                     {dadosPizza.map((entry, index) => (
@@ -775,12 +729,7 @@ export function FluxoCaixa() {
                                                 </Pie>
                                                 <Tooltip
                                                     formatter={(value: number) => formatarMoeda(value)}
-                                                    contentStyle={{
-                                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                                        borderRadius: '8px',
-                                                        border: 'none',
-                                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                                    }}
+                                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', fontSize: '11px' }}
                                                 />
                                             </PieChart>
                                         </ResponsiveContainer>
@@ -790,32 +739,20 @@ export function FluxoCaixa() {
 
                             {/* Gráfico de Evolução */}
                             {dadosEvolucao.length > 1 && (
-                                <div className="card-mobile">
-                                    <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
+                                    <h3 className="text-xs font-semibold text-gray-900 dark:text-white mb-2">
                                         Evolução do Saldo
                                     </h3>
-                                    <div className="h-[200px]">
+                                    <div className="h-[140px]">
                                         <ResponsiveContainer width="100%" height="100%">
                                             <LineChart data={dadosEvolucao}>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                                                <XAxis dataKey="data" tick={{ fontSize: 10 }} />
-                                                <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+                                                <XAxis dataKey="data" tick={{ fontSize: 8 }} axisLine={false} />
+                                                <YAxis tick={{ fontSize: 8 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} axisLine={false} />
                                                 <Tooltip
                                                     formatter={(value: number) => formatarMoeda(value)}
-                                                    contentStyle={{
-                                                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                                        borderRadius: '8px',
-                                                        border: 'none',
-                                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                                    }}
+                                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', fontSize: '11px' }}
                                                 />
-                                                <Line
-                                                    type="monotone"
-                                                    dataKey="saldo"
-                                                    stroke="#3b82f6"
-                                                    strokeWidth={2}
-                                                    dot={{ fill: '#3b82f6', strokeWidth: 2 }}
-                                                />
+                                                <Line type="monotone" dataKey="saldo" stroke="#3b82f6" strokeWidth={2} dot={false} />
                                             </LineChart>
                                         </ResponsiveContainer>
                                     </div>
@@ -824,91 +761,79 @@ export function FluxoCaixa() {
                         </div>
                     )}
 
-                    {/* Insights */}
+                    {/* Insights - Compacto */}
                     {(estatisticas.categoriaMaisGastos || estatisticas.mediaDiariaGastos > 0) && (
-                        <div className="card-mobile bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border border-amber-200 dark:border-amber-800">
-                            <div className="flex items-center space-x-2 mb-3">
-                                <Lightbulb className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                                <h3 className="text-sm font-semibold text-amber-900 dark:text-amber-100">Insights</h3>
+                        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                            <div className="flex items-center gap-2 mb-2">
+                                <Lightbulb className="w-4 h-4 text-amber-600" />
+                                <h3 className="text-xs font-semibold text-amber-900 dark:text-amber-100">Insights</h3>
                             </div>
-                            <div className="space-y-2 text-sm text-amber-800 dark:text-amber-200">
+                            <div className="space-y-1 text-xs text-amber-800 dark:text-amber-200">
                                 {estatisticas.categoriaMaisGastos && (
-                                    <p>
-                                        • Maior categoria de gastos: <strong>{estatisticas.categoriaMaisGastos.categoria.nome}</strong> ({formatarMoeda(estatisticas.categoriaMaisGastos.total)})
-                                    </p>
+                                    <p>• Maior gasto: <strong>{estatisticas.categoriaMaisGastos.categoria.nome}</strong> ({formatarMoeda(estatisticas.categoriaMaisGastos.total)})</p>
                                 )}
                                 {estatisticas.mediaDiariaGastos > 0 && (
-                                    <p>
-                                        • Média diária de gastos: <strong>{formatarMoeda(estatisticas.mediaDiariaGastos)}</strong>
-                                    </p>
+                                    <p>• Média/dia: <strong>{formatarMoeda(estatisticas.mediaDiariaGastos)}</strong></p>
                                 )}
-                                <p>
-                                    • Projeção para fim do mês: <strong className={estatisticas.projecaoFimMes >= 0 ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}>
-                                        {formatarMoeda(estatisticas.projecaoFimMes)}
-                                    </strong>
-                                </p>
+                                <p>• Projeção mês: <strong className={estatisticas.projecaoFimMes >= 0 ? 'text-green-700' : 'text-red-700'}>{formatarMoeda(estatisticas.projecaoFimMes)}</strong></p>
                             </div>
                         </div>
                     )}
 
-                    {/* Lista de Transações */}
-                    <div className="card-mobile">
-                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
+                    {/* Lista de Transações - Compacto */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
+                        <h3 className="text-xs font-semibold text-gray-900 dark:text-white mb-3">
                             Transações Recentes
                         </h3>
 
                         {transacoesAgrupadas.length === 0 ? (
-                            <div className="text-center py-12">
-                                <BarChart3 className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
-                                <p className="text-gray-600 dark:text-gray-400 mb-2">Nenhuma transação encontrada</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-500">
-                                    Clique em "Nova Transação" para começar
-                                </p>
+                            <div className="text-center py-8">
+                                <BarChart3 className="w-8 h-8 mx-auto text-gray-300 mb-2" />
+                                <p className="text-xs text-gray-500">Nenhuma transação</p>
+                                <p className="text-[10px] text-gray-400">Clique em "Nova" para começar</p>
                             </div>
                         ) : (
-                            <div className="space-y-4">
+                            <div className="space-y-3">
                                 {transacoesAgrupadas.map(grupo => (
                                     <div key={grupo.data}>
-                                        <div className="flex items-center space-x-2 mb-2">
-                                            <Calendar className="w-4 h-4 text-gray-400" />
-                                            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                                        <div className="flex items-center gap-1 mb-1.5">
+                                            <Calendar className="w-3 h-3 text-gray-400" />
+                                            <span className="text-[10px] font-medium text-gray-500">
                                                 {grupo.data}
                                             </span>
                                         </div>
-                                        <div className="space-y-2">
+                                        <div className="space-y-1.5">
                                             {grupo.transacoes.map(transacao => {
                                                 const categoria = obterCategoria(transacao.categoriaId);
                                                 return (
                                                     <div
                                                         key={transacao.id}
-                                                        className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group"
+                                                        className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 group"
                                                     >
-                                                        <div className="flex items-center space-x-3">
+                                                        <div className="flex items-center gap-2 flex-1 min-w-0">
                                                             <div
-                                                                className="w-10 h-10 rounded-lg flex items-center justify-center text-lg"
+                                                                className="w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
                                                                 style={{ backgroundColor: `${categoria?.cor}20` }}
                                                             >
                                                                 {categoria?.icone}
                                                             </div>
-                                                            <div>
-                                                                <p className="font-medium text-gray-900 dark:text-white">
+                                                            <div className="min-w-0">
+                                                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                                                     {transacao.descricao}
                                                                 </p>
-                                                                <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                                <p className="text-[10px] text-gray-500 truncate">
                                                                     {categoria?.nome}
                                                                 </p>
                                                             </div>
                                                         </div>
-                                                        <div className="flex items-center space-x-3">
+                                                        <div className="flex items-center gap-2 flex-shrink-0">
                                                             <span className={cn(
-                                                                'font-semibold',
-                                                                transacao.tipo === 'entrada'
-                                                                    ? 'text-green-600 dark:text-green-400'
-                                                                    : 'text-red-600 dark:text-red-400'
+                                                                'text-sm font-semibold',
+                                                                transacao.tipo === 'entrada' ? 'text-green-600' : 'text-red-600'
                                                             )}>
                                                                 {transacao.tipo === 'entrada' ? '+' : '-'}{formatarMoeda(transacao.valor)}
                                                             </span>
-                                                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                                                                 <button
                                                                     onClick={() => setModalEdicao({
                                                                         aberto: true,
@@ -922,9 +847,9 @@ export function FluxoCaixa() {
                                                                             observacoes: transacao.observacoes
                                                                         }
                                                                     })}
-                                                                    className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                                                    className="p-1 rounded hover:bg-gray-200"
                                                                 >
-                                                                    <Pencil className="w-4 h-4 text-gray-500" />
+                                                                    <Pencil className="w-3 h-3 text-gray-500" />
                                                                 </button>
                                                                 <button
                                                                     onClick={() => setModalExclusao({
@@ -932,9 +857,9 @@ export function FluxoCaixa() {
                                                                         id: transacao.id,
                                                                         descricao: transacao.descricao
                                                                     })}
-                                                                    className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                                                                    className="p-1 rounded hover:bg-red-100"
                                                                 >
-                                                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                                                    <Trash2 className="w-3 h-3 text-red-500" />
                                                                 </button>
                                                             </div>
                                                         </div>

@@ -80,11 +80,15 @@ export function useDividas() {
 
     // Marcar como pago (retorna o valor para debitar do caixa)
     const marcarComoPago = useCallback((id: string): number => {
-        let valorPago = 0;
+        // Buscar a dívida primeiro para obter o valor ANTES de atualizar
+        const divida = dividas.find(d => d.id === id && !d.pago);
+        if (!divida) return 0;
+
+        const valorPago = divida.valor;
+
         setDividas(prev =>
             prev.map(d => {
                 if (d.id === id && !d.pago) {
-                    valorPago = d.valor;
                     return {
                         ...d,
                         pago: true,
@@ -95,8 +99,9 @@ export function useDividas() {
                 return d;
             })
         );
+
         return valorPago;
-    }, []);
+    }, [dividas]);
 
     // Desmarcar pagamento
     const desmarcarPagamento = useCallback((id: string) => {

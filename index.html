@@ -1,102 +1,116 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>JURUS</title>
-    
-    <!-- Script de inicialização das configurações -->
-    <script>
-      (function() {
-        try {
-          // Aplicar tema imediatamente
-          const savedTheme = localStorage.getItem('theme') || 'system';
-          const root = document.documentElement;
-          
-          if (savedTheme === 'dark') {
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="description"
+    content="Jurus - Calculadora financeira completa. Simule juros compostos, gerencie fluxo de caixa, controle dívidas e cartões." />
+  <meta name="theme-color" content="#3b82f6" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Jurus" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="format-detection" content="telephone=no" />
+  <link rel="manifest" href="/manifest.json" />
+  <title>Jurus - Calculadora Financeira</title>
+
+  <!-- Script de inicialização das configurações -->
+  <script>
+    (function () {
+      try {
+        // Aplicar tema imediatamente
+        const savedTheme = localStorage.getItem('theme') || 'system';
+        const root = document.documentElement;
+
+        if (savedTheme === 'dark') {
+          root.classList.add('dark');
+        } else if (savedTheme === 'light') {
+          root.classList.remove('dark');
+        } else {
+          // Sistema - detectar preferência
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (prefersDark) {
             root.classList.add('dark');
-          } else if (savedTheme === 'light') {
-            root.classList.remove('dark');
           } else {
-            // Sistema - detectar preferência
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (prefersDark) {
-              root.classList.add('dark');
-            } else {
-              root.classList.remove('dark');
-            }
+            root.classList.remove('dark');
           }
-          
-          // Aplicar configurações de acessibilidade
-          const accessibilitySettings = localStorage.getItem('accessibility-settings');
-          if (accessibilitySettings) {
-            const settings = JSON.parse(accessibilitySettings);
-            
-            // Alto contraste
-            if (settings.highContrast) {
-              root.classList.add('high-contrast');
-            }
-            
-            // Movimento reduzido
-            if (settings.reducedMotion) {
-              root.classList.add('reduced-motion');
-            }
-            
-            // Tamanho da fonte
-            if (settings.fontSize) {
-              root.classList.add(`font-${settings.fontSize}`);
-            }
-            
-            // Altura da linha
-            if (settings.lineHeight) {
-              root.classList.add(`line-height-${settings.lineHeight}`);
-            }
-            
-            // Espaçamento entre letras
-            if (settings.letterSpacing) {
-              root.classList.add(`letter-spacing-${settings.letterSpacing}`);
-            }
-            
-            // Modo daltônico
-            if (settings.colorBlindMode && settings.colorBlindMode !== 'none') {
-              root.classList.add(settings.colorBlindMode);
-            }
-            
-            // Indicadores de foco
-            if (settings.focusIndicators) {
-              root.classList.add('enhanced-focus');
-            }
-          }
-        } catch (error) {
-          console.warn('Erro ao carregar configurações iniciais:', error);
         }
-        
-        // Debug para produção - capturar erros de carregamento
-        window.addEventListener('error', function(e) {
-          console.error('Erro de carregamento:', e.error || e.message);
-        });
-        
-        window.addEventListener('unhandledrejection', function(e) {
-          console.error('Promise rejeitada:', e.reason);
-        });
-      })();
-    </script>
-    
-    <script type="module">
-      if (import.meta.hot?.on) {
-        import.meta.hot.on('vite:error', (error) => {
-          if (error.err) {
-            console.error(
-              [error.err.message, error.err.frame].filter(Boolean).join('\n'),
-            )
+
+        // Aplicar configurações de acessibilidade
+        const accessibilitySettings = localStorage.getItem('accessibility-settings');
+        if (accessibilitySettings) {
+          const settings = JSON.parse(accessibilitySettings);
+
+          // Alto contraste
+          if (settings.highContrast) {
+            root.classList.add('high-contrast');
           }
-        })
+
+          // Movimento reduzido
+          if (settings.reducedMotion) {
+            root.classList.add('reduced-motion');
+          }
+
+          // Tamanho da fonte
+          if (settings.fontSize) {
+            root.classList.add(`font-${settings.fontSize}`);
+          }
+
+          // Altura da linha
+          if (settings.lineHeight) {
+            root.classList.add(`line-height-${settings.lineHeight}`);
+          }
+
+          // Espaçamento entre letras
+          if (settings.letterSpacing) {
+            root.classList.add(`letter-spacing-${settings.letterSpacing}`);
+          }
+
+          // Modo daltônico
+          if (settings.colorBlindMode && settings.colorBlindMode !== 'none') {
+            root.classList.add(settings.colorBlindMode);
+          }
+
+          // Indicadores de foco
+          if (settings.focusIndicators) {
+            root.classList.add('enhanced-focus');
+          }
+        }
+      } catch (error) {
+        console.warn('Erro ao carregar configurações iniciais:', error);
       }
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+      // Debug para produção - capturar erros de carregamento
+      window.addEventListener('error', function (e) {
+        console.error('Erro de carregamento:', e.error || e.message);
+      });
+
+      window.addEventListener('unhandledrejection', function (e) {
+        console.error('Promise rejeitada:', e.reason);
+      });
+    })();
+  </script>
+
+  <script type="module">
+    if (import.meta.hot?.on) {
+      import.meta.hot.on('vite:error', (error) => {
+        if (error.err) {
+          console.error(
+            [error.err.message, error.err.frame].filter(Boolean).join('\n'),
+          )
+        }
+      })
+    }
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>

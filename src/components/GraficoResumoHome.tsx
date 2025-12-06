@@ -1,18 +1,23 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { TrendingUp } from 'lucide-react';
+import { useState } from 'react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { TrendingUp, PieChartIcon, BarChart3 } from 'lucide-react';
 import { useSimulacao } from '../store/useAppStore';
 import { formatarMoeda } from '../utils/calculos';
+import { cn } from '../utils/cn';
 
 const CORES = ['#3b82f6', '#10b981', '#f59e0b'];
 
+type TipoGrafico = 'pizza' | 'barras';
+
 export function GraficoResumoHome() {
   const { resultado, simulacao } = useSimulacao();
+  const [tipoGrafico, setTipoGrafico] = useState<TipoGrafico>('pizza');
 
   if (!resultado || !simulacao) {
     return (
-      <div className="card-mobile text-center py-12">
-        <TrendingUp className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-600 mb-4" />
-        <h3 className="text-lg font-semibold text-gray-600 dark:text-gray-400 mb-2">
+      <div className="card-mobile text-center py-8">
+        <TrendingUp className="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3" />
+        <h3 className="text-base font-semibold text-gray-600 dark:text-gray-400 mb-1">
           Gráfico de Resumo
         </h3>
         <p className="text-sm text-gray-500 dark:text-gray-500">
@@ -22,7 +27,7 @@ export function GraficoResumoHome() {
     );
   }
 
-  // Dados para o gráfico de pizza - composição do valor final
+  // Dados para o gráfico
   const dadosGrafico = [
     {
       nome: 'Valor Inicial',
@@ -31,13 +36,13 @@ export function GraficoResumoHome() {
       cor: CORES[0]
     },
     {
-      nome: 'Aportes Mensais',
+      nome: 'Aportes',
       valor: resultado.totalInvestido - simulacao.valorInicial,
       percentual: (((resultado.totalInvestido - simulacao.valorInicial) / resultado.valorFinal) * 100).toFixed(1),
       cor: CORES[1]
     },
     {
-      nome: 'Juros Gerados',
+      nome: 'Juros',
       valor: resultado.totalJuros,
       percentual: ((resultado.totalJuros / resultado.valorFinal) * 100).toFixed(1),
       cor: CORES[2]
@@ -48,13 +53,10 @@ export function GraficoResumoHome() {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-          <p className="font-semibold text-gray-900 dark:text-white mb-2">{data.nome}</p>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Valor: {formatarMoeda(data.valor)}
-          </p>
-          <p className="text-sm font-medium text-gray-900 dark:text-white">
-            {data.percentual}% do total
+        <div className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 text-sm">
+          <p className="font-semibold text-gray-900 dark:text-white">{data.nome}</p>
+          <p className="text-gray-600 dark:text-gray-400">
+            {formatarMoeda(data.valor)} ({data.percentual}%)
           </p>
         </div>
       );
@@ -64,72 +66,137 @@ export function GraficoResumoHome() {
 
   return (
     <div className="card-mobile">
-      <div className="flex items-center space-x-2 mb-4">
-        <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Composição do Investimento
-        </h3>
+      {/* Header com toggle */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-2">
+          <TrendingUp className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+            Composição
+          </h3>
+        </div>
+
+        {/* Toggle tipo de gráfico */}
+        <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+          <button
+            onClick={() => setTipoGrafico('pizza')}
+            className={cn(
+              'p-1.5 rounded-md transition-all',
+              tipoGrafico === 'pizza'
+                ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600'
+                : 'text-gray-500'
+            )}
+          >
+            <PieChartIcon className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setTipoGrafico('barras')}
+            className={cn(
+              'p-1.5 rounded-md transition-all',
+              tipoGrafico === 'barras'
+                ? 'bg-white dark:bg-gray-700 shadow-sm text-blue-600'
+                : 'text-gray-500'
+            )}
+          >
+            <BarChart3 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      <div className="w-full h-[300px]">
+      {/* Valor Total Destacado */}
+      <div className="text-center mb-4 p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl text-white">
+        <p className="text-xs font-medium opacity-90">Valor Final</p>
+        <p className="text-2xl font-bold">{formatarMoeda(resultado.valorFinal)}</p>
+        <p className="text-xs opacity-80">
+          Rendimento: +{formatarMoeda(resultado.totalJuros)} ({dadosGrafico[2].percentual}%)
+        </p>
+      </div>
+
+      {/* Gráfico - Altura maior no mobile */}
+      <div className="w-full h-[280px] sm:h-[320px]">
         <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Pie
+          {tipoGrafico === 'pizza' ? (
+            <PieChart>
+              <Pie
+                data={dadosGrafico}
+                cx="50%"
+                cy="45%"
+                innerRadius="35%"
+                outerRadius="70%"
+                paddingAngle={3}
+                dataKey="valor"
+                label={({ percentual }) => `${percentual}%`}
+                labelLine={false}
+              >
+                {dadosGrafico.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.cor} />
+                ))}
+              </Pie>
+              <Tooltip content={<CustomTooltip />} />
+              <Legend
+                verticalAlign="bottom"
+                height={50}
+                iconType="circle"
+                formatter={(value) => (
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{value}</span>
+                )}
+              />
+            </PieChart>
+          ) : (
+            <BarChart
               data={dadosGrafico}
-              cx="50%"
-              cy="50%"
-              innerRadius={60}
-              outerRadius={100}
-              paddingAngle={2}
-              dataKey="valor"
+              layout="vertical"
+              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
             >
-              {dadosGrafico.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.cor} />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-            <Legend
-              verticalAlign="bottom"
-              height={36}
-              formatter={(value, entry: any) => (
-                <span style={{ color: entry.color }}>
-                  {value} ({entry.payload.percentual}%)
-                </span>
-              )}
-            />
-          </PieChart>
+              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+              <XAxis
+                type="number"
+                tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                fontSize={12}
+              />
+              <YAxis
+                type="category"
+                dataKey="nome"
+                width={60}
+                fontSize={12}
+              />
+              <Tooltip
+                formatter={(value: number) => formatarMoeda(value)}
+                labelStyle={{ color: '#374151' }}
+              />
+              <Bar dataKey="valor" radius={[0, 4, 4, 0]}>
+                {dadosGrafico.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.cor} />
+                ))}
+              </Bar>
+            </BarChart>
+          )}
         </ResponsiveContainer>
       </div>
 
-      {/* Resumo textual */}
-      <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-center">
-        <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
-          <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Valor Inicial</p>
-          <p className="text-lg font-bold text-blue-700 dark:text-blue-300">
-            {formatarMoeda(simulacao.valorInicial)}
-          </p>
-          <p className="text-xs text-blue-500 dark:text-blue-500">
-            {dadosGrafico[0].percentual}%
-          </p>
-        </div>
-        <div className="p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
-          <p className="text-xs text-green-600 dark:text-green-400 font-medium">Aportes Mensais</p>
-          <p className="text-lg font-bold text-green-700 dark:text-green-300">
-            {formatarMoeda(resultado.totalInvestido - simulacao.valorInicial)}
-          </p>
-          <p className="text-xs text-green-500 dark:text-green-500">
-            {dadosGrafico[1].percentual}%
-          </p>
-        </div>
-        <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20">
-          <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">Juros Gerados</p>
-          <p className="text-lg font-bold text-amber-700 dark:text-amber-300">
-            {formatarMoeda(resultado.totalJuros)}
-          </p>
-          <p className="text-xs text-amber-500 dark:text-amber-500">
-            {dadosGrafico[2].percentual}%
-          </p>
-        </div>
+      {/* Cards de resumo - Layout horizontal em mobile */}
+      <div className="grid grid-cols-3 gap-2 mt-4">
+        {dadosGrafico.map((item, index) => (
+          <div
+            key={item.nome}
+            className="p-2 rounded-lg text-center"
+            style={{ backgroundColor: `${item.cor}15` }}
+          >
+            <div
+              className="w-3 h-3 rounded-full mx-auto mb-1"
+              style={{ backgroundColor: item.cor }}
+            />
+            <p className="text-[10px] text-gray-600 dark:text-gray-400 font-medium truncate">
+              {item.nome}
+            </p>
+            <p
+              className="text-sm font-bold"
+              style={{ color: item.cor }}
+            >
+              {formatarMoeda(item.valor)}
+            </p>
+            <p className="text-[10px] text-gray-500">{item.percentual}%</p>
+          </div>
+        ))}
       </div>
     </div>
   );

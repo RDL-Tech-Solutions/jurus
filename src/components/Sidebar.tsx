@@ -1,4 +1,4 @@
-import { X, Calculator, Target, History, Settings, TrendingUp, Wallet } from 'lucide-react';
+import { X, Calculator, Target, History, Settings, TrendingUp, Wallet, BarChart3 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 
@@ -12,7 +12,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: 'home', label: 'Simulador', icon: Calculator, path: '/' },
   { id: 'comparacao', label: 'Comparação', icon: TrendingUp, path: '/comparacao' },
-  { id: 'planejamento', label: 'Regra 50/30/20', icon: Wallet, path: '/planejamento' },
+  { id: 'planejamento', label: 'Planejamento', icon: Wallet, path: '/planejamento' },
+  { id: 'fluxo', label: 'Fluxo de Caixa', icon: BarChart3, path: '/fluxo' },
   { id: 'metas', label: 'Metas Financeiras', icon: Target, path: '/metas' },
   { id: 'historico', label: 'Histórico', icon: History, path: '/historico' },
   { id: 'config', label: 'Configurações', icon: Settings, path: '/configuracoes' },
@@ -74,10 +75,9 @@ export function Sidebar() {
                 className={`
                   w-full flex items-center space-x-3 px-4 py-3 rounded-lg
                   transition-colors duration-200
-                  ${
-                    isActive
-                      ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ${isActive
+                    ? 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }
                 `}
               >

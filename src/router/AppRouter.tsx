@@ -5,6 +5,7 @@ import { Metas } from '../pages/Metas';
 import { Historico } from '../pages/Historico';
 import { Comparacao } from '../pages/Comparacao';
 import { Planejamento } from '../pages/Planejamento';
+import { FluxoCaixaPage } from '../pages/FluxoCaixa';
 import { Configuracoes } from '../pages/Configuracoes';
 
 export function AppRouter() {
@@ -17,6 +18,7 @@ export function AppRouter() {
           <Route path="historico" element={<Historico />} />
           <Route path="comparacao" element={<Comparacao />} />
           <Route path="planejamento" element={<Planejamento />} />
+          <Route path="fluxo" element={<FluxoCaixaPage />} />
           <Route path="configuracoes" element={<Configuracoes />} />
         </Route>
       </Routes>

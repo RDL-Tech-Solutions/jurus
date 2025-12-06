@@ -1,481 +1,447 @@
-import { useState, useMemo } from 'react';
-import { TrendingUp, Filter, BarChart3, Table, Eye, EyeOff, AlertTriangle, CheckCircle, Info, Download } from 'lucide-react';
-import { useSimulacao } from '../store/useAppStore';
-import { gerarCenariosInvestimento, calcularJurosCompostos } from '../utils/calculations';
-import { formatarMoeda, formatarPercentual } from '../utils/calculos';
-import { exportarComparacao, ExportFormat } from '../utils/exportacao';
-import { MenuExportacao } from '../components/MenuExportacao';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, Cell } from 'recharts';
+import { useState, useMemo, useEffect } from 'react';
+import {
+  TrendingUp,
+  Building2,
+  Layers,
+  Check,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Star,
+  Info,
+  Wallet
+} from 'lucide-react';
+import {
+  BANCOS_DIGITAIS,
+  MODALIDADES_INVESTIMENTO,
+  calcularRendimentoBanco,
+  calcularRendimentoModalidade,
+  SimulacaoSalva
+} from '../types/bancosDigitais';
+import { formatarMoeda } from '../utils/calculos';
+import { cn } from '../utils/cn';
 
-type RiscoFilter = 'todos' | 'baixo' | 'medio' | 'alto';
-type LiquidezFilter = 'todos' | 'alta' | 'media' | 'baixa';
-type VisualizacaoType = 'barras' | 'pizza' | 'tabela';
+type AbaComparacao = 'bancos' | 'modalidades';
 
-const CORES_RISCO = {
-  baixo: '#10b981',
-  medio: '#f59e0b',
-  alto: '#ef4444'
-};
-
-const CORES_LIQUIDEZ = {
-  alta: '#3b82f6',
-  media: '#8b5cf6',
-  baixa: '#64748b'
+// Carregar simulações salvas do histórico
+const carregarSimulacoes = (): SimulacaoSalva[] => {
+  try {
+    const dados = localStorage.getItem('jurus_historico');
+    if (dados) {
+      const parsed = JSON.parse(dados);
+      return parsed.map((item: any, index: number) => ({
+        id: `sim-${index}`,
+        nome: item.nome || `Simulação ${index + 1}`,
+        valorInicial: item.input?.valorInicial || 1000,
+        aporteMensal: item.input?.aporteMensal || 100,
+        prazoMeses: item.input?.prazoMeses || 12,
+        taxaAnual: item.input?.taxa || 12,
+        dataCriacao: item.data || new Date().toISOString()
+      }));
+    }
+  } catch (e) { }
+  return [];
 };
 
 export function Comparacao() {
-  const { simulacao } = useSimulacao();
-  const [riscoFilter, setRiscoFilter] = useState<RiscoFilter>('todos');
-  const [liquidezFilter, setLiquidezFilter] = useState<LiquidezFilter>('todos');
-  const [visualizacao, setVisualizacao] = useState<VisualizacaoType>('barras');
-  const [cenariosSelecionados, setCenariosSelecionados] = useState<Set<number>>(new Set());
+  const [abaAtiva, setAbaAtiva] = useState<AbaComparacao>('bancos');
+  const [simulacoes, setSimulacoes] = useState<SimulacaoSalva[]>([]);
+  const [simulacaoSelecionada, setSimulacaoSelecionada] = useState<SimulacaoSalva | null>(null);
+  const [itemExpandido, setItemExpandido] = useState<string | null>(null);
 
-  // Gerar cenários expandidos
-  const todosCenarios = useMemo(() => {
-    const cenariosBasicos = gerarCenariosInvestimento(simulacao);
+  // Dados de simulação
+  const [valorInicial, setValorInicial] = useState(1000);
+  const [aporteMensal, setAporteMensal] = useState(100);
+  const [prazoMeses, setPrazoMeses] = useState(12);
 
-    // Adicionar cenários adicionais
-    const cenariosAdicionais = [
-      {
-        nome: 'Fundos Imobiliários',
-        taxaAnual: 10.5,
-        risco: 'medio' as const,
-        liquidez: 'alta' as const,
-        tributacao: 20
-      },
-      {
-        nome: 'Criptomoedas',
-        taxaAnual: 25.0,
-        risco: 'alto' as const,
-        liquidez: 'alta' as const,
-        tributacao: 15
-      },
-      {
-        nome: 'Previdência Privada',
-        taxaAnual: 8.5,
-        risco: 'baixo' as const,
-        liquidez: 'baixa' as const,
-        tributacao: 10
-      },
-      {
-        nome: 'Debêntures',
-        taxaAnual: 11.2,
-        risco: 'medio' as const,
-        liquidez: 'media' as const,
-        tributacao: 15
-      }
-    ];
-
-    return [...cenariosBasicos, ...cenariosAdicionais.map(cenario => {
-      const inputCenario = {
-        ...simulacao,
-        taxaType: 'personalizada' as const,
-        taxaPersonalizada: cenario.taxaAnual
-      };
-
-      const resultado = calcularJurosCompostos(inputCenario);
-
-      // Aplicar tributação
-      if (cenario.tributacao > 0) {
-        const impostoSobreGanhos = resultado.totalJuros * (cenario.tributacao / 100);
-        resultado.valorFinal -= impostoSobreGanhos;
-        resultado.totalJuros -= impostoSobreGanhos;
-      }
-
-      return {
-        ...cenario,
-        resultado
-      };
-    })];
-  }, [simulacao]);
-
-  // Filtrar cenários
-  const cenariosFiltrados = useMemo(() => {
-    return todosCenarios.filter(cenario => {
-      const riscoOk = riscoFilter === 'todos' || cenario.risco === riscoFilter;
-      const liquidezOk = liquidezFilter === 'todos' || cenario.liquidez === liquidezFilter;
-      return riscoOk && liquidezOk;
-    });
-  }, [todosCenarios, riscoFilter, liquidezFilter]);
-
-  // Dados para gráficos
-  const dadosGrafico = useMemo(() => {
-    return cenariosFiltrados.map((cenario, index) => ({
-      id: index,
-      nome: cenario.nome,
-      Investido: cenario.resultado.totalInvestido,
-      Juros: cenario.resultado.totalJuros,
-      Total: cenario.resultado.valorFinal,
-      Rentabilidade: (cenario.resultado.totalJuros / cenario.resultado.totalInvestido) * 100,
-      Risco: cenario.risco,
-      Liquidez: cenario.liquidez,
-      selecionado: cenariosSelecionados.has(index)
-    }));
-  }, [cenariosFiltrados, cenariosSelecionados]);
-
-  // Dados para gráfico de pizza (top 5 cenários)
-  const dadosPizza = useMemo(() => {
-    return dadosGrafico
-      .sort((a, b) => b.Total - a.Total)
-      .slice(0, 5)
-      .map((item, index) => ({
-        ...item,
-        fill: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'][index] || '#64748b'
-      }));
-  }, [dadosGrafico]);
-
-  // Toggle cenário selecionado
-  const toggleCenario = (index: number) => {
-    const novosSelecionados = new Set(cenariosSelecionados);
-    if (novosSelecionados.has(index)) {
-      novosSelecionados.delete(index);
-    } else {
-      novosSelecionados.add(index);
+  useEffect(() => {
+    const sims = carregarSimulacoes();
+    setSimulacoes(sims);
+    if (sims.length > 0) {
+      setSimulacaoSelecionada(sims[0]);
+      setValorInicial(sims[0].valorInicial);
+      setAporteMensal(sims[0].aporteMensal);
+      setPrazoMeses(sims[0].prazoMeses);
     }
-    setCenariosSelecionados(novosSelecionados);
+  }, []);
+
+  // Comparações
+  const comparacaoBancos = useMemo(() => {
+    return BANCOS_DIGITAIS.map(banco =>
+      calcularRendimentoBanco(banco, valorInicial, aporteMensal, prazoMeses)
+    ).sort((a, b) => b.totalFinal - a.totalFinal);
+  }, [valorInicial, aporteMensal, prazoMeses]);
+
+  const comparacaoModalidades = useMemo(() => {
+    return MODALIDADES_INVESTIMENTO.map(mod =>
+      calcularRendimentoModalidade(mod, valorInicial, aporteMensal, prazoMeses)
+    ).sort((a, b) => b.totalFinal - a.totalFinal);
+  }, [valorInicial, aporteMensal, prazoMeses]);
+
+  const melhorBanco = comparacaoBancos[0];
+  const melhorModalidade = comparacaoModalidades[0];
+
+  const selecionarSimulacao = (sim: SimulacaoSalva) => {
+    setSimulacaoSelecionada(sim);
+    setValorInicial(sim.valorInicial);
+    setAporteMensal(sim.aporteMensal);
+    setPrazoMeses(sim.prazoMeses);
   };
 
-  // Análise de viabilidade
-  const analiseViabilidade = useMemo(() => {
-    const melhor = cenariosFiltrados.reduce((prev, curr) =>
-      curr.resultado.valorFinal > prev.resultado.valorFinal ? curr : prev
-    );
+  const toggleExpand = (id: string) => {
+    setItemExpandido(itemExpandido === id ? null : id);
+  };
 
-    const maisConservador = cenariosFiltrados
-      .filter(c => c.risco === 'baixo')
-      .reduce((prev, curr) =>
-        curr.resultado.valorFinal > prev.resultado.valorFinal ? curr : prev,
-        cenariosFiltrados[0]
-      );
-
-    return { melhor, maisConservador };
-  }, [cenariosFiltrados]);
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-w-xs">
-          <p className="font-semibold text-gray-900 dark:text-white mb-2">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex justify-between items-center mb-1">
-              <span className="text-sm" style={{ color: entry.color }}>
-                {entry.name}:
-              </span>
-              <span className="text-sm font-medium ml-2">
-                {entry.dataKey === 'Rentabilidade'
-                  ? formatarPercentual(entry.value)
-                  : formatarMoeda(entry.value)
-                }
-              </span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
+  const getMedal = (index: number) => {
+    if (index === 0) return '🥇';
+    if (index === 1) return '🥈';
+    if (index === 2) return '🥉';
+    return `${index + 1}º`;
   };
 
   return (
-    <div className="page-container space-y-6">
-      <div className="card-mobile flex items-center justify-between">
+    <div className="page-container space-y-4">
+      {/* Header compacto */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <TrendingUp className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Comparação de Investimentos
-          </h1>
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+            <TrendingUp className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">
+              Comparar
+            </h1>
+            <p className="text-xs text-gray-500">Escolha o melhor</p>
+          </div>
         </div>
-        <div className="flex items-center space-x-3">
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            {cenariosFiltrados.length} cenários
+      </div>
+
+      {/* Abas */}
+      <div className="flex p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+        <button
+          onClick={() => setAbaAtiva('bancos')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all',
+            abaAtiva === 'bancos'
+              ? 'bg-white dark:bg-gray-700 text-purple-600 shadow-sm'
+              : 'text-gray-500'
+          )}
+        >
+          <Building2 className="w-4 h-4" />
+          <span>Bancos</span>
+        </button>
+        <button
+          onClick={() => setAbaAtiva('modalidades')}
+          className={cn(
+            'flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-sm font-medium transition-all',
+            abaAtiva === 'modalidades'
+              ? 'bg-white dark:bg-gray-700 text-purple-600 shadow-sm'
+              : 'text-gray-500'
+          )}
+        >
+          <Layers className="w-4 h-4" />
+          <span>Modalidades</span>
+        </button>
+      </div>
+
+      {/* Simulação - Compacta */}
+      <div className="card-mobile !p-3">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <Wallet className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Simulação</span>
+          </div>
+          {simulacoes.length > 0 && (
+            <select
+              value={simulacaoSelecionada?.id || ''}
+              onChange={(e) => {
+                const sim = simulacoes.find(s => s.id === e.target.value);
+                if (sim) selecionarSimulacao(sim);
+              }}
+              className="text-xs border rounded-lg px-2 py-1 bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600"
+            >
+              <option value="">Personalizada</option>
+              {simulacoes.map(sim => (
+                <option key={sim.id} value={sim.id}>{sim.nome}</option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <label className="block text-[10px] text-gray-400 mb-0.5">Inicial</label>
+            <input
+              type="number"
+              value={valorInicial}
+              onChange={(e) => setValorInicial(Number(e.target.value))}
+              className="w-full px-2 py-1.5 text-sm border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] text-gray-400 mb-0.5">Mensal</label>
+            <input
+              type="number"
+              value={aporteMensal}
+              onChange={(e) => setAporteMensal(Number(e.target.value))}
+              className="w-full px-2 py-1.5 text-sm border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600"
+            />
+          </div>
+          <div>
+            <label className="block text-[10px] text-gray-400 mb-0.5">Meses</label>
+            <input
+              type="number"
+              value={prazoMeses}
+              onChange={(e) => setPrazoMeses(Number(e.target.value))}
+              className="w-full px-2 py-1.5 text-sm border rounded-lg bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600"
+            />
+          </div>
+        </div>
+
+        <div className="mt-2 flex items-center justify-between text-xs">
+          <span className="text-gray-500">Total investido:</span>
+          <span className="font-bold text-gray-900 dark:text-white">
+            {formatarMoeda(valorInicial + (aporteMensal * prazoMeses))}
           </span>
-          <MenuExportacao
-            onExportar={(formato: ExportFormat) => {
-              const dadosExportar = cenariosFiltrados.map(c => ({
-                nome: c.nome,
-                valorFinal: c.resultado.valorFinal,
-                totalJuros: c.resultado.totalJuros,
-                rentabilidade: (c.resultado.totalJuros / c.resultado.totalInvestido) * 100,
-                taxaAnual: c.taxaAnual
-              }));
-              exportarComparacao(dadosExportar, formato);
-            }}
-            label="Exportar"
-            variant="secondary"
-          />
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="card-mobile">
-        <div className="flex items-center space-x-2 mb-4">
-          <Filter className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Filtros</h2>
+      {/* Destaque - Melhor opção */}
+      <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl p-4 text-white">
+        <div className="flex items-center gap-1.5 mb-1">
+          <Star className="w-4 h-4" />
+          <span className="text-sm font-medium opacity-90">
+            {abaAtiva === 'bancos' ? 'Melhor Banco' : 'Melhor Modalidade'}
+          </span>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="flex items-end justify-between">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Risco
-            </label>
-            <select
-              value={riscoFilter}
-              onChange={(e) => setRiscoFilter(e.target.value as RiscoFilter)}
-              className="input-mobile"
+            <p className="text-xl font-bold">
+              {abaAtiva === 'bancos'
+                ? `${melhorBanco?.banco.logo} ${melhorBanco?.banco.nome}`
+                : melhorModalidade?.modalidade.nome
+              }
+            </p>
+            <p className="text-white/80 text-xs">
+              +{formatarMoeda(abaAtiva === 'bancos' ? melhorBanco?.rendimentoLiquido || 0 : melhorModalidade?.rendimentoLiquido || 0)} de juros
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-bold">
+              {formatarMoeda(abaAtiva === 'bancos' ? melhorBanco?.totalFinal || 0 : melhorModalidade?.totalFinal || 0)}
+            </p>
+            <p className="text-[10px] text-white/70">Total Final</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Lista - Bancos */}
+      {abaAtiva === 'bancos' && (
+        <div className="space-y-2">
+          {comparacaoBancos.map((item, index) => (
+            <div
+              key={item.banco.id}
+              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden"
             >
-              <option value="todos">Todos os riscos</option>
-              <option value="baixo">Baixo Risco</option>
-              <option value="medio">Médio Risco</option>
-              <option value="alto">Alto Risco</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Liquidez
-            </label>
-            <select
-              value={liquidezFilter}
-              onChange={(e) => setLiquidezFilter(e.target.value as LiquidezFilter)}
-              className="input-mobile"
-            >
-              <option value="todos">Todas as liquidezes</option>
-              <option value="alta">Alta Liquidez</option>
-              <option value="media">Média Liquidez</option>
-              <option value="baixa">Baixa Liquidez</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Visualização
-            </label>
-            <div className="flex space-x-2">
               <button
-                onClick={() => setVisualizacao('barras')}
-                className={`btn ${visualizacao === 'barras' ? 'btn-primary' : ''}`}
+                onClick={() => toggleExpand(item.banco.id)}
+                className="w-full p-3 flex items-center gap-3"
               >
-                <BarChart3 className="w-4 h-4" />
+                {/* Posição */}
+                <div className="w-8 text-center font-bold text-lg">
+                  {getMedal(index)}
+                </div>
+
+                {/* Logo */}
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
+                  style={{ backgroundColor: item.banco.cor + '20' }}
+                >
+                  {item.banco.logo}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 text-left">
+                  <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                    {item.banco.nome}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {item.banco.taxaCDB}% CDI
+                  </p>
+                </div>
+
+                {/* Valor */}
+                <div className="text-right">
+                  <p className="font-bold text-green-600 text-sm">
+                    {formatarMoeda(item.totalFinal)}
+                  </p>
+                  <p className="text-[10px] text-gray-400">
+                    +{formatarMoeda(item.rendimentoLiquido)}
+                  </p>
+                </div>
+
+                {itemExpandido === item.banco.id
+                  ? <ChevronUp className="w-4 h-4 text-gray-400" />
+                  : <ChevronDown className="w-4 h-4 text-gray-400" />
+                }
               </button>
-              <button
-                onClick={() => setVisualizacao('pizza')}
-                className={`btn ${visualizacao === 'pizza' ? 'btn-primary' : ''}`}
-              >
-                <TrendingUp className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setVisualizacao('tabela')}
-                className={`btn ${visualizacao === 'tabela' ? 'btn-primary' : ''}`}
-              >
-                <Table className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Análise de Viabilidade */}
-      <div className="card-mobile">
-        <div className="flex items-center space-x-2 mb-4">
-          <Info className="w-5 h-5 text-blue-500" />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Análise Recomendada</h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-            <div className="flex items-center space-x-2 mb-2">
-              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-              <h3 className="font-semibold text-green-800 dark:text-green-200">Melhor Retorno</h3>
-            </div>
-            <p className="text-sm text-green-700 dark:text-green-300 mb-2">
-              {analiseViabilidade.melhor.nome}
-            </p>
-            <p className="text-lg font-bold text-green-800 dark:text-green-200">
-              {formatarMoeda(analiseViabilidade.melhor.resultado.valorFinal)}
-            </p>
-            <p className="text-xs text-green-600 dark:text-green-400">
-              Rentabilidade: {formatarPercentual((analiseViabilidade.melhor.resultado.totalJuros / analiseViabilidade.melhor.resultado.totalInvestido) * 100)}
-            </p>
-          </div>
-
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <div className="flex items-center space-x-2 mb-2">
-              <AlertTriangle className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-              <h3 className="font-semibold text-blue-800 dark:text-blue-200">Mais Conservador</h3>
-            </div>
-            <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
-              {analiseViabilidade.maisConservador.nome}
-            </p>
-            <p className="text-lg font-bold text-blue-800 dark:text-blue-200">
-              {formatarMoeda(analiseViabilidade.maisConservador.resultado.valorFinal)}
-            </p>
-            <p className="text-xs text-blue-600 dark:text-blue-400">
-              Rentabilidade: {formatarPercentual((analiseViabilidade.maisConservador.resultado.totalJuros / analiseViabilidade.maisConservador.resultado.totalInvestido) * 100)}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Gráfico */}
-      {visualizacao !== 'tabela' && (
-        <div className="card-mobile">
-          <div className="w-full h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              {visualizacao === 'barras' ? (
-                <BarChart data={dadosGrafico} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.2} />
-                  <XAxis
-                    dataKey="nome"
-                    stroke="#9ca3af"
-                    angle={-45}
-                    textAnchor="end"
-                    interval={0}
-                    height={80}
-                    fontSize={12}
-                  />
-                  <YAxis
-                    stroke="#9ca3af"
-                    tickFormatter={(v) => `R$ ${(v / 1000).toFixed(0)}k`}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                  <Bar dataKey="Investido" stackId="a" fill="#3b82f6" name="Investido" />
-                  <Bar dataKey="Juros" stackId="a" fill="#f59e0b" name="Juros" />
-                </BarChart>
-              ) : (
-                <PieChart>
-                  <Pie
-                    data={dadosPizza}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={120}
-                    paddingAngle={2}
-                    dataKey="Total"
-                    nameKey="nome"
-                  >
-                    {dadosPizza.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
+              {/* Expandido */}
+              {itemExpandido === item.banco.id && (
+                <div className="px-3 pb-3 pt-0 border-t border-gray-100 dark:border-gray-700">
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    <div>
+                      <p className="text-[10px] font-medium text-green-600 mb-1 flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Prós
+                      </p>
+                      <ul className="space-y-0.5">
+                        {item.banco.pros.slice(0, 3).map((pro, i) => (
+                          <li key={i} className="text-[11px] text-gray-600 dark:text-gray-400">
+                            • {pro}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium text-red-500 mb-1 flex items-center gap-1">
+                        <X className="w-3 h-3" /> Contras
+                      </p>
+                      <ul className="space-y-0.5">
+                        {item.banco.contras.slice(0, 3).map((contra, i) => (
+                          <li key={i} className="text-[11px] text-gray-600 dark:text-gray-400">
+                            • {contra}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {item.banco.categorias.map(cat => (
+                      <span key={cat} className="px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 rounded text-[10px] text-gray-500">
+                        {cat}
+                      </span>
                     ))}
-                  </Pie>
-                  <Tooltip formatter={(value: number) => formatarMoeda(value)} />
-                  <Legend />
-                </PieChart>
+                  </div>
+                </div>
               )}
-            </ResponsiveContainer>
-          </div>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Tabela Detalhada */}
-      <div className="card-mobile">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Cenários Detalhados
-          </h2>
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            {cenariosFiltrados.length} cenários encontrados
-          </span>
-        </div>
+      {/* Lista - Modalidades */}
+      {abaAtiva === 'modalidades' && (
+        <div className="space-y-2">
+          {comparacaoModalidades.map((item, index) => (
+            <div
+              key={item.modalidade.id}
+              className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden"
+            >
+              <button
+                onClick={() => toggleExpand(item.modalidade.id)}
+                className="w-full p-3 flex items-center gap-3"
+              >
+                {/* Posição */}
+                <div className="w-8 text-center font-bold text-lg">
+                  {getMedal(index)}
+                </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-700">
-                <th className="text-left py-3 px-2 font-semibold text-gray-900 dark:text-white">
-                  Cenário
-                </th>
-                <th className="text-center py-3 px-2 font-semibold text-gray-900 dark:text-white">
-                  Risco
-                </th>
-                <th className="text-center py-3 px-2 font-semibold text-gray-900 dark:text-white">
-                  Liquidez
-                </th>
-                <th className="text-right py-3 px-2 font-semibold text-gray-900 dark:text-white">
-                  Investido
-                </th>
-                <th className="text-right py-3 px-2 font-semibold text-gray-900 dark:text-white">
-                  Juros
-                </th>
-                <th className="text-right py-3 px-2 font-semibold text-gray-900 dark:text-white">
-                  Total
-                </th>
-                <th className="text-right py-3 px-2 font-semibold text-gray-900 dark:text-white">
-                  Rentabilidade
-                </th>
-                <th className="text-center py-3 px-2 font-semibold text-gray-900 dark:text-white">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {cenariosFiltrados.map((cenario, index) => {
-                const rentabilidade = (cenario.resultado.totalJuros / cenario.resultado.totalInvestido) * 100;
-                return (
-                  <tr key={index} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                    <td className="py-3 px-2 text-gray-900 dark:text-white font-medium">
-                      {cenario.nome}
-                    </td>
-                    <td className="py-3 px-2 text-center">
-                      <span
-                        className="px-2 py-1 rounded-full text-xs font-medium"
-                        style={{
-                          backgroundColor: CORES_RISCO[cenario.risco] + '20',
-                          color: CORES_RISCO[cenario.risco]
-                        }}
-                      >
-                        {cenario.risco}
-                      </span>
-                    </td>
-                    <td className="py-3 px-2 text-center">
-                      <span
-                        className="px-2 py-1 rounded-full text-xs font-medium"
-                        style={{
-                          backgroundColor: CORES_LIQUIDEZ[cenario.liquidez] + '20',
-                          color: CORES_LIQUIDEZ[cenario.liquidez]
-                        }}
-                      >
-                        {cenario.liquidez}
-                      </span>
-                    </td>
-                    <td className="py-3 px-2 text-right text-blue-600 dark:text-blue-400">
-                      {formatarMoeda(cenario.resultado.totalInvestido)}
-                    </td>
-                    <td className="py-3 px-2 text-right text-amber-600 dark:text-amber-400">
-                      {formatarMoeda(cenario.resultado.totalJuros)}
-                    </td>
-                    <td className="py-3 px-2 text-right font-semibold text-green-600 dark:text-green-400">
-                      {formatarMoeda(cenario.resultado.valorFinal)}
-                    </td>
-                    <td className="py-3 px-2 text-right text-purple-600 dark:text-purple-400">
-                      {formatarPercentual(rentabilidade)}
-                    </td>
-                    <td className="py-3 px-2 text-center">
-                      <button
-                        onClick={() => toggleCenario(index)}
-                        className={`btn ${cenariosSelecionados.has(index) ? 'btn-primary' : ''}`}
-                      >
-                        {cenariosSelecionados.has(index) ? (
-                          <Eye className="w-4 h-4" />
-                        ) : (
-                          <EyeOff className="w-4 h-4" />
-                        )}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                {/* Ícone risco */}
+                <div className={cn(
+                  "w-10 h-10 rounded-xl flex items-center justify-center",
+                  item.modalidade.risco === 'baixo' && "bg-green-100 dark:bg-green-900/30",
+                  item.modalidade.risco === 'medio' && "bg-yellow-100 dark:bg-yellow-900/30",
+                  item.modalidade.risco === 'alto' && "bg-red-100 dark:bg-red-900/30"
+                )}>
+                  <span className={cn(
+                    "text-sm font-bold",
+                    item.modalidade.risco === 'baixo' && "text-green-600",
+                    item.modalidade.risco === 'medio' && "text-yellow-600",
+                    item.modalidade.risco === 'alto' && "text-red-600"
+                  )}>
+                    {item.modalidade.nome.substring(0, 3)}
+                  </span>
+                </div>
 
-        {cenariosSelecionados.size > 0 && (
-          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <p className="text-sm text-blue-800 dark:text-blue-200">
-              <strong>{cenariosSelecionados.size}</strong> cenários selecionados para análise detalhada.
-              Você pode salvar esta comparação ou exportar os dados.
-            </p>
-          </div>
-        )}
+                {/* Info */}
+                <div className="flex-1 text-left">
+                  <p className="font-semibold text-gray-900 dark:text-white text-sm">
+                    {item.modalidade.nome}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {item.modalidade.rentabilidadeMedia}% a.a. • {item.modalidade.risco}
+                  </p>
+                </div>
+
+                {/* Valor */}
+                <div className="text-right">
+                  <p className="font-bold text-green-600 text-sm">
+                    {formatarMoeda(item.totalFinal)}
+                  </p>
+                  <p className="text-[10px] text-gray-400">
+                    IR: {item.modalidade.tributacao}%
+                  </p>
+                </div>
+
+                {itemExpandido === item.modalidade.id
+                  ? <ChevronUp className="w-4 h-4 text-gray-400" />
+                  : <ChevronDown className="w-4 h-4 text-gray-400" />
+                }
+              </button>
+
+              {/* Expandido */}
+              {itemExpandido === item.modalidade.id && (
+                <div className="px-3 pb-3 pt-0 border-t border-gray-100 dark:border-gray-700">
+                  <p className="text-xs text-gray-500 mt-2 mb-2">
+                    {item.modalidade.descricao}
+                  </p>
+
+                  <div className="grid grid-cols-3 gap-2 mb-2">
+                    <div className="text-center p-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-[10px] text-gray-400">Liquidez</p>
+                      <p className="text-xs font-medium capitalize">{item.modalidade.liquidez}</p>
+                    </div>
+                    <div className="text-center p-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-[10px] text-gray-400">Mínimo</p>
+                      <p className="text-xs font-medium">{formatarMoeda(item.modalidade.valorMinimo)}</p>
+                    </div>
+                    <div className="text-center p-1.5 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                      <p className="text-[10px] text-gray-400">IR</p>
+                      <p className="text-xs font-medium">{item.modalidade.tributacao}%</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <p className="text-[10px] font-medium text-green-600 mb-1">✓ Prós</p>
+                      <ul className="space-y-0.5">
+                        {item.modalidade.pros.map((pro, i) => (
+                          <li key={i} className="text-[11px] text-gray-600 dark:text-gray-400">• {pro}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-medium text-red-500 mb-1">✗ Contras</p>
+                      <ul className="space-y-0.5">
+                        {item.modalidade.contras.map((contra, i) => (
+                          <li key={i} className="text-[11px] text-gray-600 dark:text-gray-400">• {contra}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Dica */}
+      <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl">
+        <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+        <p className="text-[11px] text-amber-700 dark:text-amber-300">
+          Valores estimados. Consulte cada instituição para taxas atualizadas.
+        </p>
       </div>
     </div>
   );

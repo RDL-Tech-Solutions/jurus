@@ -1,7 +1,7 @@
 {
-  "name": "Jurus - Calculadora de Juros Compostos",
+  "name": "Jurus - Calculadora Financeira",
   "short_name": "Jurus",
-  "description": "Plataforma completa e gratuita para simulações financeiras e cálculo de juros compostos",
+  "description": "Plataforma completa para simulações financeiras e planejamento",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
@@ -9,117 +9,39 @@
   "orientation": "portrait-primary",
   "scope": "/",
   "lang": "pt-BR",
-  "categories": ["finance", "productivity", "education"],
+  "categories": [
+    "finance",
+    "productivity",
+    "education"
+  ],
   "icons": [
     {
-      "src": "/icons/icon-72x72.png",
+      "src": "/icons/icon-72x72.svg",
       "sizes": "72x72",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "type": "image/svg+xml"
     },
     {
-      "src": "/icons/icon-96x96.png",
+      "src": "/icons/icon-96x96.svg",
       "sizes": "96x96",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "type": "image/svg+xml"
     },
     {
-      "src": "/icons/icon-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/icons/icon-144x144.png",
+      "src": "/icons/icon-144x144.svg",
       "sizes": "144x144",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "type": "image/svg+xml"
     },
     {
-      "src": "/icons/icon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/icons/icon-192x192.png",
+      "src": "/icons/icon-192x192.svg",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable any"
+      "type": "image/svg+xml"
     },
     {
-      "src": "/icons/icon-384x384.png",
-      "sizes": "384x384",
-      "type": "image/png",
-      "purpose": "maskable any"
-    },
-    {
-      "src": "/icons/icon-512x512.png",
+      "src": "/icons/icon-512x512.svg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "maskable any"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Nova Simulação",
-      "short_name": "Simular",
-      "description": "Criar uma nova simulação de juros compostos",
-      "url": "/?action=new-simulation",
-      "icons": [
-        {
-          "src": "/icons/shortcut-calculator.png",
-          "sizes": "96x96"
-        }
-      ]
-    },
-    {
-      "name": "Histórico",
-      "short_name": "Histórico",
-      "description": "Ver histórico de simulações",
-      "url": "/?tab=historico",
-      "icons": [
-        {
-          "src": "/icons/shortcut-history.png",
-          "sizes": "96x96"
-        }
-      ]
-    },
-    {
-      "name": "Comparador",
-      "short_name": "Comparar",
-      "description": "Comparar investimentos",
-      "url": "/?tab=comparador",
-      "icons": [
-        {
-          "src": "/icons/shortcut-compare.png",
-          "sizes": "96x96"
-        }
-      ]
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/screenshots/desktop-home.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Tela inicial da calculadora"
-    },
-    {
-      "src": "/screenshots/mobile-simulation.png",
-      "sizes": "375x667",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Simulação no mobile"
     }
   ],
   "related_applications": [],
-  "prefer_related_applications": false,
-  "edge_side_panel": {
-    "preferred_width": 400
-  },
-  "launch_handler": {
-    "client_mode": "focus-existing"
-  }
+  "prefer_related_applications": false
 }

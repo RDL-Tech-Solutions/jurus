@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from "vite-tsconfig-paths";
+import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -20,13 +21,48 @@ export default defineConfig({
         ],
       },
     }),
-    tsconfigPaths()
+    tsconfigPaths(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      includeAssets: ['favicon.ico', 'favicon.svg', 'icons/*.svg'],
+      manifest: {
+        name: 'Jurus - Calculadora Financeira',
+        short_name: 'Jurus',
+        description: 'Plataforma completa para simulações financeiras',
+        theme_color: '#3b82f6',
+        background_color: '#ffffff',
+        display: 'standalone',
+        orientation: 'portrait-primary',
+        start_url: '/',
+        scope: '/',
+        lang: 'pt-BR',
+        icons: [
+          {
+            src: '/icons/icon-192x192.svg',
+            sizes: '192x192',
+            type: 'image/svg+xml'
+          },
+          {
+            src: '/icons/icon-512x512.svg',
+            sizes: '512x512',
+            type: 'image/svg+xml',
+            purpose: 'any maskable'
+          }
+        ]
+      },
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,svg,woff2}']
+      },
+      devOptions: {
+        enabled: false // PWA apenas em produção
+      }
+    })
   ],
   optimizeDeps: {
     include: [
-      'react', 
-      'react-dom', 
-      'react-router-dom', 
+      'react',
+      'react-dom',
+      'react-router-dom',
       'zustand',
       'lucide-react',
       'framer-motion',

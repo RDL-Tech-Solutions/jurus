@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 import { Sidebar } from './Sidebar';
 import { BottomNav } from './BottomNav';
+import { InstallBanner } from './InstallBanner';
 
 export function Layout() {
   const { theme } = useAppStore();
@@ -17,14 +18,15 @@ export function Layout() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
       <Sidebar />
-      
+
       <main className="lg:ml-64 pb-16 lg:pb-0">
         <div className="container mx-auto px-4 py-6">
           <Outlet />
         </div>
       </main>
-      
+
       <BottomNav />
+      <InstallBanner />
     </div>
   );
 }

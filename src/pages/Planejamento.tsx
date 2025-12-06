@@ -1,616 +1,515 @@
-import { useState, useMemo } from 'react';
-import { Target, PiggyBank, TrendingUp, Wallet, AlertTriangle, Calculator, DollarSign, Calendar, Shield, BarChart3 } from 'lucide-react';
+import { useState } from 'react';
+import { Target, PiggyBank, Wallet, Shield, Calculator, AlertCircle, Check, Info } from 'lucide-react';
 import { Regra503020 } from '../components/Regra503020';
-import { FluxoCaixa } from '../components/FluxoCaixa';
 import { formatarMoeda } from '../utils/calculos';
 import { cn } from '../utils/cn';
 
-type FerramentaAtiva = 'orcamento' | 'emergencia' | 'aposentadoria' | 'metas' | 'fluxo';
+type FerramentaAtiva = 'orcamento' | 'emergencia' | 'aposentadoria' | 'metas';
 
-interface GastoMensal {
-  categoria: string;
-  valor: number;
-  cor: string;
-  icone: string;
-}
-
-interface FluxoCaixa {
-  descricao: string;
-  valor: number;
-  tipo: 'entrada' | 'saida';
-  categoria: string;
-  data: string;
-}
+// Taxa CDI atual
+const CDI_ATUAL = 12.25;
 
 export function Planejamento() {
   const [ferramentaAtiva, setFerramentaAtiva] = useState<FerramentaAtiva>('orcamento');
 
-  // Dados para orçamento mensal
-  const [rendaMensal, setRendaMensal] = useState(5000);
-  const [gastosMensais, setGastosMensais] = useState<GastoMensal[]>([
-    { categoria: 'Moradia', valor: 1500, cor: '#ef4444', icone: '🏠' },
-    { categoria: 'Alimentação', valor: 800, cor: '#f59e0b', icone: '🍽️' },
-    { categoria: 'Transporte', valor: 400, cor: '#10b981', icone: '🚗' },
-    { categoria: 'Saúde', valor: 300, cor: '#3b82f6', icone: '🏥' },
-    { categoria: 'Educação', valor: 200, cor: '#8b5cf6', icone: '📚' },
-    { categoria: 'Lazer', valor: 500, cor: '#ec4899', icone: '🎉' },
-    { categoria: 'Investimentos', valor: 600, cor: '#64748b', icone: '📈' }
-  ]);
-
-  // Dados para fundo de emergência
+  // ========== FUNDO DE EMERGÊNCIA ==========
   const [fundoEmergencia, setFundoEmergencia] = useState({
     mesesAlvo: 6,
     rendaMensal: 5000,
-    gastosEssenciaisMensais: 3000,
+    gastosEssenciais: 3000,
     valorAtual: 0
   });
 
-  // Dados para planejamento de aposentadoria
+  const valorAlvoEmergencia = fundoEmergencia.gastosEssenciais * fundoEmergencia.mesesAlvo;
+  const progressoEmergencia = valorAlvoEmergencia > 0 ? Math.min((fundoEmergencia.valorAtual / valorAlvoEmergencia) * 100, 100) : 0;
+  const mesesRestantesEmergencia = fundoEmergencia.gastosEssenciais > 0
+    ? Math.max(0, fundoEmergencia.mesesAlvo - Math.floor(fundoEmergencia.valorAtual / fundoEmergencia.gastosEssenciais))
+    : 0;
+  const aporteNecessarioEmergencia = fundoEmergencia.rendaMensal > 0
+    ? Math.ceil((valorAlvoEmergencia - fundoEmergencia.valorAtual) / 12)
+    : 0;
+
+  // ========== APOSENTADORIA ==========
   const [aposentadoria, setAposentadoria] = useState({
     idadeAtual: 30,
     idadeAposentadoria: 65,
     rendaAtual: 5000,
     aporteMensal: 800,
-    taxaJuros: 8,
-    inflacao: 3,
-    expectativaVida: 85,
+    taxaJuros: 10,
     tipoTaxa: 'manual' as 'manual' | 'cdi',
-    percentualCDI: 100 // Percentual do CDI (100%, 110%, 120%, etc)
+    percentualCDI: 100,
+    expectativaVida: 85
   });
 
-  // Taxa CDI atual (pode ser atualizada via API no futuro)
-  const CDI_ATUAL = 12.25;
-
-  // Taxa efetiva considerando tipo de taxa
   const taxaEfetiva = aposentadoria.tipoTaxa === 'cdi'
     ? (CDI_ATUAL * aposentadoria.percentualCDI / 100)
     : aposentadoria.taxaJuros;
 
-  // Dados para metas de longo prazo
-  const [metaLongoPrazo, setMetaLongoPrazo] = useState({
-    objetivo: 'Comprar casa própria',
+  const anosContribuicao = aposentadoria.idadeAposentadoria - aposentadoria.idadeAtual;
+  const mesesContribuicao = anosContribuicao * 12;
+  const taxaMensal = taxaEfetiva / 100 / 12;
+
+  const calcularValorFuturo = (aporteMensal: number, taxaMensal: number, meses: number) => {
+    if (taxaMensal === 0) return aporteMensal * meses;
+    return aporteMensal * ((Math.pow(1 + taxaMensal, meses) - 1) / taxaMensal);
+  };
+
+  const valorAposentadoria = calcularValorFuturo(aposentadoria.aporteMensal, taxaMensal, mesesContribuicao);
+  const rendaMensalAposentadoria = valorAposentadoria / ((aposentadoria.expectativaVida - aposentadoria.idadeAposentadoria) * 12);
+  const totalAportado = aposentadoria.aporteMensal * mesesContribuicao;
+  const jurosGanhos = valorAposentadoria - totalAportado;
+
+  // ========== METAS ==========
+  const [meta, setMeta] = useState({
+    nome: 'Casa própria',
     valorMeta: 300000,
     valorAtual: 50000,
     prazoAnos: 10,
     aporteMensal: 1500,
-    taxaJuros: 7
+    taxaJuros: 8
   });
 
-  // Dados para fluxo de caixa
-  const [fluxoCaixa, setFluxoCaixa] = useState<FluxoCaixa[]>([
-    { descricao: 'Salário', valor: 5000, tipo: 'entrada', categoria: 'Renda', data: '2024-01-01' },
-    { descricao: 'Freelance', valor: 800, tipo: 'entrada', categoria: 'Extra', data: '2024-01-15' },
-    { descricao: 'Aluguel', valor: 1500, tipo: 'saida', categoria: 'Moradia', data: '2024-01-01' },
-    { descricao: 'Supermercado', valor: 600, tipo: 'saida', categoria: 'Alimentação', data: '2024-01-05' },
-    { descricao: 'Transporte', valor: 200, tipo: 'saida', categoria: 'Transporte', data: '2024-01-10' },
-    { descricao: 'Academia', valor: 150, tipo: 'saida', categoria: 'Saúde', data: '2024-01-12' }
-  ]);
-
-  // Cálculos para orçamento
-  const totalGastos = useMemo(() =>
-    gastosMensais.reduce((acc, gasto) => acc + gasto.valor, 0),
-    [gastosMensais]
-  );
-
-  const saldoMensal = rendaMensal - totalGastos;
-  const percentualGastos = rendaMensal > 0 ? (totalGastos / rendaMensal) * 100 : 0;
-
-  // Cálculos para fundo de emergência
-  const valorAlvoEmergencia = fundoEmergencia.gastosEssenciaisMensais * fundoEmergencia.mesesAlvo;
-  const progressoEmergencia = valorAlvoEmergencia > 0 ? (fundoEmergencia.valorAtual / valorAlvoEmergencia) * 100 : 0;
-  const mesesRestantesEmergencia = Math.max(0, fundoEmergencia.mesesAlvo - Math.floor(fundoEmergencia.valorAtual / fundoEmergencia.gastosEssenciaisMensais));
-
-  // Cálculos para aposentadoria
-  const anosContribuicao = aposentadoria.idadeAposentadoria - aposentadoria.idadeAtual;
-  const mesesContribuicao = anosContribuicao * 12;
-  const aporteAnual = aposentadoria.aporteMensal * 12;
-
-  const calcularValorFuturo = (principal: number, aporteMensal: number, taxaMensal: number, meses: number) => {
-    const valorPrincipal = principal * Math.pow(1 + taxaMensal, meses);
-    const valorAportes = aporteMensal * ((Math.pow(1 + taxaMensal, meses) - 1) / taxaMensal);
-    return valorPrincipal + valorAportes;
-  };
-
-  const taxaMensal = taxaEfetiva / 100 / 12;
-  const valorAposentadoria = calcularValorFuturo(0, aposentadoria.aporteMensal, taxaMensal, mesesContribuicao);
-  const rendaMensalAposentadoria = valorAposentadoria / ((aposentadoria.expectativaVida - aposentadoria.idadeAposentadoria) * 12);
-
-  // Cálculos para meta de longo prazo
-  const mesesMeta = metaLongoPrazo.prazoAnos * 12;
-  const taxaMensalMeta = metaLongoPrazo.taxaJuros / 100 / 12;
-  const valorProjetadoMeta = calcularValorFuturo(metaLongoPrazo.valorAtual, metaLongoPrazo.aporteMensal, taxaMensalMeta, mesesMeta);
-  const progressoMeta = metaLongoPrazo.valorMeta > 0 ? (valorProjetadoMeta / metaLongoPrazo.valorMeta) * 100 : 0;
-
-  // Cálculos para fluxo de caixa
-  const entradas = fluxoCaixa.filter(item => item.tipo === 'entrada').reduce((acc, item) => acc + item.valor, 0);
-  const saidas = fluxoCaixa.filter(item => item.tipo === 'saida').reduce((acc, item) => acc + item.valor, 0);
-  const saldoFluxo = entradas - saidas;
+  const mesesMeta = meta.prazoAnos * 12;
+  const taxaMensalMeta = meta.taxaJuros / 100 / 12;
+  const valorProjetadoMeta = meta.valorAtual * Math.pow(1 + taxaMensalMeta, mesesMeta) +
+    calcularValorFuturo(meta.aporteMensal, taxaMensalMeta, mesesMeta);
+  const progressoMeta = meta.valorMeta > 0 ? Math.min((valorProjetadoMeta / meta.valorMeta) * 100, 100) : 0;
+  const atingiraMeta = valorProjetadoMeta >= meta.valorMeta;
+  const faltaMeta = Math.max(0, meta.valorMeta - valorProjetadoMeta);
 
   const ferramentas = [
-    { id: 'orcamento', nome: 'Orçamento 50/30/20', icone: Wallet, descricao: 'Regra de distribuição da renda' },
-    { id: 'emergencia', nome: 'Fundo de Emergência', icone: Shield, descricao: 'Planejamento de reserva financeira' },
-    { id: 'aposentadoria', nome: 'Aposentadoria', icone: PiggyBank, descricao: 'Projeções para aposentadoria' },
-    { id: 'metas', nome: 'Metas de Longo Prazo', icone: Target, descricao: 'Objetivos financeiros futuros' },
-    { id: 'fluxo', nome: 'Fluxo de Caixa', icone: BarChart3, descricao: 'Controle de entradas e saídas' }
+    { id: 'orcamento', nome: '50/30/20', icone: Wallet },
+    { id: 'emergencia', nome: 'Emergência', icone: Shield },
+    { id: 'aposentadoria', nome: 'Aposentadoria', icone: PiggyBank },
+    { id: 'metas', nome: 'Metas', icone: Target }
   ];
 
-  const renderizarFerramenta = () => {
-    switch (ferramentaAtiva) {
-      case 'orcamento':
-        return <Regra503020 />;
-
-      case 'emergencia':
-        return (
-          <div className="space-y-6">
-            <div className="card-mobile">
-              <div className="flex items-center space-x-2 mb-4">
-                <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Fundo de Emergência
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Meses de proteção desejada
-                  </label>
-                  <select
-                    value={fundoEmergencia.mesesAlvo}
-                    onChange={(e) => setFundoEmergencia(prev => ({ ...prev, mesesAlvo: Number(e.target.value) }))}
-                    className="input-mobile"
-                  >
-                    <option value={3}>3 meses</option>
-                    <option value={6}>6 meses</option>
-                    <option value={9}>9 meses</option>
-                    <option value={12}>12 meses</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Gastos essenciais mensais
-                  </label>
-                  <input
-                    type="number"
-                    value={fundoEmergencia.gastosEssenciaisMensais}
-                    onChange={(e) => setFundoEmergencia(prev => ({ ...prev, gastosEssenciaisMensais: Number(e.target.value) }))}
-                    className="input-mobile"
-                    placeholder="Ex: 3000"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Valor atual do fundo
-                  </label>
-                  <input
-                    type="number"
-                    value={fundoEmergencia.valorAtual}
-                    onChange={(e) => setFundoEmergencia(prev => ({ ...prev, valorAtual: Number(e.target.value) }))}
-                    className="input-mobile"
-                    placeholder="Ex: 5000"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                    <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">Valor Alvo</p>
-                    <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                      {formatarMoeda(valorAlvoEmergencia)}
-                    </p>
-                  </div>
-
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <p className="text-sm text-green-800 dark:text-green-200 font-medium">Valor Atual</p>
-                    <p className="text-2xl font-bold text-green-900 dark:text-green-100">
-                      {formatarMoeda(fundoEmergencia.valorAtual)}
-                    </p>
-                  </div>
-
-                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                    <p className="text-sm text-purple-800 dark:text-purple-200 font-medium">Progresso</p>
-                    <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                      {progressoEmergencia.toFixed(1)}%
-                    </p>
-                  </div>
-                </div>
-
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
-                  <div
-                    className="bg-blue-600 dark:bg-blue-500 h-4 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min(progressoEmergencia, 100)}%` }}
-                  />
-                </div>
-
-                {mesesRestantesEmergencia > 0 ? (
-                  <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-                      <div>
-                        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                          Ainda faltam {mesesRestantesEmergencia} meses para completar seu fundo
-                        </p>
-                        <p className="text-xs text-amber-600 dark:text-amber-400">
-                          Aporte mensal necessário: {formatarMoeda(fundoEmergencia.gastosEssenciaisMensais)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                      <Shield className="w-5 h-5 text-green-600 dark:text-green-400" />
-                      <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                        🎉 Parabéns! Seu fundo de emergência está completo!
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'aposentadoria':
-        return (
-          <div className="space-y-6">
-            <div className="card-mobile">
-              <div className="flex items-center space-x-2 mb-6">
-                <PiggyBank className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Planejamento de Aposentadoria
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Idade atual
-                  </label>
-                  <input
-                    type="number"
-                    value={aposentadoria.idadeAtual}
-                    onChange={(e) => setAposentadoria(prev => ({ ...prev, idadeAtual: Number(e.target.value) }))}
-                    className="input-mobile"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Idade para aposentar
-                  </label>
-                  <input
-                    type="number"
-                    value={aposentadoria.idadeAposentadoria}
-                    onChange={(e) => setAposentadoria(prev => ({ ...prev, idadeAposentadoria: Number(e.target.value) }))}
-                    className="input-mobile"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Aporte mensal
-                  </label>
-                  <input
-                    type="number"
-                    value={aposentadoria.aporteMensal}
-                    onChange={(e) => setAposentadoria(prev => ({ ...prev, aporteMensal: Number(e.target.value) }))}
-                    className="input-mobile"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Tipo de Rentabilidade
-                  </label>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    <button
-                      type="button"
-                      onClick={() => setAposentadoria(prev => ({ ...prev, tipoTaxa: 'manual' }))}
-                      className={cn(
-                        'p-2 rounded-lg border-2 transition-all text-sm font-medium',
-                        aposentadoria.tipoTaxa === 'manual'
-                          ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
-                      )}
-                    >
-                      Taxa a.a.
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAposentadoria(prev => ({ ...prev, tipoTaxa: 'cdi' }))}
-                      className={cn(
-                        'p-2 rounded-lg border-2 transition-all text-sm font-medium',
-                        aposentadoria.tipoTaxa === 'cdi'
-                          ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-purple-300'
-                      )}
-                    >
-                      % do CDI
-                    </button>
-                  </div>
-
-                  {aposentadoria.tipoTaxa === 'manual' ? (
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="0.1"
-                        value={aposentadoria.taxaJuros || ''}
-                        onChange={(e) => setAposentadoria(prev => ({ ...prev, taxaJuros: Number(e.target.value) || 0 }))}
-                        className="input-mobile pr-16"
-                        placeholder="Ex: 13"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">
-                        % a.a.
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="relative">
-                        <input
-                          type="number"
-                          step="1"
-                          value={aposentadoria.percentualCDI || ''}
-                          onChange={(e) => setAposentadoria(prev => ({ ...prev, percentualCDI: Number(e.target.value) || 0 }))}
-                          className="input-mobile pr-20"
-                          placeholder="Ex: 100, 110, 120"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500 dark:text-gray-400">
-                          % do CDI
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                        <span className="text-xs text-purple-700 dark:text-purple-300">
-                          CDI atual: {CDI_ATUAL}% a.a.
-                        </span>
-                        <span className="text-sm font-semibold text-purple-800 dark:text-purple-200">
-                          = {(CDI_ATUAL * aposentadoria.percentualCDI / 100).toFixed(2)}% a.a.
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Expectativa de vida
-                  </label>
-                  <input
-                    type="number"
-                    value={aposentadoria.expectativaVida}
-                    onChange={(e) => setAposentadoria(prev => ({ ...prev, expectativaVida: Number(e.target.value) }))}
-                    className="input-mobile"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                  <p className="text-sm text-purple-800 dark:text-purple-200 font-medium">Valor acumulado</p>
-                  <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                    {formatarMoeda(valorAposentadoria)}
-                  </p>
-                  <p className="text-xs text-purple-600 dark:text-purple-400">
-                    em {anosContribuicao} anos
-                  </p>
-                </div>
-
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">Renda mensal</p>
-                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                    {formatarMoeda(rendaMensalAposentadoria)}
-                  </p>
-                  <p className="text-xs text-blue-600 dark:text-blue-400">
-                    durante {aposentadoria.expectativaVida - aposentadoria.idadeAposentadoria} anos
-                  </p>
-                </div>
-
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <p className="text-sm text-green-800 dark:text-green-200 font-medium">Total aportado</p>
-                  <p className="text-2xl font-bold text-green-900 dark:text-green-100">
-                    {formatarMoeda(aposentadoria.aporteMensal * mesesContribuicao)}
-                  </p>
-                  <p className="text-xs text-green-600 dark:text-green-400">
-                    {formatarMoeda(aposentadoria.aporteMensal)}/mês
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-
-      case 'metas':
-        return (
-          <div className="space-y-6">
-            <div className="card-mobile">
-              <div className="flex items-center space-x-2 mb-6">
-                <Target className="w-6 h-6 text-green-600 dark:text-green-400" />
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Metas de Longo Prazo
-                </h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Objetivo
-                  </label>
-                  <input
-                    type="text"
-                    value={metaLongoPrazo.objetivo}
-                    onChange={(e) => setMetaLongoPrazo(prev => ({ ...prev, objetivo: e.target.value }))}
-                    className="input-mobile"
-                    placeholder="Ex: Comprar casa própria"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Valor da meta
-                  </label>
-                  <input
-                    type="number"
-                    value={metaLongoPrazo.valorMeta}
-                    onChange={(e) => setMetaLongoPrazo(prev => ({ ...prev, valorMeta: Number(e.target.value) }))}
-                    className="input-mobile"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Valor atual
-                  </label>
-                  <input
-                    type="number"
-                    value={metaLongoPrazo.valorAtual}
-                    onChange={(e) => setMetaLongoPrazo(prev => ({ ...prev, valorAtual: Number(e.target.value) }))}
-                    className="input-mobile"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Prazo (anos)
-                  </label>
-                  <input
-                    type="number"
-                    value={metaLongoPrazo.prazoAnos}
-                    onChange={(e) => setMetaLongoPrazo(prev => ({ ...prev, prazoAnos: Number(e.target.value) }))}
-                    className="input-mobile"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Aporte mensal
-                  </label>
-                  <input
-                    type="number"
-                    value={metaLongoPrazo.aporteMensal}
-                    onChange={(e) => setMetaLongoPrazo(prev => ({ ...prev, aporteMensal: Number(e.target.value) }))}
-                    className="input-mobile"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Taxa esperada (% a.a.)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={metaLongoPrazo.taxaJuros}
-                    onChange={(e) => setMetaLongoPrazo(prev => ({ ...prev, taxaJuros: Number(e.target.value) }))}
-                    className="input-mobile"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <p className="text-sm text-green-800 dark:text-green-200 font-medium">Valor projetado</p>
-                  <p className="text-2xl font-bold text-green-900 dark:text-green-100">
-                    {formatarMoeda(valorProjetadoMeta)}
-                  </p>
-                  <p className="text-xs text-green-600 dark:text-green-400">
-                    em {metaLongoPrazo.prazoAnos} anos
-                  </p>
-                </div>
-
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <p className="text-sm text-blue-800 dark:text-blue-200 font-medium">Valor restante</p>
-                  <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                    {formatarMoeda(Math.max(metaLongoPrazo.valorMeta - valorProjetadoMeta, 0))}
-                  </p>
-                  <p className="text-xs text-blue-600 dark:text-blue-400">
-                    Progresso: {progressoMeta.toFixed(1)}%
-                  </p>
-                </div>
-
-                <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                  <p className="text-sm text-purple-800 dark:text-purple-200 font-medium">Aporte mensal</p>
-                  <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                    {formatarMoeda(metaLongoPrazo.aporteMensal)}
-                  </p>
-                  <p className="text-xs text-purple-600 dark:text-purple-400">
-                    Total aportado: {formatarMoeda(metaLongoPrazo.valorAtual + metaLongoPrazo.aporteMensal * mesesMeta)}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
-                  <div
-                    className={cn(
-                      "h-4 rounded-full transition-all duration-500",
-                      progressoMeta >= 100 ? "bg-green-500" : "bg-blue-500"
-                    )}
-                    style={{ width: `${Math.min(progressoMeta, 100)}%` }}
-                  />
-                </div>
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 text-center">
-                  {progressoMeta >= 100
-                    ? "🎉 Meta atingida!"
-                    : `Faltam ${formatarMoeda(Math.max(metaLongoPrazo.valorMeta - valorProjetadoMeta, 0))} para atingir a meta`
-                  }
-                </p>
-              </div>
-            </div>
-          </div>
-        );
-
-
-      case 'fluxo':
-        return <FluxoCaixa />;
-
-      default:
-        return null;
-    }
-  };
-
   return (
-    <div className="page-container space-y-6">
-      <div className="card-mobile">
-        <div className="flex items-center space-x-2 mb-4">
-          <Calculator className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Planejamento Financeiro
-          </h1>
+    <div className="page-container space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+          <Calculator className="w-5 h-5 text-white" />
         </div>
-
-        {/* Seletor de ferramentas */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          {ferramentas.map((ferramenta) => {
-            const Icon = ferramenta.icone;
-            return (
-              <button
-                key={ferramenta.id}
-                onClick={() => setFerramentaAtiva(ferramenta.id as FerramentaAtiva)}
-                className={cn(
-                  'p-4 rounded-lg border-2 transition-all text-left',
-                  ferramentaAtiva === ferramenta.id
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
-                )}
-              >
-                <Icon className="w-6 h-6 mb-2 text-blue-600 dark:text-blue-400" />
-                <h3 className="font-semibold text-gray-900 dark:text-white mb-1">
-                  {ferramenta.nome}
-                </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {ferramenta.descricao}
-                </p>
-              </button>
-            );
-          })}
+        <div>
+          <h1 className="text-lg font-bold text-gray-900 dark:text-white">Planejamento</h1>
+          <p className="text-xs text-gray-500">Organize suas finanças</p>
         </div>
       </div>
 
-      {/* Conteúdo da ferramenta selecionada */}
-      {renderizarFerramenta()}
+      {/* Abas */}
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+        {ferramentas.map((f) => {
+          const Icon = f.icone;
+          const isActive = ferramentaAtiva === f.id;
+          return (
+            <button
+              key={f.id}
+              onClick={() => setFerramentaAtiva(f.id as FerramentaAtiva)}
+              className={cn(
+                'flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all',
+                isActive
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700'
+                  : 'border-gray-200 dark:border-gray-700 text-gray-500'
+              )}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{f.nome}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ========== ORÇAMENTO 50/30/20 ========== */}
+      {ferramentaAtiva === 'orcamento' && <Regra503020 />}
+
+      {/* ========== FUNDO DE EMERGÊNCIA ========== */}
+      {ferramentaAtiva === 'emergencia' && (
+        <div className="space-y-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                <Shield className="w-4 h-4 text-blue-600" />
+              </div>
+              <h3 className="font-bold text-gray-900 dark:text-white">Fundo de Emergência</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Meses de proteção</label>
+                <select
+                  value={fundoEmergencia.mesesAlvo}
+                  onChange={(e) => setFundoEmergencia(p => ({ ...p, mesesAlvo: Number(e.target.value) }))}
+                  className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                >
+                  <option value={3}>3 meses</option>
+                  <option value={6}>6 meses (recomendado)</option>
+                  <option value={9}>9 meses</option>
+                  <option value={12}>12 meses</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Renda mensal</label>
+                <input
+                  type="number"
+                  value={fundoEmergencia.rendaMensal}
+                  onChange={(e) => setFundoEmergencia(p => ({ ...p, rendaMensal: Number(e.target.value) }))}
+                  className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Gastos essenciais/mês</label>
+                <input
+                  type="number"
+                  value={fundoEmergencia.gastosEssenciais}
+                  onChange={(e) => setFundoEmergencia(p => ({ ...p, gastosEssenciais: Number(e.target.value) }))}
+                  className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Valor atual do fundo</label>
+                <input
+                  type="number"
+                  value={fundoEmergencia.valorAtual}
+                  onChange={(e) => setFundoEmergencia(p => ({ ...p, valorAtual: Number(e.target.value) }))}
+                  className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                />
+              </div>
+            </div>
+
+            {/* Resultado Emergência */}
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
+                <p className="text-[10px] text-blue-600">Meta</p>
+                <p className="text-sm font-bold text-blue-700">{formatarMoeda(valorAlvoEmergencia)}</p>
+              </div>
+              <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
+                <p className="text-[10px] text-green-600">Atual</p>
+                <p className="text-sm font-bold text-green-700">{formatarMoeda(fundoEmergencia.valorAtual)}</p>
+              </div>
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-center">
+                <p className="text-[10px] text-amber-600">Falta</p>
+                <p className="text-sm font-bold text-amber-700">{formatarMoeda(Math.max(0, valorAlvoEmergencia - fundoEmergencia.valorAtual))}</p>
+              </div>
+            </div>
+
+            {/* Barra de Progresso */}
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-4 text-white">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium">Progresso</span>
+                <span className="font-bold">{progressoEmergencia.toFixed(0)}%</span>
+              </div>
+              <div className="w-full bg-white/30 rounded-full h-3 mb-3">
+                <div
+                  className="bg-white h-3 rounded-full transition-all"
+                  style={{ width: `${progressoEmergencia}%` }}
+                />
+              </div>
+
+              {progressoEmergencia >= 100 ? (
+                <div className="flex items-center gap-2 text-sm">
+                  <Check className="w-4 h-4" />
+                  <span>🎉 Parabéns! Seu fundo está completo!</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 text-center text-xs">
+                  <div className="bg-white/20 rounded-lg p-2">
+                    <p className="opacity-80">Meses restantes</p>
+                    <p className="font-bold">{mesesRestantesEmergencia}</p>
+                  </div>
+                  <div className="bg-white/20 rounded-lg p-2">
+                    <p className="opacity-80">Aporte sugerido/mês</p>
+                    <p className="font-bold">{formatarMoeda(aporteNecessarioEmergencia)}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Dicas */}
+          <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 flex items-start gap-2">
+            <Info className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="text-xs text-amber-700 dark:text-amber-300">
+              <p className="font-medium mb-1">💡 Dicas para seu fundo:</p>
+              <ul className="space-y-1 list-disc list-inside">
+                <li>Mantenha em investimentos de alta liquidez (CDB liquidez diária, Tesouro Selic)</li>
+                <li>Nunca use para gastos não emergenciais</li>
+                <li>Reponha imediatamente após uso</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========== APOSENTADORIA ========== */}
+      {ferramentaAtiva === 'aposentadoria' && (
+        <div className="space-y-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                <PiggyBank className="w-4 h-4 text-purple-600" />
+              </div>
+              <h3 className="font-bold text-gray-900 dark:text-white">Aposentadoria</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Idade atual</label>
+                <input
+                  type="number"
+                  value={aposentadoria.idadeAtual}
+                  onChange={(e) => setAposentadoria(p => ({ ...p, idadeAtual: Number(e.target.value) }))}
+                  className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Aposentar aos</label>
+                <input
+                  type="number"
+                  value={aposentadoria.idadeAposentadoria}
+                  onChange={(e) => setAposentadoria(p => ({ ...p, idadeAposentadoria: Number(e.target.value) }))}
+                  className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Renda atual</label>
+                <input
+                  type="number"
+                  value={aposentadoria.rendaAtual}
+                  onChange={(e) => setAposentadoria(p => ({ ...p, rendaAtual: Number(e.target.value) }))}
+                  className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Aporte mensal</label>
+                <input
+                  type="number"
+                  value={aposentadoria.aporteMensal}
+                  onChange={(e) => setAposentadoria(p => ({ ...p, aporteMensal: Number(e.target.value) }))}
+                  className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                />
+              </div>
+            </div>
+
+            {/* Tipo de Taxa */}
+            <div className="mb-4">
+              <label className="block text-[10px] text-gray-500 mb-2">Rentabilidade</label>
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <button
+                  onClick={() => setAposentadoria(p => ({ ...p, tipoTaxa: 'manual' }))}
+                  className={cn(
+                    'p-2 rounded-lg border-2 text-xs font-medium transition-all',
+                    aposentadoria.tipoTaxa === 'manual'
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-gray-200 text-gray-500'
+                  )}
+                >
+                  Taxa Manual
+                </button>
+                <button
+                  onClick={() => setAposentadoria(p => ({ ...p, tipoTaxa: 'cdi' }))}
+                  className={cn(
+                    'p-2 rounded-lg border-2 text-xs font-medium transition-all',
+                    aposentadoria.tipoTaxa === 'cdi'
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-gray-200 text-gray-500'
+                  )}
+                >
+                  % do CDI ({CDI_ATUAL}%)
+                </button>
+              </div>
+
+              {aposentadoria.tipoTaxa === 'manual' ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={aposentadoria.taxaJuros}
+                    onChange={(e) => setAposentadoria(p => ({ ...p, taxaJuros: Number(e.target.value) }))}
+                    className="flex-1 px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                  />
+                  <span className="text-sm text-gray-500">% a.a.</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={aposentadoria.percentualCDI}
+                    onChange={(e) => setAposentadoria(p => ({ ...p, percentualCDI: Number(e.target.value) }))}
+                    className="flex-1 px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                  />
+                  <span className="text-sm text-gray-500">% CDI = {taxaEfetiva.toFixed(2)}% a.a.</span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-[10px] text-gray-500 mb-1">Expectativa de vida</label>
+              <input
+                type="number"
+                value={aposentadoria.expectativaVida}
+                onChange={(e) => setAposentadoria(p => ({ ...p, expectativaVida: Number(e.target.value) }))}
+                className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+              />
+            </div>
+          </div>
+
+          {/* Resultado Aposentadoria */}
+          <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-4 text-white">
+            <p className="text-sm opacity-80 mb-1">Patrimônio aos {aposentadoria.idadeAposentadoria} anos</p>
+            <p className="text-3xl font-bold mb-4">{formatarMoeda(valorAposentadoria)}</p>
+
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <div className="bg-white/20 rounded-lg p-2 text-center">
+                <p className="text-[10px] opacity-80">Anos contribuindo</p>
+                <p className="font-bold">{anosContribuicao}</p>
+              </div>
+              <div className="bg-white/20 rounded-lg p-2 text-center">
+                <p className="text-[10px] opacity-80">Total aportado</p>
+                <p className="font-bold">{formatarMoeda(totalAportado)}</p>
+              </div>
+              <div className="bg-white/20 rounded-lg p-2 text-center">
+                <p className="text-[10px] opacity-80">Juros ganhos</p>
+                <p className="font-bold">{formatarMoeda(jurosGanhos)}</p>
+              </div>
+              <div className="bg-white/20 rounded-lg p-2 text-center">
+                <p className="text-[10px] opacity-80">Renda mensal</p>
+                <p className="font-bold">{formatarMoeda(rendaMensalAposentadoria)}</p>
+              </div>
+            </div>
+
+            <div className="text-xs opacity-80">
+              Durante {aposentadoria.expectativaVida - aposentadoria.idadeAposentadoria} anos de aposentadoria
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========== METAS ========== */}
+      {ferramentaAtiva === 'metas' && (
+        <div className="space-y-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <Target className="w-4 h-4 text-green-600" />
+              </div>
+              <h3 className="font-bold text-gray-900 dark:text-white">Metas de Longo Prazo</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div className="col-span-2">
+                <label className="block text-[10px] text-gray-500 mb-1">Nome da meta</label>
+                <input
+                  type="text"
+                  value={meta.nome}
+                  onChange={(e) => setMeta(p => ({ ...p, nome: e.target.value }))}
+                  className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                  placeholder="Ex: Casa própria, Carro, Viagem..."
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Valor da meta</label>
+                <input
+                  type="number"
+                  value={meta.valorMeta}
+                  onChange={(e) => setMeta(p => ({ ...p, valorMeta: Number(e.target.value) }))}
+                  className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Já tenho</label>
+                <input
+                  type="number"
+                  value={meta.valorAtual}
+                  onChange={(e) => setMeta(p => ({ ...p, valorAtual: Number(e.target.value) }))}
+                  className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Prazo (anos)</label>
+                <input
+                  type="number"
+                  value={meta.prazoAnos}
+                  onChange={(e) => setMeta(p => ({ ...p, prazoAnos: Number(e.target.value) }))}
+                  className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] text-gray-500 mb-1">Aporte mensal</label>
+                <input
+                  type="number"
+                  value={meta.aporteMensal}
+                  onChange={(e) => setMeta(p => ({ ...p, aporteMensal: Number(e.target.value) }))}
+                  className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-[10px] text-gray-500 mb-1">Taxa de rendimento (% a.a.)</label>
+                <input
+                  type="number"
+                  value={meta.taxaJuros}
+                  onChange={(e) => setMeta(p => ({ ...p, taxaJuros: Number(e.target.value) }))}
+                  className="w-full px-2 py-2 border rounded-lg text-sm bg-gray-50 dark:bg-gray-700"
+                />
+              </div>
+            </div>
+
+            {/* Resultado Metas */}
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
+                <p className="text-[10px] text-green-600">Meta</p>
+                <p className="text-sm font-bold text-green-700">{formatarMoeda(meta.valorMeta)}</p>
+              </div>
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
+                <p className="text-[10px] text-blue-600">Projetado</p>
+                <p className="text-sm font-bold text-blue-700">{formatarMoeda(valorProjetadoMeta)}</p>
+              </div>
+              <div className={cn(
+                "p-3 rounded-lg text-center",
+                atingiraMeta ? "bg-green-50" : "bg-amber-50"
+              )}>
+                <p className={cn("text-[10px]", atingiraMeta ? "text-green-600" : "text-amber-600")}>
+                  {atingiraMeta ? "Sobra" : "Falta"}
+                </p>
+                <p className={cn("text-sm font-bold", atingiraMeta ? "text-green-700" : "text-amber-700")}>
+                  {atingiraMeta ? formatarMoeda(valorProjetadoMeta - meta.valorMeta) : formatarMoeda(faltaMeta)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Barra de Progresso Meta */}
+          <div className={cn(
+            "rounded-xl p-4 text-white",
+            atingiraMeta
+              ? "bg-gradient-to-r from-green-500 to-emerald-600"
+              : "bg-gradient-to-r from-amber-500 to-orange-600"
+          )}>
+            <p className="text-sm font-medium mb-1">{meta.nome}</p>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-xs opacity-80">{formatarMoeda(meta.valorAtual)} → {formatarMoeda(valorProjetadoMeta)}</span>
+              <span className="font-bold">{Math.min(progressoMeta, 100).toFixed(0)}%</span>
+            </div>
+            <div className="w-full bg-white/30 rounded-full h-3 mb-3">
+              <div
+                className="bg-white h-3 rounded-full transition-all"
+                style={{ width: `${Math.min(progressoMeta, 100)}%` }}
+              />
+            </div>
+
+            {atingiraMeta ? (
+              <div className="flex items-center gap-2 text-sm">
+                <Check className="w-4 h-4" />
+                <span>🎉 Você atingirá sua meta em {meta.prazoAnos} anos!</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 text-sm">
+                <AlertCircle className="w-4 h-4" />
+                <span>Aumente seu aporte para atingir a meta</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
