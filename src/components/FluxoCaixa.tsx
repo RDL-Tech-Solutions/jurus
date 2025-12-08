@@ -22,7 +22,8 @@ import {
     Wallet,
     FileDown,
     FileSpreadsheet,
-    Printer
+    Printer,
+    Settings
 } from 'lucide-react';
 import {
     BarChart,
@@ -40,13 +41,16 @@ import {
     Cell
 } from 'recharts';
 import { useFluxoCaixa } from '../hooks/useFluxoCaixa';
+import { useDividas } from '../hooks/useDividas';
+import { useCartaoCredito } from '../hooks/useCartaoCredito';
+import { useMetas } from '../hooks/useMetas';
+import { useRecorrentes } from '../hooks/useRecorrentes';
 import { useToast } from '../hooks/useToast';
 import { useModal } from '../hooks/useModal';
 import { ToastContainer } from './Toast';
 import { ListaDividas } from './ListaDividas';
 import { GerenciadorCartao } from './GerenciadorCartao';
-import { AnalisesFluxo } from './AnalisesFluxo';
-import { NovaTransacao, TipoTransacao, PeriodoFiltro, EstatisticasFluxo } from '../types/fluxoCaixa';
+import { NovaTransacao, TipoTransacao, PeriodoFiltro, EstatisticasFluxo, DashboardConfig, DASHBOARD_CONFIG_PADRAO } from '../types/fluxoCaixa';
 import { formatarMoeda } from '../utils/calculos';
 import { exportarCSV, exportarJSON, imprimirPDF } from '../utils/exportar';
 import { cn } from '../utils/cn';
@@ -60,7 +64,16 @@ import {
     CardRunway,
     CardBreakEven,
     CardMaiorGasto,
-    CardAlertas
+    CardAlertas,
+    CardPrevisaoMes,
+    CardEconomiaMensal,
+    CardResumoDividas,
+    CardResumoCartoes,
+    CardMetas,
+    ModalMeta,
+    ListaRecorrentes,
+    ModalRecorrente,
+    ModalConfigDashboard
 } from './FluxoCaixa/index';
 
 // Modal de Adicionar/Editar Transação
@@ -434,6 +447,36 @@ export function FluxoCaixa() {
         limparFiltros
     } = useFluxoCaixa();
 
+    // Hooks para Dívidas e Cartões
+    const {
+        dividasPendentes,
+        estatisticas: estatisticasDividas,
+        marcarComoPago: marcarDividaComoPago
+    } = useDividas();
+
+    const {
+        cartoes,
+        estatisticas: estatisticasCartoes,
+        obterFaturaAtual,
+        pagarFatura
+    } = useCartaoCredito();
+
+    // Hooks para Metas e Recorrentes
+    const {
+        metas,
+        adicionarMeta,
+        editarMeta,
+        excluirMeta
+    } = useMetas();
+
+    const {
+        recorrentes,
+        adicionarRecorrente,
+        editarRecorrente,
+        excluirRecorrente,
+        toggleAtiva
+    } = useRecorrentes();
+
     const [modalAberto, setModalAberto] = useState(false);
     const [modalEdicao, setModalEdicao] = useState<{ aberto: boolean; id: string; dados?: Partial<NovaTransacao> }>({
         aberto: false,
@@ -445,9 +488,66 @@ export function FluxoCaixa() {
         descricao: ''
     });
     const [mostrarFiltros, setMostrarFiltros] = useState(false);
-    const [abaAtiva, setAbaAtiva] = useState<'transacoes' | 'dividas' | 'cartoes' | 'analises'>('transacoes');
+    const [abaAtiva, setAbaAtiva] = useState<'transacoes' | 'dividas' | 'cartoes'>('transacoes');
     const [mostrarMenuExportar, setMostrarMenuExportar] = useState(false);
+    const [modalMeta, setModalMeta] = useState<{ aberto: boolean; meta?: any }>({ aberto: false });
+    const [modalRecorrente, setModalRecorrente] = useState<{ aberto: boolean; recorrente?: any }>({ aberto: false });
+    const [modalConfigDashboard, setModalConfigDashboard] = useState(false);
+    const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig>(() => {
+        const saved = localStorage.getItem('jurus_dashboard_config');
+        return saved ? JSON.parse(saved) : DASHBOARD_CONFIG_PADRAO;
+    });
     const { success, error, toasts, removeToast } = useToast();
+
+    // Funções para controlar visibilidade dos cards
+    const handleToggleInsight = (key: keyof DashboardConfig['insights']) => {
+        setDashboardConfig(prev => {
+            const newConfig = { ...prev, insights: { ...prev.insights, [key]: !prev.insights[key] } };
+            localStorage.setItem('jurus_dashboard_config', JSON.stringify(newConfig));
+            return newConfig;
+        });
+    };
+
+    const handleToggleAnalytic = (key: keyof DashboardConfig['analytics']) => {
+        setDashboardConfig(prev => {
+            const newConfig = { ...prev, analytics: { ...prev.analytics, [key]: !prev.analytics[key] } };
+            localStorage.setItem('jurus_dashboard_config', JSON.stringify(newConfig));
+            return newConfig;
+        });
+    };
+
+    const handleToggleGrafico = (key: keyof DashboardConfig['graficos']) => {
+        setDashboardConfig(prev => {
+            const newConfig = { ...prev, graficos: { ...prev.graficos, [key]: !prev.graficos[key] } };
+            localStorage.setItem('jurus_dashboard_config', JSON.stringify(newConfig));
+            return newConfig;
+        });
+    };
+
+    const handleRestaurarPadrao = () => {
+        setDashboardConfig(DASHBOARD_CONFIG_PADRAO);
+        localStorage.setItem('jurus_dashboard_config', JSON.stringify(DASHBOARD_CONFIG_PADRAO));
+    };
+
+    const handleMostrarTodos = () => {
+        const allTrue: DashboardConfig = {
+            insights: { tendencia: true, mediaDiaria: true, comparativo: true },
+            analytics: { runway: true, breakEven: true, maiorGasto: true, alertas: true, topCategorias: true },
+            graficos: { barrasComparativo: true, pizza: true, evolucao: true }
+        };
+        setDashboardConfig(allTrue);
+        localStorage.setItem('jurus_dashboard_config', JSON.stringify(allTrue));
+    };
+
+    const handleOcultarTodos = () => {
+        const allFalse: DashboardConfig = {
+            insights: { tendencia: false, mediaDiaria: false, comparativo: false },
+            analytics: { runway: false, breakEven: false, maiorGasto: false, alertas: false, topCategorias: false },
+            graficos: { barrasComparativo: false, pizza: false, evolucao: false }
+        };
+        setDashboardConfig(allFalse);
+        localStorage.setItem('jurus_dashboard_config', JSON.stringify(allFalse));
+    };
 
     const periodos: { valor: PeriodoFiltro; label: string }[] = [
         { valor: 'hoje', label: 'Hoje' },
@@ -746,16 +846,11 @@ export function FluxoCaixa() {
                         <span>Cartões</span>
                     </button>
                     <button
-                        onClick={() => setAbaAtiva('analises')}
-                        className={cn(
-                            'flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all',
-                            abaAtiva === 'analises'
-                                ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700'
-                                : 'border-gray-200 dark:border-gray-700 text-gray-500'
-                        )}
+                        onClick={() => setModalConfigDashboard(true)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
+                        title="Configurar cards visíveis"
                     >
-                        <BarChart3 className="w-4 h-4" />
-                        <span>Análises</span>
+                        <Settings className="w-4 h-4" />
                     </button>
                 </div>
             </div>
@@ -789,15 +884,6 @@ export function FluxoCaixa() {
                                 data: new Date().toISOString().split('T')[0]
                             });
                         }}
-                    />
-                </div>
-            )}
-
-            {abaAtiva === 'analises' && (
-                <div className="card-mobile">
-                    <AnalisesFluxo
-                        transacoes={transacoesAgrupadas.flatMap(g => g.transacoes)}
-                        estatisticas={estatisticas}
                     />
                 </div>
             )}
@@ -846,6 +932,89 @@ export function FluxoCaixa() {
                                 {formatarMoeda(estatisticas.saldo)}
                             </p>
                         </div>
+                    </div>
+
+                    {/* Cards de Previsão e Economia */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+                        <CardPrevisaoMes
+                            saldoAtual={estatisticas.saldo}
+                            transacoes={transacoesAgrupadas.flatMap(g => g.transacoes).map(t => ({
+                                data: t.data,
+                                tipo: t.tipo,
+                                valor: t.valor
+                            }))}
+                            recorrentes={[]}
+                        />
+                        <CardEconomiaMensal
+                            receitasConsideradas={estatisticas.totalEntradas}
+                            despesasConsideradas={estatisticas.totalSaidas}
+                            transacoesEntrada={transacoesAgrupadas.flatMap(g => g.transacoes).filter(t => t.tipo === 'entrada')}
+                            transacoesSaida={transacoesAgrupadas.flatMap(g => g.transacoes).filter(t => t.tipo === 'saida')}
+                            categorias={categorias}
+                            onEditarTransacao={(id, dados) => editarTransacao(id, dados)}
+                            onExcluirTransacao={excluirTransacao}
+                        />
+                    </div>
+
+                    {/* Cards de Dívidas e Cartões */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+                        <CardResumoDividas
+                            estatisticas={estatisticasDividas}
+                            dividasPendentes={dividasPendentes}
+                            onPagarDivida={(valor, descricao) => {
+                                adicionarTransacao({
+                                    descricao,
+                                    valor,
+                                    tipo: 'saida',
+                                    categoriaId: 'contas',
+                                    data: new Date().toISOString().split('T')[0]
+                                });
+                            }}
+                            onMarcarComoPago={marcarDividaComoPago}
+                            onVerTodas={() => setAbaAtiva('dividas')}
+                        />
+                        <CardResumoCartoes
+                            cartoes={cartoes}
+                            estatisticas={estatisticasCartoes}
+                            obterFaturaAtual={obterFaturaAtual}
+                            onPagarFatura={pagarFatura}
+                            onRegistrarPagamento={(valor, descricao) => {
+                                adicionarTransacao({
+                                    descricao,
+                                    valor,
+                                    tipo: 'saida',
+                                    categoriaId: 'contas',
+                                    data: new Date().toISOString().split('T')[0]
+                                });
+                            }}
+                            onVerDetalhes={() => setAbaAtiva('cartoes')}
+                        />
+                    </div>
+
+                    {/* Cards de Metas e Recorrentes */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+                        <CardMetas
+                            metas={metas}
+                            gastosPorCategoria={
+                                Object.entries(
+                                    transacoesAgrupadas.flatMap(g => g.transacoes)
+                                        .filter(t => t.tipo === 'saida')
+                                        .reduce((acc, t) => {
+                                            acc[t.categoriaId] = (acc[t.categoriaId] || 0) + t.valor;
+                                            return acc;
+                                        }, {} as Record<string, number>)
+                                ).map(([categoriaId, total]) => ({ categoriaId, total }))
+                            }
+                            onNovaMeta={() => setModalMeta({ aberto: true })}
+                            onEditarMeta={(meta) => setModalMeta({ aberto: true, meta })}
+                        />
+                        <ListaRecorrentes
+                            recorrentes={recorrentes}
+                            onNovaRecorrente={() => setModalRecorrente({ aberto: true })}
+                            onEditarRecorrente={(rec) => setModalRecorrente({ aberto: true, recorrente: rec })}
+                            onExcluirRecorrente={excluirRecorrente}
+                            onToggleAtiva={toggleAtiva}
+                        />
                     </div>
 
                     {/* Filtros - Compacto */}
@@ -1170,6 +1339,48 @@ export function FluxoCaixa() {
                     />
                 </>
             )}
+
+            {/* Modais de Metas e Recorrentes */}
+            <ModalMeta
+                aberto={modalMeta.aberto}
+                onFechar={() => setModalMeta({ aberto: false })}
+                onSalvar={(dados) => {
+                    if (modalMeta.meta) {
+                        editarMeta(modalMeta.meta.id, dados);
+                    } else {
+                        adicionarMeta(dados);
+                    }
+                    setModalMeta({ aberto: false });
+                }}
+                metaInicial={modalMeta.meta}
+                categoriasUsadas={metas.map(m => m.categoriaId)}
+            />
+            <ModalRecorrente
+                aberto={modalRecorrente.aberto}
+                onFechar={() => setModalRecorrente({ aberto: false })}
+                onSalvar={(dados) => {
+                    if (modalRecorrente.recorrente) {
+                        editarRecorrente(modalRecorrente.recorrente.id, dados);
+                    } else {
+                        adicionarRecorrente(dados);
+                    }
+                    setModalRecorrente({ aberto: false });
+                }}
+                recorrenteInicial={modalRecorrente.recorrente}
+            />
+
+            {/* Modal de Configuração do Dashboard */}
+            <ModalConfigDashboard
+                aberto={modalConfigDashboard}
+                onFechar={() => setModalConfigDashboard(false)}
+                config={dashboardConfig}
+                onToggleInsight={handleToggleInsight}
+                onToggleAnalytic={handleToggleAnalytic}
+                onToggleGrafico={handleToggleGrafico}
+                onRestaurarPadrao={handleRestaurarPadrao}
+                onMostrarTodos={handleMostrarTodos}
+                onOcultarTodos={handleOcultarTodos}
+            />
 
             {/* Toast Container */}
             <ToastContainer toasts={toasts} onClose={removeToast} />

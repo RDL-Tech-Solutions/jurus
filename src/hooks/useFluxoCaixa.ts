@@ -8,6 +8,7 @@ import {
     CATEGORIAS_PADRAO,
     FILTROS_PADRAO
 } from '../types/fluxoCaixa';
+import { formatarData } from '../utils/calculos';
 
 const STORAGE_KEY = 'jurus_fluxo_caixa';
 
@@ -253,7 +254,7 @@ export function useFluxoCaixa() {
         const grupos: Record<string, Transacao[]> = {};
 
         transacoesFiltradas.forEach(t => {
-            const dataFormatada = new Date(t.data).toLocaleDateString('pt-BR');
+            const dataFormatada = formatarData(t.data.split('T')[0]);
             if (!grupos[dataFormatada]) {
                 grupos[dataFormatada] = [];
             }
@@ -322,7 +323,7 @@ export function useFluxoCaixa() {
         // Evolução do saldo
         const evolucaoSaldo: EstatisticasFluxo['evolucaoSaldo'] = [];
         const datasOrdenadas = [...new Set(transacoesFiltradas.map(t =>
-            new Date(t.data).toLocaleDateString('pt-BR')
+            formatarData(t.data.split('T')[0])
         ))].sort((a, b) => {
             const [diaA, mesA, anoA] = a.split('/').map(Number);
             const [diaB, mesB, anoB] = b.split('/').map(Number);
@@ -332,7 +333,7 @@ export function useFluxoCaixa() {
         let saldoAcumulado = 0;
         datasOrdenadas.forEach(data => {
             const transacoesDia = transacoesFiltradas.filter(t =>
-                new Date(t.data).toLocaleDateString('pt-BR') === data
+                formatarData(t.data.split('T')[0]) === data
             );
             const entradasDia = transacoesDia.filter(t => t.tipo === 'entrada').reduce((acc, t) => acc + t.valor, 0);
             const saidasDia = transacoesDia.filter(t => t.tipo === 'saida').reduce((acc, t) => acc + t.valor, 0);

@@ -171,6 +171,15 @@ export function useCartaoCredito() {
         }
     }, [gastos]);
 
+    // Editar gasto
+    const editarGasto = useCallback((id: string, dados: { descricao?: string; valor?: number }) => {
+        setGastos(prev => prev.map(g =>
+            g.id === id
+                ? { ...g, ...dados }
+                : g
+        ));
+    }, []);
+
     // Obter cartão por ID
     const obterCartao = useCallback((id: string) => {
         return cartoes.find(c => c.id === id);
@@ -274,6 +283,7 @@ export function useCartaoCredito() {
         obterCartao,
         // CRUD Gastos
         adicionarGasto,
+        editarGasto,
         excluirGasto,
         // Faturas
         calcularFatura,

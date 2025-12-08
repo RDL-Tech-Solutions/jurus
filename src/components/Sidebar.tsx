@@ -1,4 +1,4 @@
-import { X, Calculator, Target, History, Settings, TrendingUp, Wallet, BarChart3 } from 'lucide-react';
+import { X, Calculator, History, Settings, TrendingUp, Wallet, BarChart3 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppStore } from '../store/useAppStore';
 
@@ -14,7 +14,6 @@ const navItems: NavItem[] = [
   { id: 'comparacao', label: 'Comparação', icon: TrendingUp, path: '/comparacao' },
   { id: 'planejamento', label: 'Planejamento', icon: Wallet, path: '/planejamento' },
   { id: 'fluxo', label: 'Fluxo de Caixa', icon: BarChart3, path: '/fluxo' },
-  { id: 'metas', label: 'Metas Financeiras', icon: Target, path: '/metas' },
   { id: 'historico', label: 'Histórico', icon: History, path: '/historico' },
   { id: 'config', label: 'Configurações', icon: Settings, path: '/configuracoes' },
 ];

@@ -154,8 +154,15 @@ function ModalCartao({ aberto, onFechar, onSalvar, cartaoInicial, titulo }: Moda
                                 type="number"
                                 min="1"
                                 max="31"
-                                value={dados.diaFechamento || ''}
-                                onChange={(e) => setDados(prev => ({ ...prev, diaFechamento: Number(e.target.value) || 1 }))}
+                                value={dados.diaFechamento ?? 1}
+                                onChange={(e) => {
+                                    const val = parseInt(e.target.value, 10);
+                                    if (!isNaN(val) && val >= 1 && val <= 31) {
+                                        setDados(prev => ({ ...prev, diaFechamento: val }));
+                                    } else if (e.target.value === '') {
+                                        setDados(prev => ({ ...prev, diaFechamento: 1 }));
+                                    }
+                                }}
                                 className="input-mobile"
                             />
                         </div>
@@ -165,8 +172,15 @@ function ModalCartao({ aberto, onFechar, onSalvar, cartaoInicial, titulo }: Moda
                                 type="number"
                                 min="1"
                                 max="31"
-                                value={dados.diaVencimento || ''}
-                                onChange={(e) => setDados(prev => ({ ...prev, diaVencimento: Number(e.target.value) || 10 }))}
+                                value={dados.diaVencimento ?? 10}
+                                onChange={(e) => {
+                                    const val = parseInt(e.target.value, 10);
+                                    if (!isNaN(val) && val >= 1 && val <= 31) {
+                                        setDados(prev => ({ ...prev, diaVencimento: val }));
+                                    } else if (e.target.value === '') {
+                                        setDados(prev => ({ ...prev, diaVencimento: 10 }));
+                                    }
+                                }}
                                 className="input-mobile"
                             />
                         </div>
@@ -436,7 +450,9 @@ export function GerenciadorCartao({ onPagarFatura }: GerenciadorCartaoProps) {
         editarCartao,
         excluirCartao,
         adicionarGasto,
-        obterFaturaAtual,
+        editarGasto,
+        excluirGasto,
+        calcularFatura,
         pagarFatura,
         calcularLimiteUsado
     } = useCartaoCredito();
@@ -448,16 +464,47 @@ export function GerenciadorCartao({ onPagarFatura }: GerenciadorCartaoProps) {
     const [modalPagamento, setModalPagamento] = useState<{ aberto: boolean; cartaoId: string; valor: number; nome: string }>({
         aberto: false, cartaoId: '', valor: 0, nome: ''
     });
+    const [mesFatura, setMesFatura] = useState(new Date().getMonth());
+    const [anoFatura, setAnoFatura] = useState(new Date().getFullYear());
+    const [gastoEditando, setGastoEditando] = useState<{ id: string; descricao: string; valor: number } | null>(null);
 
     const cartaoAtivo = useMemo(() => {
         if (!cartaoSelecionado) return null;
         return cartoes.find(c => c.id === cartaoSelecionado);
     }, [cartaoSelecionado, cartoes]);
 
-    const faturaAtual = useMemo(() => {
+    const faturaExibida = useMemo(() => {
         if (!cartaoSelecionado) return null;
-        return obterFaturaAtual(cartaoSelecionado);
-    }, [cartaoSelecionado, obterFaturaAtual]);
+        return calcularFatura(cartaoSelecionado, mesFatura, anoFatura);
+    }, [cartaoSelecionado, mesFatura, anoFatura, calcularFatura]);
+
+    const mesAtual = new Date().getMonth();
+    const anoAtual = new Date().getFullYear();
+    const isFaturaAtual = mesFatura === mesAtual && anoFatura === anoAtual;
+
+    const navegarMes = (direcao: 'anterior' | 'proximo') => {
+        if (direcao === 'anterior') {
+            if (mesFatura === 0) {
+                setMesFatura(11);
+                setAnoFatura(prev => prev - 1);
+            } else {
+                setMesFatura(prev => prev - 1);
+            }
+        } else {
+            if (mesFatura === 11) {
+                setMesFatura(0);
+                setAnoFatura(prev => prev + 1);
+            } else {
+                setMesFatura(prev => prev + 1);
+            }
+        }
+    };
+
+    const nomeMes = (mes: number) => {
+        const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+            'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        return meses[mes];
+    };
 
     const handlePagarFatura = () => {
         if (modalPagamento.cartaoId) {
@@ -495,6 +542,47 @@ export function GerenciadorCartao({ onPagarFatura }: GerenciadorCartaoProps) {
                     <span>Novo Cartão</span>
                 </button>
             </div>
+
+            {/* Resumo Geral dos Cartões */}
+            {cartoes.length > 0 && (
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                        <p className="text-[10px] text-blue-600 font-medium">Total Faturas</p>
+                        <p className="text-sm font-bold text-blue-700 dark:text-blue-400">
+                            {formatarMoeda(estatisticas.totalFaturas)}
+                        </p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800">
+                        <p className="text-[10px] text-purple-600 font-medium">Limite Total</p>
+                        <p className="text-sm font-bold text-purple-700 dark:text-purple-400">
+                            {formatarMoeda(estatisticas.totalLimite)}
+                        </p>
+                    </div>
+                    <div className={cn(
+                        "p-3 rounded-xl border",
+                        estatisticas.totalLimite > 0 && (estatisticas.totalUsado / estatisticas.totalLimite) > 0.8
+                            ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
+                            : "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800"
+                    )}>
+                        <p className={cn(
+                            "text-[10px] font-medium",
+                            estatisticas.totalLimite > 0 && (estatisticas.totalUsado / estatisticas.totalLimite) > 0.8
+                                ? "text-red-600"
+                                : "text-green-600"
+                        )}>Uso do Limite</p>
+                        <p className={cn(
+                            "text-sm font-bold",
+                            estatisticas.totalLimite > 0 && (estatisticas.totalUsado / estatisticas.totalLimite) > 0.8
+                                ? "text-red-700 dark:text-red-400"
+                                : "text-green-700 dark:text-green-400"
+                        )}>
+                            {estatisticas.totalLimite > 0
+                                ? `${Math.round((estatisticas.totalUsado / estatisticas.totalLimite) * 100)}%`
+                                : '0%'}
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Lista de Cartões */}
             {cartoes.length === 0 ? (
@@ -555,45 +643,130 @@ export function GerenciadorCartao({ onPagarFatura }: GerenciadorCartaoProps) {
             )}
 
             {/* Detalhes do Cartão Selecionado */}
-            {cartaoAtivo && faturaAtual && (
+            {cartaoAtivo && faturaExibida && (
                 <div className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 space-y-4">
+                    {/* Navegação de Meses */}
                     <div className="flex items-center justify-between">
-                        <div>
-                            <h4 className="font-semibold text-gray-900 dark:text-white">Fatura Atual - {cartaoAtivo.nome}</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Fecha: {formatarData(faturaAtual.dataFechamento)} | Vence: {formatarData(faturaAtual.dataVencimento)}
+                        <button
+                            onClick={() => navegarMes('anterior')}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                            <ChevronRight className="w-5 h-5 text-gray-500 rotate-180" />
+                        </button>
+                        <div className="text-center">
+                            <h4 className="font-semibold text-gray-900 dark:text-white">
+                                {nomeMes(mesFatura)} {anoFatura}
+                            </h4>
+                            <p className="text-xs text-gray-500">
+                                {isFaturaAtual ? 'Fatura Atual' : 'Fatura Anterior'}
                             </p>
                         </div>
                         <button
-                            onClick={() => setModalGasto({ aberto: true, cartaoId: cartaoAtivo.id })}
-                            className="px-3 py-1.5 rounded-lg bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 text-sm font-medium"
+                            onClick={() => navegarMes('proximo')}
+                            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
-                            + Gasto
+                            <ChevronRight className="w-5 h-5 text-gray-500" />
                         </button>
                     </div>
 
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h4 className="font-semibold text-gray-900 dark:text-white">{cartaoAtivo.nome}</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                                Fecha: {formatarData(faturaExibida.dataFechamento)} | Vence: {formatarData(faturaExibida.dataVencimento)}
+                            </p>
+                        </div>
+                        {isFaturaAtual && (
+                            <button
+                                onClick={() => setModalGasto({ aberto: true, cartaoId: cartaoAtivo.id })}
+                                className="px-3 py-1.5 rounded-lg bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 text-sm font-medium"
+                            >
+                                + Gasto
+                            </button>
+                        )}
+                    </div>
+
                     {/* Lista de Gastos da Fatura */}
-                    {faturaAtual.gastos.length === 0 ? (
+                    {faturaExibida.gastos.length === 0 ? (
                         <p className="text-center text-sm text-gray-500 py-4">Nenhum gasto nesta fatura</p>
                     ) : (
                         <div className="space-y-2 max-h-60 overflow-y-auto">
-                            {faturaAtual.gastos.map(gasto => {
+                            {faturaExibida.gastos.map(gasto => {
                                 const cat = CATEGORIAS_PADRAO.find(c => c.id === gasto.categoriaId);
                                 return (
-                                    <div key={gasto.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                                        <div className="flex items-center space-x-2">
+                                    <div key={gasto.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg group">
+                                        <div className="flex items-center space-x-2 flex-1">
                                             <span>{cat?.icone || '💳'}</span>
-                                            <div>
-                                                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                                                    {gasto.descricao}
-                                                    {gasto.parcelas > 1 && ` ${gasto.parcelaAtual}/${gasto.parcelas}`}
-                                                </span>
-                                                <p className="text-xs text-gray-500">{formatarData(gasto.data)}</p>
-                                            </div>
+                                            {gastoEditando?.id === gasto.id ? (
+                                                <div className="flex-1 flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={gastoEditando.descricao}
+                                                        onChange={(e) => setGastoEditando(prev => prev ? { ...prev, descricao: e.target.value } : null)}
+                                                        className="flex-1 px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:border-gray-600"
+                                                    />
+                                                    <input
+                                                        type="number"
+                                                        value={gastoEditando.valor}
+                                                        onChange={(e) => setGastoEditando(prev => prev ? { ...prev, valor: parseFloat(e.target.value) || 0 } : null)}
+                                                        className="w-20 px-2 py-1 text-sm border rounded dark:bg-gray-800 dark:border-gray-600"
+                                                        step="0.01"
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            if (gastoEditando) {
+                                                                editarGasto(gastoEditando.id, { descricao: gastoEditando.descricao, valor: gastoEditando.valor });
+                                                                setGastoEditando(null);
+                                                            }
+                                                        }}
+                                                        className="p-1 text-green-600 hover:bg-green-100 rounded"
+                                                    >
+                                                        <Check className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setGastoEditando(null)}
+                                                        className="p-1 text-gray-500 hover:bg-gray-200 rounded"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div>
+                                                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                                            {gasto.descricao}
+                                                            {gasto.parcelas > 1 && ` ${gasto.parcelaAtual}/${gasto.parcelas}`}
+                                                        </span>
+                                                        <p className="text-xs text-gray-500">{formatarData(gasto.data)}</p>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
-                                        <span className="text-sm font-medium text-red-600 dark:text-red-400">
-                                            {formatarMoeda(gasto.valorParcela)}
-                                        </span>
+                                        {gastoEditando?.id !== gasto.id && (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-sm font-medium text-red-600 dark:text-red-400">
+                                                    {formatarMoeda(gasto.valorParcela)}
+                                                </span>
+                                                {isFaturaAtual && (
+                                                    <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                                                        <button
+                                                            onClick={() => setGastoEditando({ id: gasto.id, descricao: gasto.descricao, valor: gasto.valorParcela })}
+                                                            className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600"
+                                                            title="Editar"
+                                                        >
+                                                            <Pencil className="w-3 h-3 text-gray-500" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => excluirGasto(gasto.id)}
+                                                            className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30"
+                                                            title="Excluir"
+                                                        >
+                                                            <Trash2 className="w-3 h-3 text-red-500" />
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -604,9 +777,9 @@ export function GerenciadorCartao({ onPagarFatura }: GerenciadorCartaoProps) {
                     <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
                         <div>
                             <p className="text-sm text-gray-600 dark:text-gray-400">Total da Fatura</p>
-                            <p className="text-xl font-bold text-gray-900 dark:text-white">{formatarMoeda(faturaAtual.total)}</p>
+                            <p className="text-xl font-bold text-gray-900 dark:text-white">{formatarMoeda(faturaExibida.total)}</p>
                         </div>
-                        {faturaAtual.paga ? (
+                        {faturaExibida.paga ? (
                             <span className="px-3 py-1.5 rounded-lg bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 text-sm font-medium">
                                 ✓ Pago
                             </span>
@@ -615,10 +788,10 @@ export function GerenciadorCartao({ onPagarFatura }: GerenciadorCartaoProps) {
                                 onClick={() => setModalPagamento({
                                     aberto: true,
                                     cartaoId: cartaoAtivo.id,
-                                    valor: faturaAtual.total,
+                                    valor: faturaExibida.total,
                                     nome: cartaoAtivo.nome
                                 })}
-                                disabled={faturaAtual.total === 0}
+                                disabled={faturaExibida.total === 0}
                                 className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
                             >
                                 Pagar Fatura

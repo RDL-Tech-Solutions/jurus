@@ -272,6 +272,10 @@ export interface Divida {
     pago: boolean;
     dataPagamento?: string;
     observacoes?: string;
+    // Campos de parcelamento
+    numeroParcelas?: number;
+    parcelaAtual?: number;
+    dividaPaiId?: string; // Para vincular parcelas à dívida original
     criadoEm: string;
     atualizadoEm: string;
 }
@@ -282,6 +286,8 @@ export interface NovaDivida {
     credor: string;
     dataVencimento?: string;
     observacoes?: string;
+    // Campos de parcelamento
+    numeroParcelas?: number;
 }
 
 // ==========================================

@@ -141,8 +141,8 @@ function ModalDivida({ aberto, onFechar, onSalvar, dividaInicial, titulo }: Moda
                         {erros.credor && <p className="text-red-500 text-xs mt-1">{erros.credor}</p>}
                     </div>
 
-                    {/* Valor e Vencimento */}
-                    <div className="grid grid-cols-2 gap-4">
+                    {/* Valor, Vencimento e Parcelas */}
+                    <div className="grid grid-cols-3 gap-3">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                                 Valor (R$) *
@@ -168,6 +168,26 @@ function ModalDivida({ aberto, onFechar, onSalvar, dividaInicial, titulo }: Moda
                                 onChange={(e) => setDados(prev => ({ ...prev, dataVencimento: e.target.value }))}
                                 className="input-mobile"
                             />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                Parcelas
+                            </label>
+                            <select
+                                value={dados.numeroParcelas || 1}
+                                onChange={(e) => setDados(prev => ({ ...prev, numeroParcelas: parseInt(e.target.value) }))}
+                                className="input-mobile"
+                                disabled={!!dividaInicial}
+                            >
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24, 36, 48].map(n => (
+                                    <option key={n} value={n}>{n}x</option>
+                                ))}
+                            </select>
+                            {(dados.numeroParcelas || 1) > 1 && (
+                                <p className="text-[10px] text-gray-500 mt-1">
+                                    {(dados.numeroParcelas || 1)}x de {formatarMoeda((dados.valor || 0) / (dados.numeroParcelas || 1))}
+                                </p>
+                            )}
                         </div>
                     </div>
 

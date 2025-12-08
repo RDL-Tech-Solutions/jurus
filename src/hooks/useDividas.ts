@@ -49,17 +49,43 @@ export function useDividas() {
         }
     }, [dividas, carregado]);
 
-    // Adicionar dívida
+    // Adicionar dívida (com suporte a parcelamento)
     const adicionarDivida = useCallback((nova: NovaDivida) => {
-        const divida: Divida = {
-            id: gerarId(),
-            ...nova,
-            pago: false,
-            criadoEm: getDataAtual(),
-            atualizadoEm: getDataAtual()
-        };
-        setDividas(prev => [divida, ...prev]);
-        return divida;
+        const numeroParcelas = nova.numeroParcelas || 1;
+        const valorParcela = nova.valor / numeroParcelas;
+        const dividaPaiId = gerarId();
+        const novasDividas: Divida[] = [];
+
+        for (let i = 0; i < numeroParcelas; i++) {
+            // Calcular data de vencimento para cada parcela (adiciona meses)
+            let dataVencimento = nova.dataVencimento;
+            if (dataVencimento && i > 0) {
+                const data = new Date(dataVencimento);
+                data.setMonth(data.getMonth() + i);
+                dataVencimento = data.toISOString().split('T')[0];
+            }
+
+            const divida: Divida = {
+                id: i === 0 ? dividaPaiId : gerarId(),
+                descricao: numeroParcelas > 1
+                    ? `${nova.descricao} (${i + 1}/${numeroParcelas})`
+                    : nova.descricao,
+                valor: Math.round(valorParcela * 100) / 100, // Arredondar para 2 casas
+                credor: nova.credor,
+                dataVencimento,
+                observacoes: nova.observacoes,
+                pago: false,
+                numeroParcelas: numeroParcelas > 1 ? numeroParcelas : undefined,
+                parcelaAtual: numeroParcelas > 1 ? i + 1 : undefined,
+                dividaPaiId: numeroParcelas > 1 && i > 0 ? dividaPaiId : undefined,
+                criadoEm: getDataAtual(),
+                atualizadoEm: getDataAtual()
+            };
+            novasDividas.push(divida);
+        }
+
+        setDividas(prev => [...novasDividas, ...prev]);
+        return novasDividas[0];
     }, []);
 
     // Editar dívida
