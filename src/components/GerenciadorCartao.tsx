@@ -478,9 +478,52 @@ export function GerenciadorCartao({ onPagarFatura }: GerenciadorCartaoProps) {
         return calcularFatura(cartaoSelecionado, mesFatura, anoFatura);
     }, [cartaoSelecionado, mesFatura, anoFatura, calcularFatura]);
 
-    const mesAtual = new Date().getMonth();
-    const anoAtual = new Date().getFullYear();
-    const isFaturaAtual = mesFatura === mesAtual && anoFatura === anoAtual;
+    // Selecionar automaticamente a fatura aberta ao trocar de cartão
+    React.useEffect(() => {
+        if (cartaoSelecionado) {
+            const cartao = cartoes.find(c => c.id === cartaoSelecionado);
+            if (cartao) {
+                const hoje = new Date();
+                const dia = hoje.getDate();
+
+                // Se hoje > diaFechamento, a fatura atual já fechou, mostrar a próxima
+                if (dia > cartao.diaFechamento) {
+                    if (hoje.getMonth() === 11) {
+                        setMesFatura(0);
+                        setAnoFatura(hoje.getFullYear() + 1);
+                    } else {
+                        setMesFatura(hoje.getMonth() + 1);
+                        setAnoFatura(hoje.getFullYear());
+                    }
+                } else {
+                    setMesFatura(hoje.getMonth());
+                    setAnoFatura(hoje.getFullYear());
+                }
+            }
+        }
+    }, [cartaoSelecionado, cartoes]);
+
+    const isFaturaAtual = useMemo(() => {
+        if (!cartaoAtivo) return false;
+        const hoje = new Date();
+        const dia = hoje.getDate();
+        const mes = hoje.getMonth();
+        const ano = hoje.getFullYear();
+
+        let mesAberto = mes;
+        let anoAberto = ano;
+
+        if (dia > cartaoAtivo.diaFechamento) {
+            if (mes === 11) {
+                mesAberto = 0;
+                anoAberto = ano + 1;
+            } else {
+                mesAberto = mes + 1;
+            }
+        }
+
+        return mesFatura === mesAberto && anoFatura === anoAberto;
+    }, [cartaoAtivo, mesFatura, anoFatura]);
 
     const navegarMes = (direcao: 'anterior' | 'proximo') => {
         if (direcao === 'anterior') {

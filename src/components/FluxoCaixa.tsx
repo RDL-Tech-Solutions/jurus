@@ -1099,18 +1099,20 @@ export function FluxoCaixa() {
 
                         {/* Grid de Cards */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            <CardTendencia tendencia={tendencia} />
-                            <CardMediaDiaria media={mediaDiaria} />
-                            <CardComparativo
-                                atual={estatisticas}
-                                anterior={estatisticasAnterior}
-                                periodoAtual={periodos.find(p => p.valor === filtros.periodo)?.label || 'Atual'}
-                                periodoAnterior="Anterior"
-                            />
+                            {dashboardConfig.insights.tendencia && <CardTendencia tendencia={tendencia} />}
+                            {dashboardConfig.insights.mediaDiaria && <CardMediaDiaria media={mediaDiaria} />}
+                            {dashboardConfig.insights.comparativo && (
+                                <CardComparativo
+                                    atual={estatisticas}
+                                    anterior={estatisticasAnterior}
+                                    periodoAtual={periodos.find(p => p.valor === filtros.periodo)?.label || 'Atual'}
+                                    periodoAnterior="Anterior"
+                                />
+                            )}
                         </div>
 
                         {/* Gráfico Comparativo */}
-                        {dadosGraficoComparativo.length > 0 && (
+                        {dashboardConfig.graficos.barrasComparativo && dadosGraficoComparativo.length > 0 && (
                             <GraficoBarrasComparativo dados={dadosGraficoComparativo} />
                         )}
                     </div>
@@ -1122,20 +1124,22 @@ export function FluxoCaixa() {
                         </h2>
 
                         {/* Gráfico Top Categorias (Fase 2) */}
-                        {dadosTopCategorias.length > 0 && (
+                        {dashboardConfig.analytics.topCategorias && dadosTopCategorias.length > 0 && (
                             <GraficoTopCategorias dados={dadosTopCategorias} limite={5} />
                         )}
 
                         {/* Grid de Cards Avançados (Fase 3) */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                            <CardRunway
-                                runway={runway}
-                                saldoAtual={estatisticas.saldo}
-                                gastoMensal={estatisticas.totalSaidas}
-                            />
-                            <CardBreakEven breakEven={breakEven} />
-                            <CardMaiorGasto maiorGasto={maiorGasto} />
-                            <CardAlertas alertas={alertas} />
+                            {dashboardConfig.analytics.runway && (
+                                <CardRunway
+                                    runway={runway}
+                                    saldoAtual={estatisticas.saldo}
+                                    gastoMensal={estatisticas.totalSaidas}
+                                />
+                            )}
+                            {dashboardConfig.analytics.breakEven && <CardBreakEven breakEven={breakEven} />}
+                            {dashboardConfig.analytics.maiorGasto && <CardMaiorGasto maiorGasto={maiorGasto} />}
+                            {dashboardConfig.analytics.alertas && <CardAlertas alertas={alertas} />}
                         </div>
                     </div>
 
@@ -1143,7 +1147,7 @@ export function FluxoCaixa() {
                     {estatisticas.evolucaoSaldo.length > 0 && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {/* Gráfico de Categorias */}
-                            {dadosPizza.length > 0 && (
+                            {dashboardConfig.graficos.pizza && dadosPizza.length > 0 && (
                                 <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
                                     <h3 className="text-xs font-semibold text-gray-900 dark:text-white mb-2">
                                         Gastos por Categoria
@@ -1175,7 +1179,7 @@ export function FluxoCaixa() {
                             )}
 
                             {/* Gráfico de Evolução */}
-                            {dadosEvolucao.length > 1 && (
+                            {dashboardConfig.graficos.evolucao && dadosEvolucao.length > 1 && (
                                 <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
                                     <h3 className="text-xs font-semibold text-gray-900 dark:text-white mb-2">
                                         Evolução do Saldo

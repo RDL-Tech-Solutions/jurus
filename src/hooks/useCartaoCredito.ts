@@ -133,7 +133,9 @@ export function useCartaoCredito() {
 
         // Criar um gasto para cada parcela
         const novosGastos: GastoCartao[] = [];
-        const dataBase = new Date(novo.data);
+        // Criar data base usando tempo local para evitar problemas de fuso horário
+        const [ano, mes, dia] = novo.data.split('-').map(Number);
+        const dataBase = new Date(ano, mes - 1, dia);
 
         for (let i = 0; i < novo.parcelas; i++) {
             const dataParcela = new Date(dataBase);
