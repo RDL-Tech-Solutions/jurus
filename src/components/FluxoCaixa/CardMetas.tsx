@@ -1,4 +1,4 @@
-import { Target, Plus, AlertTriangle, CheckCircle, TrendingUp } from 'lucide-react';
+import { Target, Plus, AlertTriangle, CheckCircle, TrendingUp, Pencil, Trash2 } from 'lucide-react';
 import { MetaGasto, CategoriaFluxo, CATEGORIAS_PADRAO } from '../../types/fluxoCaixa';
 import { formatarMoeda } from '../../utils/calculos';
 import { cn } from '../../utils/cn';
@@ -14,13 +14,32 @@ interface MetaComProgresso {
 interface CardMetasProps {
     metas: MetaGasto[];
     gastosPorCategoria: { categoriaId: string; total: number }[];
+    categorias?: CategoriaFluxo[]; // Todas as categorias disponíveis
     onNovaMeta: () => void;
     onEditarMeta: (meta: MetaGasto) => void;
+    onExcluirMeta?: (id: string) => void;
 }
 
-export function CardMetas({ metas, gastosPorCategoria, onNovaMeta, onEditarMeta }: CardMetasProps) {
+export function CardMetas({ metas, gastosPorCategoria, categorias, onNovaMeta, onEditarMeta, onExcluirMeta }: CardMetasProps) {
+    // Usar categorias fornecidas ou padrão como fallback
+    const todasCategorias = categorias || CATEGORIAS_PADRAO;
+    
     const metasComProgresso: MetaComProgresso[] = metas.map(meta => {
-        const categoria = CATEGORIAS_PADRAO.find(c => c.id === meta.categoriaId);
+        // Buscar categoria nas categorias fornecidas
+        let categoria = todasCategorias.find(c => c.id === meta.categoriaId);
+        
+        // Se não encontrou, pode ser uma categoria especial (dívidas/cartões)
+        if (!categoria) {
+            // Categorias especiais para dívidas e cartões
+            if (meta.categoriaId === 'dividas') {
+                categoria = { id: 'dividas', nome: 'Dívidas', icone: '📝', cor: '#ef4444', tipo: 'saida' as const };
+            } else if (meta.categoriaId === 'cartoes') {
+                categoria = { id: 'cartoes', nome: 'Cartões', icone: '💳', cor: '#8b5cf6', tipo: 'saida' as const };
+            } else {
+                categoria = { id: meta.categoriaId, nome: 'Outro', icone: '📌', cor: '#6b7280', tipo: 'saida' as const };
+            }
+        }
+        
         const gasto = gastosPorCategoria.find(g => g.categoriaId === meta.categoriaId);
         const valorGasto = gasto?.total || 0;
         const percentual = meta.limite > 0 ? (valorGasto / meta.limite) * 100 : 0;
@@ -31,7 +50,7 @@ export function CardMetas({ metas, gastosPorCategoria, onNovaMeta, onEditarMeta 
 
         return {
             meta,
-            categoria: categoria || { id: meta.categoriaId, nome: 'Outro', icone: '📌', cor: '#6b7280', tipo: 'saida' as const },
+            categoria,
             valorGasto,
             percentual,
             status
@@ -75,21 +94,38 @@ export function CardMetas({ metas, gastosPorCategoria, onNovaMeta, onEditarMeta 
             ) : (
                 <div className="space-y-3">
                     {metasComProgresso.map(({ meta, categoria, valorGasto, percentual, status }) => (
-                        <button
+                        <div
                             key={meta.id}
-                            onClick={() => onEditarMeta(meta)}
-                            className="w-full p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-left"
+                            className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                         >
                             <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-1">
                                     <span className="text-lg">{categoria.icone}</span>
                                     <span className="text-sm font-medium text-gray-900 dark:text-white">
                                         {categoria.nome}
                                     </span>
                                 </div>
-                                {status === 'ultrapassado' && <AlertTriangle className="w-4 h-4 text-red-500" />}
-                                {status === 'atencao' && <TrendingUp className="w-4 h-4 text-orange-500" />}
-                                {status === 'ok' && <CheckCircle className="w-4 h-4 text-green-500" />}
+                                <div className="flex items-center gap-2">
+                                    {status === 'ultrapassado' && <AlertTriangle className="w-4 h-4 text-red-500" />}
+                                    {status === 'atencao' && <TrendingUp className="w-4 h-4 text-orange-500" />}
+                                    {status === 'ok' && <CheckCircle className="w-4 h-4 text-green-500" />}
+                                    <button
+                                        onClick={() => onEditarMeta(meta)}
+                                        className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                                        title="Editar meta"
+                                    >
+                                        <Pencil className="w-3.5 h-3.5 text-gray-600 dark:text-gray-400" />
+                                    </button>
+                                    {onExcluirMeta && (
+                                        <button
+                                            onClick={() => onExcluirMeta(meta.id)}
+                                            className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                                            title="Excluir meta"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Barra de Progresso */}
@@ -123,7 +159,7 @@ export function CardMetas({ metas, gastosPorCategoria, onNovaMeta, onEditarMeta 
                                     ⚠️ Ultrapassou {formatarMoeda(valorGasto - meta.limite)}
                                 </p>
                             )}
-                        </button>
+                        </div>
                     ))}
                 </div>
             )}

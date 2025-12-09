@@ -145,6 +145,30 @@ export interface TransacaoRecorrente {
     dataFim?: string;
     observacoes?: string;
     criadoEm: string;
+    gerarPendentes?: boolean; // Se deve gerar transações pendentes automaticamente
+}
+
+// Transação Pendente (gerada de recorrente, aguardando confirmação)
+export interface TransacaoPendente {
+    id: string;
+    descricao: string;
+    valor: number;
+    tipo: TipoTransacao;
+    categoriaId: string;
+    dataAgendada: string; // Data prevista
+    recorrenteId?: string; // ID da recorrente que gerou (se aplicável)
+    observacoes?: string;
+    criadoEm: string;
+}
+
+export interface NovaTransacaoPendente {
+    descricao: string;
+    valor: number;
+    tipo: TipoTransacao;
+    categoriaId: string;
+    dataAgendada: string;
+    recorrenteId?: string;
+    observacoes?: string;
 }
 
 export interface NovaTransacaoRecorrente {
@@ -269,6 +293,7 @@ export interface Divida {
     descricao: string;
     valor: number;
     credor: string;
+    categoriaId?: string; // Categoria da dívida
     dataVencimento?: string;
     pago: boolean;
     dataPagamento?: string;
@@ -285,6 +310,7 @@ export interface NovaDivida {
     descricao: string;
     valor: number;
     credor: string;
+    categoriaId?: string; // Categoria da dívida
     dataVencimento?: string;
     observacoes?: string;
     // Campos de parcelamento

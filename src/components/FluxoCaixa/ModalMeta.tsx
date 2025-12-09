@@ -11,9 +11,10 @@ interface ModalMetaProps {
     onExcluir?: (id: string) => void;
     metaInicial?: MetaGasto;
     categoriasUsadas: string[];
+    categorias?: CategoriaFluxo[]; // Categorias personalizadas
 }
 
-export function ModalMeta({ aberto, onFechar, onSalvar, onExcluir, metaInicial, categoriasUsadas }: ModalMetaProps) {
+export function ModalMeta({ aberto, onFechar, onSalvar, onExcluir, metaInicial, categoriasUsadas, categorias }: ModalMetaProps) {
     const [categoriaId, setCategoriaId] = useState('');
     const [limite, setLimite] = useState('');
     const [alertar80, setAlertar80] = useState(true);
@@ -27,11 +28,23 @@ export function ModalMeta({ aberto, onFechar, onSalvar, onExcluir, metaInicial, 
     const mes = agora.getMonth() + 1;
     const ano = agora.getFullYear();
 
+    // Usar categorias fornecidas ou padrão como fallback
+    const categoriasBase = categorias || CATEGORIAS_PADRAO;
+    
     // Categorias de saída disponíveis (não usadas em outras metas)
-    const categoriasSaida = CATEGORIAS_PADRAO.filter(c => c.tipo === 'saida');
+    const categoriasSaida = categoriasBase.filter(c => c.tipo === 'saida');
+    
+    // Adicionar categorias especiais de dívidas e cartões
+    const categoriasEspeciais: CategoriaFluxo[] = [
+        { id: 'dividas', nome: 'Dívidas', icone: '📝', cor: '#ef4444', tipo: 'saida' },
+        { id: 'cartoes', nome: 'Cartões', icone: '💳', cor: '#8b5cf6', tipo: 'saida' }
+    ];
+    
+    const todasCategorias = [...categoriasSaida, ...categoriasEspeciais];
+    
     const categoriasDisponiveis = metaInicial
-        ? categoriasSaida
-        : categoriasSaida.filter(c => !categoriasUsadas.includes(c.id));
+        ? todasCategorias
+        : todasCategorias.filter(c => !categoriasUsadas.includes(c.id));
 
     useEffect(() => {
         if (metaInicial) {

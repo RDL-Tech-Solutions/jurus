@@ -30,10 +30,13 @@ interface ModalDividaProps {
 }
 
 function ModalDivida({ aberto, onFechar, onSalvar, dividaInicial, titulo }: ModalDividaProps) {
+    const { categorias } = useFluxoCaixa();
+    
     const [dados, setDados] = useState<Partial<NovaDivida>>({
         descricao: '',
         valor: 0,
         credor: '',
+        categoriaId: '',
         dataVencimento: '',
         observacoes: '',
         ...dividaInicial
@@ -47,12 +50,16 @@ function ModalDivida({ aberto, onFechar, onSalvar, dividaInicial, titulo }: Moda
                 descricao: '',
                 valor: 0,
                 credor: '',
+                categoriaId: '',
                 dataVencimento: '',
                 observacoes: '',
                 ...dividaInicial
             });
         }
     }, [dividaInicial]);
+    
+    // Categorias de saída
+    const categoriasSaida = categorias.filter(c => c.tipo === 'saida');
 
     const validar = (): boolean => {
         const novosErros: Record<string, string> = {};
@@ -79,6 +86,7 @@ function ModalDivida({ aberto, onFechar, onSalvar, dividaInicial, titulo }: Moda
                 descricao: '',
                 valor: 0,
                 credor: '',
+                categoriaId: '',
                 dataVencimento: '',
                 observacoes: ''
             });
@@ -139,6 +147,34 @@ function ModalDivida({ aberto, onFechar, onSalvar, dividaInicial, titulo }: Moda
                             placeholder="Ex: João, Loja X, Maria..."
                         />
                         {erros.credor && <p className="text-red-500 text-xs mt-1">{erros.credor}</p>}
+                    </div>
+
+                    {/* Categoria */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Categoria
+                        </label>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                            {categoriasSaida.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    type="button"
+                                    onClick={() => setDados(prev => ({ ...prev, categoriaId: cat.id }))}
+                                    className={cn(
+                                        'flex flex-col items-center justify-center p-2 rounded-lg border-2 transition-all text-center',
+                                        dados.categoriaId === cat.id
+                                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                                    )}
+                                >
+                                    <span className="text-xl mb-1">{cat.icone}</span>
+                                    <span className="text-xs font-medium text-gray-700 dark:text-gray-300 line-clamp-1">
+                                        {cat.nome}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">Opcional - ajuda a organizar suas dívidas</p>
                     </div>
 
                     {/* Valor, Vencimento e Parcelas */}
@@ -297,6 +333,7 @@ interface ListaDividasProps {
 
 export function ListaDividas({ onPagarDivida }: ListaDividasProps) {
     const {
+        dividas,
         dividasPendentes,
         dividasPagas,
         estatisticas,
@@ -306,6 +343,8 @@ export function ListaDividas({ onPagarDivida }: ListaDividasProps) {
         excluirDivida,
         marcarComoPago
     } = useDividas();
+    
+    const { categorias, obterCategoria } = useFluxoCaixa();
 
     const [modalAberto, setModalAberto] = useState(false);
     const [modalEdicao, setModalEdicao] = useState<{ aberto: boolean; id: string; dados?: Partial<NovaDivida> }>({
@@ -464,6 +503,15 @@ export function ListaDividas({ onPagarDivida }: ListaDividasProps) {
                                                 <User className="w-3 h-3 mr-1" />
                                                 {divida.credor}
                                             </span>
+                                            {divida.categoriaId && (() => {
+                                                const cat = obterCategoria(divida.categoriaId);
+                                                return cat ? (
+                                                    <span className="flex items-center">
+                                                        <span className="mr-1">{cat.icone}</span>
+                                                        {cat.nome}
+                                                    </span>
+                                                ) : null;
+                                            })()}
                                             {divida.dataVencimento && (
                                                 <span className="flex items-center">
                                                     <Calendar className="w-3 h-3 mr-1" />
@@ -498,6 +546,7 @@ export function ListaDividas({ onPagarDivida }: ListaDividasProps) {
                                                 descricao: divida.descricao,
                                                 valor: divida.valor,
                                                 credor: divida.credor,
+                                                categoriaId: divida.categoriaId,
                                                 dataVencimento: divida.dataVencimento?.split('T')[0],
                                                 observacoes: divida.observacoes
                                             }

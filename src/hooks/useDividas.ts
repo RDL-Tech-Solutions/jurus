@@ -72,6 +72,7 @@ export function useDividas() {
                     : nova.descricao,
                 valor: Math.round(valorParcela * 100) / 100, // Arredondar para 2 casas
                 credor: nova.credor,
+                categoriaId: nova.categoriaId,
                 dataVencimento,
                 observacoes: nova.observacoes,
                 pago: false,

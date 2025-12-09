@@ -53,13 +53,15 @@ export function CardPrevisaoMes({ saldoAtual, transacoes, recorrentes, gastosCar
             let entradas = 0;
             let saidas = 0;
 
-            // 1. Transações Reais (apenas se for mês passado ou atual, ou agendadas)
-            const transacoesMes = transacoes.filter(t => {
-                const d = new Date(t.data);
-                return d.getFullYear() * 100 + d.getMonth() === mesAno;
-            });
-            entradas += transacoesMes.filter(t => t.tipo === 'entrada').reduce((a, t) => a + t.valor, 0);
-            saidas += transacoesMes.filter(t => t.tipo === 'saida').reduce((a, t) => a + t.valor, 0);
+            // 1. Transações Reais - APENAS para mês atual ou passado (offset <= 0)
+            if (offset <= 0) {
+                const transacoesMes = transacoes.filter(t => {
+                    const d = new Date(t.data);
+                    return d.getFullYear() * 100 + d.getMonth() === mesAno;
+                });
+                entradas += transacoesMes.filter(t => t.tipo === 'entrada').reduce((a, t) => a + t.valor, 0);
+                saidas += transacoesMes.filter(t => t.tipo === 'saida').reduce((a, t) => a + t.valor, 0);
+            }
 
             // 2. Gastos de Cartão (Faturas)
             // Precisamos somar as faturas que vencem neste mês
@@ -111,13 +113,9 @@ export function CardPrevisaoMes({ saldoAtual, transacoes, recorrentes, gastosCar
 
             saidas += faturasMes;
 
-            // 3. Recorrências (Simulação)
-            // Apenas se não houver transação real correspondente? 
-            // Simplificação: Assumimos que recorrentes são extras ou o usuário deve gerenciar duplicação
-            // Para previsão futura (offset > 0), usamos recorrentes.
-            // Para mês atual, se já passou a data, talvez já tenha transação real.
-
-            if (offset >= 0) {
+            // 3. Recorrências (Simulação) - Para mês futuro (offset > 0), APENAS recorrentes
+            // Para mês atual/passado, não incluir recorrentes aqui (já estão nas transações reais)
+            if (offset > 0) {
                 recorrentes.filter(r => r.ativa).forEach(rec => {
                     // Verificar se ocorre neste mês
                     let dataRec = rec.dataInicio;
@@ -151,18 +149,36 @@ export function CardPrevisaoMes({ saldoAtual, transacoes, recorrentes, gastosCar
             return { entradas, saidas };
         };
 
-        // Calcular saldo inicial acumulando meses anteriores (do atual até o alvo - 1)
+        // Calcular saldo inicial acumulando meses anteriores
         let saldoSimulado = saldoAtual;
 
-        // Se estamos no futuro, projetamos o saldo
-        if (mesOffset > 0) {
-            // Começa do mês atual até o anterior ao alvo
-            for (let i = 0; i < mesOffset; i++) {
+        // Se estamos vendo o mês ATUAL (offset === 0), precisamos subtrair as transações
+        // do mês atual para obter o saldo inicial do mês (antes das transações)
+        if (mesOffset === 0) {
+            // Subtrair transações do mês atual para obter saldo inicial
+            const transacoesMesAtual = transacoes.filter(t => {
+                const d = new Date(t.data);
+                return d.getFullYear() === hoje.getFullYear() && d.getMonth() === hoje.getMonth();
+            });
+            const entradasMesAtual = transacoesMesAtual.filter(t => t.tipo === 'entrada').reduce((a, t) => a + t.valor, 0);
+            const saidasMesAtual = transacoesMesAtual.filter(t => t.tipo === 'saida').reduce((a, t) => a + t.valor, 0);
+            saldoSimulado = saldoAtual - entradasMesAtual + saidasMesAtual;
+        }
+        // Se estamos vendo mês futuro (offset > 0), precisamos simular fluxo dos meses intermediários
+        else if (mesOffset > 0) {
+            // Simular recorrentes e faturas dos meses entre hoje e o mês alvo
+            for (let i = 1; i <= mesOffset; i++) {
                 const { entradas, saidas } = calcularFluxoMes(i);
                 saldoSimulado = saldoSimulado + entradas - saidas;
             }
-        } else if (mesOffset < 0) {
-            saldoSimulado = 0; // Placeholder para passado
+        } 
+        // Se estamos vendo mês passado (offset < 0)
+        else if (mesOffset < 0) {
+            // Subtrair transações dos meses entre o passado e o atual
+            for (let i = mesOffset; i < 0; i++) {
+                const { entradas, saidas } = calcularFluxoMes(i);
+                saldoSimulado = saldoSimulado - entradas + saidas;
+            }
         }
 
         // --- CÁLCULO DIÁRIO PRECISO PARA O MÊS ALVO ---
@@ -172,20 +188,23 @@ export function CardPrevisaoMes({ saldoAtual, transacoes, recorrentes, gastosCar
         const variacaoDiariaPrevista = new Array(ultimoDia + 1).fill(0);
 
         // 1. Transações Reais (Entram em Realizado e Previsto)
-        transacoes.forEach(t => {
-            const d = new Date(t.data);
-            // Verificar se é do mês alvo
-            if (d.getFullYear() === ano && d.getMonth() === mesAlvo.getMonth()) {
-                const dia = d.getDate();
-                if (t.tipo === 'entrada') {
-                    variacaoDiariaReal[dia] += t.valor;
-                    variacaoDiariaPrevista[dia] += t.valor;
-                } else {
-                    variacaoDiariaReal[dia] -= t.valor;
-                    variacaoDiariaPrevista[dia] -= t.valor;
+        // APENAS para mês atual ou passado (mesOffset <= 0)
+        if (mesOffset <= 0) {
+            transacoes.forEach(t => {
+                const d = new Date(t.data);
+                // Verificar se é do mês alvo
+                if (d.getFullYear() === ano && d.getMonth() === mesAlvo.getMonth()) {
+                    const dia = d.getDate();
+                    if (t.tipo === 'entrada') {
+                        variacaoDiariaReal[dia] += t.valor;
+                        variacaoDiariaPrevista[dia] += t.valor;
+                    } else {
+                        variacaoDiariaReal[dia] -= t.valor;
+                        variacaoDiariaPrevista[dia] -= t.valor;
+                    }
                 }
-            }
-        });
+            });
+        }
 
         // 2. Gastos de Cartão (Faturas) - (Entram apenas em Previsto, assumindo pendentes)
         gastosCartao.forEach(gasto => {
@@ -238,8 +257,8 @@ export function CardPrevisaoMes({ saldoAtual, transacoes, recorrentes, gastosCar
             }
         });
 
-        // 3. Recorrências (Entram apenas em Previsto)
-        if (mesOffset >= 0) {
+        // 3. Recorrências (Entram apenas em Previsto) - APENAS para mês futuro
+        if (mesOffset > 0) {
             recorrentes.filter(r => r.ativa).forEach(rec => {
                 let d = rec.dataInicio;
                 let safety = 0;
@@ -300,7 +319,9 @@ export function CardPrevisaoMes({ saldoAtual, transacoes, recorrentes, gastosCar
             nomeMes: nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1),
             ano,
             saldoInicial: saldoSimulado,
-            saldoFinal: saldoAtualReal, // Apenas realizados
+            // Para mês futuro (offset > 0), saldo final = previsto (não há realizados)
+            // Para mês atual/passado (offset <= 0), saldo final = apenas realizados
+            saldoFinal: mesOffset > 0 ? saldoAtualPrevisto : saldoAtualReal,
             previsto: saldoAtualPrevisto, // Realizados + Pendentes
             dadosGrafico
         };

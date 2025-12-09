@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, RefreshCw, AlertCircle, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
-import { TransacaoRecorrente, NovaTransacaoRecorrente, CATEGORIAS_PADRAO, RecorrenciaTransacao, TipoTransacao } from '../../types/fluxoCaixa';
+import { TransacaoRecorrente, NovaTransacaoRecorrente, CATEGORIAS_PADRAO, RecorrenciaTransacao, TipoTransacao, CategoriaFluxo } from '../../types/fluxoCaixa';
 import { cn } from '../../utils/cn';
 import { calcularProximaData, formatarData } from '../../utils/calculos';
 import { useModal } from '../../hooks/useModal';
@@ -12,6 +12,7 @@ interface ModalRecorrenteProps {
     onExcluir?: (id: string) => void;
     onToggleAtiva?: (id: string) => void;
     recorrenteInicial?: TransacaoRecorrente;
+    categorias?: CategoriaFluxo[]; // Categorias personalizadas
 }
 
 const FREQUENCIAS: { valor: RecorrenciaTransacao; label: string; icone: string }[] = [
@@ -31,7 +32,7 @@ const DIAS_SEMANA = [
     { valor: 6, label: 'Sáb' }
 ];
 
-export function ModalRecorrente({ aberto, onFechar, onSalvar, onExcluir, onToggleAtiva, recorrenteInicial }: ModalRecorrenteProps) {
+export function ModalRecorrente({ aberto, onFechar, onSalvar, onExcluir, onToggleAtiva, recorrenteInicial, categorias }: ModalRecorrenteProps) {
     const [tipo, setTipo] = useState<TipoTransacao>('saida');
     const [descricao, setDescricao] = useState('');
     const [valor, setValor] = useState('');
@@ -48,7 +49,8 @@ export function ModalRecorrente({ aberto, onFechar, onSalvar, onExcluir, onToggl
     // Oculta navbar quando modal abre
     useModal(aberto);
 
-    const categoriasFiltradas = CATEGORIAS_PADRAO.filter(c => c.tipo === tipo);
+    const categoriasBase = categorias || CATEGORIAS_PADRAO;
+    const categoriasFiltradas = categoriasBase.filter(c => c.tipo === tipo);
 
     useEffect(() => {
         if (recorrenteInicial) {
@@ -81,7 +83,7 @@ export function ModalRecorrente({ aberto, onFechar, onSalvar, onExcluir, onToggl
 
     // Atualizar categoria ao mudar tipo
     useEffect(() => {
-        const categoriasDoTipo = CATEGORIAS_PADRAO.filter(c => c.tipo === tipo);
+        const categoriasDoTipo = categoriasBase.filter(c => c.tipo === tipo);
         if (!categoriasDoTipo.find(c => c.id === categoriaId)) {
             setCategoriaId(categoriasDoTipo[0]?.id || '');
         }

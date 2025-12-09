@@ -105,74 +105,8 @@ export function useFluxoCaixa() {
         setCarregado(true);
     }, []);
 
-    // Gerar transações recorrentes automaticamente
-    useEffect(() => {
-        if (!carregado) return;
-
-        const hoje = new Date();
-        const recorrentes = transacoes.filter(t => t.recorrente && t.recorrencia);
-        const novasTransacoes: Transacao[] = [];
-
-        recorrentes.forEach(t => {
-            const dataOriginal = new Date(t.data);
-            const ultimaData = new Date(t.data);
-
-            // Calcular próxima data baseada na recorrência
-            const calcularProximaData = (data: Date): Date => {
-                const novaData = new Date(data);
-                switch (t.recorrencia) {
-                    case 'diaria':
-                        novaData.setDate(novaData.getDate() + 1);
-                        break;
-                    case 'semanal':
-                        novaData.setDate(novaData.getDate() + 7);
-                        break;
-                    case 'mensal':
-                        novaData.setMonth(novaData.getMonth() + 1);
-                        break;
-                    case 'anual':
-                        novaData.setFullYear(novaData.getFullYear() + 1);
-                        break;
-                }
-                return novaData;
-            };
-
-            // Gerar transações até a data atual
-            let proximaData = calcularProximaData(ultimaData);
-            while (proximaData <= hoje) {
-                const dataStr = proximaData.toISOString().split('T')[0];
-
-                // Verificar se já existe uma transação para esta data
-                const jaExiste = transacoes.some(existente =>
-                    existente.descricao === t.descricao &&
-                    existente.valor === t.valor &&
-                    existente.categoriaId === t.categoriaId &&
-                    existente.data.startsWith(dataStr)
-                );
-
-                if (!jaExiste) {
-                    novasTransacoes.push({
-                        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-                        descricao: t.descricao,
-                        valor: t.valor,
-                        tipo: t.tipo,
-                        categoriaId: t.categoriaId,
-                        data: dataStr,
-                        observacoes: `(Recorrente) ${t.observacoes || ''}`.trim(),
-                        recorrente: false, // A transação gerada não é a original recorrente
-                        criadoEm: new Date().toISOString(),
-                        atualizadoEm: new Date().toISOString()
-                    });
-                }
-
-                proximaData = calcularProximaData(proximaData);
-            }
-        });
-
-        if (novasTransacoes.length > 0) {
-            setTransacoes(prev => [...novasTransacoes, ...prev]);
-        }
-    }, [carregado]);
+    // NOTA: A lógica de recorrências foi movida para useRecorrentes e é gerenciada
+    // no componente FluxoCaixa para evitar duplicação e melhor controle
 
     // Salvar sempre que houver mudanças
     useEffect(() => {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
     BarChart3,
     Plus,
@@ -23,7 +23,8 @@ import {
     FileDown,
     FileSpreadsheet,
     Printer,
-    Settings
+    Settings,
+    Tag
 } from 'lucide-react';
 import {
     BarChart,
@@ -45,13 +46,15 @@ import { useDividas } from '../hooks/useDividas';
 import { useCartaoCredito } from '../hooks/useCartaoCredito';
 import { useMetas } from '../hooks/useMetas';
 import { useRecorrentes } from '../hooks/useRecorrentes';
+import { useTransacoesPendentes } from '../hooks/useTransacoesPendentes';
 import { useToast } from '../hooks/useToast';
 import { useModal } from '../hooks/useModal';
 import { ToastContainer } from './Toast';
 import { ListaDividas } from './ListaDividas';
 import { GerenciadorCartao } from './GerenciadorCartao';
+import { GerenciadorCategorias } from './GerenciadorCategorias';
 import { NovaTransacao, TipoTransacao, PeriodoFiltro, EstatisticasFluxo, DashboardConfig, DASHBOARD_CONFIG_PADRAO } from '../types/fluxoCaixa';
-import { formatarMoeda, calcularProximaData, formatarData } from '../utils/calculos';
+import { formatarMoeda, calcularProximaData, formatarData, obterDataHoje } from '../utils/calculos';
 import { exportarCSV, exportarJSON, imprimirPDF } from '../utils/exportar';
 import { cn } from '../utils/cn';
 import { calcularTendencia, calcularMediaDiaria, calcularRunway, calcularBreakEven, encontrarMaiorGasto, gerarAlertas } from '../utils/analiseFinanceira';
@@ -72,6 +75,7 @@ import {
     CardMetas,
     ModalMeta,
     ListaRecorrentes,
+    ListaTransacoesPendentes,
     ModalRecorrente,
     ModalConfigDashboard
 } from './FluxoCaixa/index';
@@ -92,7 +96,7 @@ function ModalTransacao({ aberto, onFechar, onSalvar, transacaoInicial, categori
         valor: 0,
         tipo: 'saida',
         categoriaId: '',
-        data: new Date().toISOString().split('T')[0],
+        data: obterDataHoje(),
         observacoes: '',
         recorrencia: 'mensal',
         ativa: true,
@@ -108,7 +112,7 @@ function ModalTransacao({ aberto, onFechar, onSalvar, transacaoInicial, categori
                 valor: 0,
                 tipo: 'saida',
                 categoriaId: '',
-                data: new Date().toISOString().split('T')[0],
+                data: obterDataHoje(),
                 observacoes: '',
                 recorrencia: 'mensal',
                 ativa: true,
@@ -152,7 +156,7 @@ function ModalTransacao({ aberto, onFechar, onSalvar, transacaoInicial, categori
                 valor: 0,
                 tipo: 'saida',
                 categoriaId: '',
-                data: new Date().toISOString().split('T')[0],
+                data: obterDataHoje(),
                 observacoes: ''
             });
         }
@@ -558,8 +562,13 @@ export function FluxoCaixa() {
         excluirTransacao,
         obterCategoria,
         atualizarFiltros,
-        limparFiltros
+        limparFiltros,
+        adicionarCategoria,
+        excluirCategoria
     } = useFluxoCaixa();
+
+    // Ref para rastrear recorrências já processadas hoje
+    const recorrentesProcessadasRef = React.useRef<Set<string>>(new Set());
 
     // Hooks para Dívidas e Cartões
     const {
@@ -593,6 +602,15 @@ export function FluxoCaixa() {
         toggleAtiva,
         atualizarProximaData
     } = useRecorrentes();
+    
+    const {
+        pendentes,
+        pendentesPorData,
+        estatisticas: estatisticasPendentes,
+        adicionarPendente,
+        editarPendente,
+        excluirPendente
+    } = useTransacoesPendentes();
 
     const [modalAberto, setModalAberto] = useState(false);
     const [modalEdicao, setModalEdicao] = useState<{ aberto: boolean; id: string; dados?: Partial<NovaTransacao> }>({
@@ -605,7 +623,7 @@ export function FluxoCaixa() {
         descricao: ''
     });
     const [mostrarFiltros, setMostrarFiltros] = useState(false);
-    const [abaAtiva, setAbaAtiva] = useState<'transacoes' | 'dividas' | 'cartoes'>('transacoes');
+    const [abaAtiva, setAbaAtiva] = useState<'transacoes' | 'dividas' | 'cartoes' | 'categorias'>('transacoes');
     const [mostrarMenuExportar, setMostrarMenuExportar] = useState(false);
     const [modalMeta, setModalMeta] = useState<{ aberto: boolean; meta?: any }>({ aberto: false });
     const [modalRecorrente, setModalRecorrente] = useState<{ aberto: boolean; recorrente?: any }>({ aberto: false });
@@ -615,30 +633,112 @@ export function FluxoCaixa() {
         return saved ? JSON.parse(saved) : DASHBOARD_CONFIG_PADRAO;
     });
     const { success, error, toasts, removeToast } = useToast();
+    
+    // Funções para gerenciar transações pendentes
+    const handleEfetivarPendente = useCallback((id: string) => {
+        const pendente = pendentes.find(p => p.id === id);
+        if (!pendente) return;
+        
+        // Criar transação efetiva
+        adicionarTransacao({
+            descricao: pendente.descricao,
+            valor: pendente.valor,
+            tipo: pendente.tipo,
+            categoriaId: pendente.categoriaId,
+            data: obterDataHoje(),
+            observacoes: pendente.observacoes
+        });
+        
+        // Remover da lista de pendentes
+        excluirPendente(id);
+        
+        // Se veio de recorrente, atualizar próxima data
+        if (pendente.recorrenteId) {
+            atualizarProximaData(pendente.recorrenteId);
+        }
+        
+        success('✅ Transação efetivada', `${pendente.descricao} foi registrada.`);
+    }, [pendentes, adicionarTransacao, excluirPendente, atualizarProximaData, success]);
+    
+    const handleAnteciparPendente = useCallback((id: string, novaData: string) => {
+        editarPendente(id, { dataAgendada: novaData });
+        success('📅 Transação antecipada', 'Data atualizada com sucesso.');
+    }, [editarPendente, success]);
+    
+    const handleCancelarPendente = useCallback((id: string) => {
+        excluirPendente(id);
+        success('❌ Transação cancelada', 'Transação pendente removida.');
+    }, [excluirPendente, success]);
+    
+    // Calcular gastos por categoria (incluindo dívidas e cartões) - com useMemo para reatividade
+    const gastosPorCategoria = useMemo(() => {
+        // Gastos por categoria de transações
+        const gastos = transacoesAgrupadas.flatMap(g => g.transacoes)
+            .filter(t => t.tipo === 'saida')
+            .reduce((acc, t) => {
+                acc[t.categoriaId] = (acc[t.categoriaId] || 0) + t.valor;
+                return acc;
+            }, {} as Record<string, number>);
+        
+        // Adicionar dívidas por categoria
+        dividasPendentes.forEach(divida => {
+            if (divida.categoriaId) {
+                // Dívida tem categoria específica
+                gastos[divida.categoriaId] = (gastos[divida.categoriaId] || 0) + divida.valor;
+            } else {
+                // Dívida sem categoria vai para 'dividas'
+                gastos['dividas'] = (gastos['dividas'] || 0) + divida.valor;
+            }
+        });
+        
+        // Adicionar total de gastos em cartões (faturas atuais)
+        const totalCartoes = cartoes.reduce((sum, cartao) => {
+            const fatura = obterFaturaAtual(cartao.id);
+            return sum + (fatura?.total || 0);
+        }, 0);
+        if (totalCartoes > 0) {
+            gastos['cartoes'] = totalCartoes;
+        }
+        
+        return Object.entries(gastos).map(([categoriaId, total]) => ({ categoriaId, total }));
+    }, [transacoesAgrupadas, dividasPendentes, cartoes, gastosCartao, obterFaturaAtual]);
 
-    // Sincronizar recorrentes pendentes
+    // Sincronizar recorrentes pendentes - Otimizado
     useEffect(() => {
         if (!carregado) return;
 
-        const hoje = new Date().toISOString().split('T')[0];
+        const hoje = obterDataHoje();
+        const hojeKey = hoje;
+
+        // Resetar processadas se mudou o dia
+        const ultimoDiaProcessado = localStorage.getItem('jurus_ultimo_dia_processado');
+        if (ultimoDiaProcessado !== hojeKey) {
+            recorrentesProcessadasRef.current.clear();
+            localStorage.setItem('jurus_ultimo_dia_processado', hojeKey);
+        }
 
         recorrentes.forEach(rec => {
+            // Pular se inativa, expirada ou já processada hoje
             if (!rec.ativa) return;
             if (rec.dataFim && rec.proximaData > rec.dataFim) return;
+            
+            const chaveProcessamento = `${rec.id}_${rec.proximaData}`;
+            if (recorrentesProcessadasRef.current.has(chaveProcessamento)) return;
 
             // Se a próxima data já chegou ou passou
             if (rec.proximaData <= hoje) {
-                // Verificar se já existe uma transação idêntica nesta data para evitar duplicidade
-                // (Caso o efeito rode múltiplas vezes ou haja delay na atualização)
-                const jaExiste = transacoesAgrupadas
-                    .flatMap(g => g.transacoes)
-                    .some(t =>
-                        t.descricao === rec.descricao &&
-                        t.valor === rec.valor &&
-                        t.data.startsWith(rec.proximaData)
-                    );
+                // Verificação mais eficiente: busca direta nas transações
+                const jaExiste = transacoes.some(t =>
+                    t.descricao === rec.descricao &&
+                    t.valor === rec.valor &&
+                    t.categoriaId === rec.categoriaId &&
+                    t.data.startsWith(rec.proximaData)
+                );
 
                 if (!jaExiste) {
+                    // Marcar como processada antes de adicionar
+                    recorrentesProcessadasRef.current.add(chaveProcessamento);
+
                     adicionarTransacao({
                         descricao: rec.descricao,
                         valor: rec.valor,
@@ -646,7 +746,7 @@ export function FluxoCaixa() {
                         categoriaId: rec.categoriaId,
                         data: rec.proximaData,
                         observacoes: rec.observacoes ? `${rec.observacoes} (Recorrente)` : 'Transação Recorrente',
-                        recorrente: false // Não usar a lógica antiga interna do useFluxoCaixa
+                        recorrente: false
                     });
 
                     // Atualizar a próxima data da recorrência
@@ -656,7 +756,7 @@ export function FluxoCaixa() {
                 }
             }
         });
-    }, [recorrentes, carregado, transacoesAgrupadas, adicionarTransacao, atualizarProximaData]);
+    }, [recorrentes, carregado, transacoes, adicionarTransacao, atualizarProximaData, success]);
 
     // Funções para controlar visibilidade dos cards
     const handleToggleInsight = (key: keyof DashboardConfig['insights']) => {
@@ -733,7 +833,7 @@ export function FluxoCaixa() {
             });
 
             // Se a data for hoje ou anterior, adicionar também a transação imediata
-            const hoje = new Date().toISOString().split('T')[0];
+            const hoje = obterDataHoje();
             if (dados.data <= hoje && (dados.ativa ?? true)) {
                 adicionarTransacao({
                     ...dados,
@@ -1033,6 +1133,18 @@ export function FluxoCaixa() {
                         <span>Cartões</span>
                     </button>
                     <button
+                        onClick={() => setAbaAtiva('categorias')}
+                        className={cn(
+                            'flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all',
+                            abaAtiva === 'categorias'
+                                ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-700'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500'
+                        )}
+                    >
+                        <Tag className="w-4 h-4" />
+                        <span>Categorias</span>
+                    </button>
+                    <button
                         onClick={() => setModalConfigDashboard(true)}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
                         title="Configurar cards visíveis"
@@ -1043,6 +1155,16 @@ export function FluxoCaixa() {
             </div>
 
             {/* Conteúdo baseado na aba ativa */}
+            {abaAtiva === 'categorias' && (
+                <div className="card-mobile">
+                    <GerenciadorCategorias
+                        categorias={categorias}
+                        onAdicionarCategoria={adicionarCategoria}
+                        onExcluirCategoria={excluirCategoria}
+                    />
+                </div>
+            )}
+
             {abaAtiva === 'dividas' && (
                 <div className="card-mobile">
                     <ListaDividas
@@ -1052,7 +1174,7 @@ export function FluxoCaixa() {
                                 valor,
                                 tipo: 'saida',
                                 categoriaId: 'contas',
-                                data: new Date().toISOString().split('T')[0]
+                                data: obterDataHoje()
                             });
                         }}
                     />
@@ -1068,7 +1190,7 @@ export function FluxoCaixa() {
                                 valor,
                                 tipo: 'saida',
                                 categoriaId: 'contas',
-                                data: new Date().toISOString().split('T')[0]
+                                data: obterDataHoje()
                             });
                         }}
                     />
@@ -1158,7 +1280,7 @@ export function FluxoCaixa() {
                                     valor,
                                     tipo: 'saida',
                                     categoriaId: 'contas',
-                                    data: new Date().toISOString().split('T')[0]
+                                    data: obterDataHoje()
                                 });
                             }}
                             onMarcarComoPago={marcarDividaComoPago}
@@ -1175,7 +1297,7 @@ export function FluxoCaixa() {
                                     valor,
                                     tipo: 'saida',
                                     categoriaId: 'contas',
-                                    data: new Date().toISOString().split('T')[0]
+                                    data: obterDataHoje()
                                 });
                             }}
                             onVerDetalhes={() => setAbaAtiva('cartoes')}
@@ -1186,18 +1308,11 @@ export function FluxoCaixa() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
                         <CardMetas
                             metas={metas}
-                            gastosPorCategoria={
-                                Object.entries(
-                                    transacoesAgrupadas.flatMap(g => g.transacoes)
-                                        .filter(t => t.tipo === 'saida')
-                                        .reduce((acc, t) => {
-                                            acc[t.categoriaId] = (acc[t.categoriaId] || 0) + t.valor;
-                                            return acc;
-                                        }, {} as Record<string, number>)
-                                ).map(([categoriaId, total]) => ({ categoriaId, total }))
-                            }
+                            categorias={categorias}
+                            gastosPorCategoria={gastosPorCategoria}
                             onNovaMeta={() => setModalMeta({ aberto: true })}
                             onEditarMeta={(meta) => setModalMeta({ aberto: true, meta })}
+                            onExcluirMeta={excluirMeta}
                         />
                         <ListaRecorrentes
                             recorrentes={recorrentes}
@@ -1207,6 +1322,22 @@ export function FluxoCaixa() {
                             onToggleAtiva={toggleAtiva}
                         />
                     </div>
+                    
+                    {/* Transações Pendentes */}
+                    {pendentes.length > 0 && (
+                        <div className="mt-4">
+                            <ListaTransacoesPendentes
+                                pendentes={pendentes}
+                                pendentesPorData={pendentesPorData}
+                                onEfetivar={handleEfetivarPendente}
+                                onAntecipar={handleAnteciparPendente}
+                                onCancelar={handleCancelarPendente}
+                                onEditar={(pendente) => {
+                                    // TODO: Implementar modal de edição de pendente
+                                }}
+                            />
+                        </div>
+                    )}
 
                     {/* Filtros - Compacto */}
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
@@ -1551,6 +1682,7 @@ export function FluxoCaixa() {
                 }}
                 metaInicial={modalMeta.meta}
                 categoriasUsadas={metas.map(m => m.categoriaId)}
+                categorias={categorias}
             />
             <ModalRecorrente
                 aberto={modalRecorrente.aberto}
@@ -1565,6 +1697,7 @@ export function FluxoCaixa() {
                 }}
                 onToggleAtiva={toggleAtiva}
                 recorrenteInicial={modalRecorrente.recorrente}
+                categorias={categorias}
             />
 
             {/* Modal de Configuração do Dashboard */}

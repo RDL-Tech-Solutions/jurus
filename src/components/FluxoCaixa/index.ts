@@ -17,6 +17,7 @@ export { CardAlertas } from './CardAlertas';
 export { CardMetas } from './CardMetas';
 export { ModalMeta } from './ModalMeta';
 export { ListaRecorrentes } from './ListaRecorrentes';
+export { ListaTransacoesPendentes } from './ListaTransacoesPendentes';
 export { ModalRecorrente } from './ModalRecorrente';
 export { ModalConfigDashboard } from './ModalConfigDashboard';
 
