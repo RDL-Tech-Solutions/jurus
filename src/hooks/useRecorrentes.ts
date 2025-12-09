@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { TransacaoRecorrente, NovaTransacaoRecorrente, NovaTransacao } from '../types/fluxoCaixa';
+import { calcularProximaData } from '../utils/calculos';
 
 const STORAGE_KEY = 'jurus_recorrentes';
 
@@ -23,44 +24,7 @@ export function useRecorrentes() {
         }
     }, [recorrentes, carregado]);
 
-    const calcularProximaData = useCallback((
-        dataInicio: string,
-        frequencia: TransacaoRecorrente['frequencia'],
-        diaDoMes?: number,
-        diaDaSemana?: number
-    ): string => {
-        const hoje = new Date();
-        const inicio = new Date(dataInicio);
-        let proxima = new Date(Math.max(hoje.getTime(), inicio.getTime()));
-
-        switch (frequencia) {
-            case 'diaria':
-                proxima.setDate(proxima.getDate() + 1);
-                break;
-
-            case 'semanal':
-                if (diaDaSemana !== undefined) {
-                    const diaAtual = proxima.getDay();
-                    let diasAte = (diaDaSemana - diaAtual + 7) % 7;
-                    if (diasAte === 0) diasAte = 7; // Próxima semana
-                    proxima.setDate(proxima.getDate() + diasAte);
-                }
-                break;
-
-            case 'mensal':
-                if (diaDoMes !== undefined) {
-                    proxima.setMonth(proxima.getMonth() + 1);
-                    proxima.setDate(Math.min(diaDoMes, new Date(proxima.getFullYear(), proxima.getMonth() + 1, 0).getDate()));
-                }
-                break;
-
-            case 'anual':
-                proxima.setFullYear(proxima.getFullYear() + 1);
-                break;
-        }
-
-        return proxima.toISOString().split('T')[0];
-    }, []);
+    // calcularProximaData removida (usando importada)
 
     const adicionarRecorrente = useCallback((nova: NovaTransacaoRecorrente) => {
         const proximaData = calcularProximaData(
@@ -74,13 +38,13 @@ export function useRecorrentes() {
             ...nova,
             id: `rec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
             proximaData,
-            ativa: true,
+            ativa: nova.ativa ?? true,
             criadoEm: new Date().toISOString()
         };
 
         setRecorrentes(prev => [...prev, recorrente]);
         return recorrente;
-    }, [calcularProximaData]);
+    }, []);
 
     const editarRecorrente = useCallback((id: string, dados: Partial<TransacaoRecorrente>) => {
         setRecorrentes(prev => prev.map(rec => {
@@ -100,7 +64,7 @@ export function useRecorrentes() {
 
             return atualizado;
         }));
-    }, [calcularProximaData]);
+    }, []);
 
     const excluirRecorrente = useCallback((id: string) => {
         setRecorrentes(prev => prev.filter(rec => rec.id !== id));
@@ -149,11 +113,45 @@ export function useRecorrentes() {
 
             return { ...rec, proximaData };
         }));
-    }, [calcularProximaData]);
+    }, []);
 
     const obterRecorrentesAtivas = useCallback(() => {
         return recorrentes.filter(r => r.ativa);
     }, [recorrentes]);
+
+    const preverOcorrencias = useCallback((recorrente: Partial<TransacaoRecorrente>, meses: number = 12): string[] => {
+        if (!recorrente.dataInicio || !recorrente.frequencia) return [];
+
+        const ocorrencias: string[] = [];
+        let dataAtual = recorrente.dataInicio;
+        const hoje = new Date();
+        const limite = new Date(hoje.getFullYear(), hoje.getMonth() + meses, 0);
+
+        // Se a data de início já passou, começamos dela
+        // Se for futura, começamos dela também
+
+        // Simular ocorrências
+        let i = 0;
+        while (i < 100) { // Safety break
+            const dataObj = new Date(dataAtual);
+            if (dataObj > limite) break;
+
+            if (recorrente.dataFim && dataObj > new Date(recorrente.dataFim)) break;
+
+            ocorrencias.push(dataAtual);
+
+            // Calcular próxima
+            dataAtual = calcularProximaData(
+                dataAtual,
+                recorrente.frequencia,
+                recorrente.diaDoMes,
+                recorrente.diaDaSemana
+            );
+            i++;
+        }
+
+        return ocorrencias;
+    }, []);
 
     return {
         recorrentes,
@@ -164,6 +162,8 @@ export function useRecorrentes() {
         toggleAtiva,
         gerarTransacoesPendentes,
         atualizarProximaData,
-        obterRecorrentesAtivas
+        obterRecorrentesAtivas,
+        calcularProximaData,
+        preverOcorrencias
     };
 }

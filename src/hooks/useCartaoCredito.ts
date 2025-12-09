@@ -224,9 +224,24 @@ export function useCartaoCredito() {
 
     // Obter fatura atual de um cartão
     const obterFaturaAtual = useCallback((cartaoId: string): Fatura | null => {
+        const cartao = cartoes.find(c => c.id === cartaoId);
+        if (!cartao) return null;
+
         const hoje = new Date();
-        return calcularFatura(cartaoId, hoje.getMonth(), hoje.getFullYear());
-    }, [calcularFatura]);
+        let mes = hoje.getMonth();
+        let ano = hoje.getFullYear();
+
+        // Se hoje > diaFechamento, a fatura atual já fechou, pegar a próxima
+        if (hoje.getDate() > cartao.diaFechamento) {
+            mes++;
+            if (mes > 11) {
+                mes = 0;
+                ano++;
+            }
+        }
+
+        return calcularFatura(cartaoId, mes, ano);
+    }, [cartoes, calcularFatura]);
 
     // Marcar fatura como paga (retorna valor para debitar)
     const pagarFatura = useCallback((cartaoId: string, mes: number, ano: number): number => {
@@ -239,11 +254,42 @@ export function useCartaoCredito() {
         return fatura.total;
     }, [calcularFatura]);
 
-    // Calcular limite usado de um cartão
+    // Calcular limite usado de um cartão (soma de todas as faturas não pagas)
     const calcularLimiteUsado = useCallback((cartaoId: string): number => {
-        const fatura = obterFaturaAtual(cartaoId);
-        return fatura?.total || 0;
-    }, [obterFaturaAtual]);
+        const cartao = cartoes.find(c => c.id === cartaoId);
+        if (!cartao) return 0;
+
+        // Iterar sobre todos os gastos deste cartão
+        return gastos.filter(g => g.cartaoId === cartaoId).reduce((total, gasto) => {
+            const dataGasto = new Date(gasto.data);
+            const diaGasto = dataGasto.getDate();
+            const mesGasto = dataGasto.getMonth();
+            const anoGasto = dataGasto.getFullYear();
+
+            // Determinar a qual fatura este gasto pertence
+            // Se o dia do gasto for maior que o fechamento, vai para o mês seguinte
+            let mesFatura = mesGasto;
+            let anoFatura = anoGasto;
+
+            // Precisamos calcular o fechamento deste mês específico para saber se passou
+            const dataFechamento = calcularDataFechamento(cartao.diaFechamento, mesGasto, anoGasto);
+
+            if (dataGasto > dataFechamento) {
+                mesFatura++;
+                if (mesFatura > 11) {
+                    mesFatura = 0;
+                    anoFatura++;
+                }
+            }
+
+            // Verificar se esta fatura está paga
+            const faturaKey = `${cartaoId}-${mesFatura}-${anoFatura}`;
+            const estaPaga = faturasPagas[faturaKey];
+
+            // Se não estiver paga, soma ao limite usado
+            return estaPaga ? total : total + gasto.valorParcela;
+        }, 0);
+    }, [cartoes, gastos, faturasPagas]);
 
     // Estatísticas gerais
     const estatisticas = useMemo(() => {
@@ -291,6 +337,7 @@ export function useCartaoCredito() {
         calcularFatura,
         obterFaturaAtual,
         pagarFatura,
-        calcularLimiteUsado
+        calcularLimiteUsado,
+        faturasPagas
     };
 }

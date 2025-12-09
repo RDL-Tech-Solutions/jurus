@@ -158,6 +158,7 @@ export interface NovaTransacaoRecorrente {
     dataInicio: string;
     dataFim?: string;
     observacoes?: string;
+    ativa?: boolean;
 }
 
 // ==========================================

@@ -551,8 +551,7 @@ export function GerenciadorCartao({ onPagarFatura }: GerenciadorCartaoProps) {
 
     const handlePagarFatura = () => {
         if (modalPagamento.cartaoId) {
-            const hoje = new Date();
-            const valor = pagarFatura(modalPagamento.cartaoId, hoje.getMonth(), hoje.getFullYear());
+            const valor = pagarFatura(modalPagamento.cartaoId, mesFatura, anoFatura);
             if (onPagarFatura && valor > 0) {
                 onPagarFatura(valor, `Fatura ${modalPagamento.nome}`);
             }

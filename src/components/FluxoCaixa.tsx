@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
     BarChart3,
     Plus,
@@ -51,7 +51,7 @@ import { ToastContainer } from './Toast';
 import { ListaDividas } from './ListaDividas';
 import { GerenciadorCartao } from './GerenciadorCartao';
 import { NovaTransacao, TipoTransacao, PeriodoFiltro, EstatisticasFluxo, DashboardConfig, DASHBOARD_CONFIG_PADRAO } from '../types/fluxoCaixa';
-import { formatarMoeda } from '../utils/calculos';
+import { formatarMoeda, calcularProximaData, formatarData } from '../utils/calculos';
 import { exportarCSV, exportarJSON, imprimirPDF } from '../utils/exportar';
 import { cn } from '../utils/cn';
 import { calcularTendencia, calcularMediaDiaria, calcularRunway, calcularBreakEven, encontrarMaiorGasto, gerarAlertas } from '../utils/analiseFinanceira';
@@ -80,20 +80,22 @@ import {
 interface ModalTransacaoProps {
     aberto: boolean;
     onFechar: () => void;
-    onSalvar: (dados: NovaTransacao) => void;
+    onSalvar: (dados: NovaTransacao & { diaDoMes?: number; diaDaSemana?: number; dataFim?: string; ativa?: boolean }) => void;
     transacaoInicial?: Partial<NovaTransacao>;
     categorias: ReturnType<typeof useFluxoCaixa>['categorias'];
     titulo: string;
 }
 
 function ModalTransacao({ aberto, onFechar, onSalvar, transacaoInicial, categorias, titulo }: ModalTransacaoProps) {
-    const [dados, setDados] = useState<Partial<NovaTransacao>>({
+    const [dados, setDados] = useState<Partial<NovaTransacao> & { diaDoMes?: number; diaDaSemana?: number; dataFim?: string; ativa?: boolean }>({
         descricao: '',
         valor: 0,
         tipo: 'saida',
         categoriaId: '',
         data: new Date().toISOString().split('T')[0],
         observacoes: '',
+        recorrencia: 'mensal',
+        ativa: true,
         ...transacaoInicial
     });
 
@@ -108,6 +110,8 @@ function ModalTransacao({ aberto, onFechar, onSalvar, transacaoInicial, categori
                 categoriaId: '',
                 data: new Date().toISOString().split('T')[0],
                 observacoes: '',
+                recorrencia: 'mensal',
+                ativa: true,
                 ...transacaoInicial
             });
         }
@@ -140,7 +144,7 @@ function ModalTransacao({ aberto, onFechar, onSalvar, transacaoInicial, categori
 
     const handleSalvar = () => {
         if (validar()) {
-            onSalvar(dados as NovaTransacao);
+            onSalvar(dados as NovaTransacao & { diaDoMes?: number; diaDaSemana?: number; dataFim?: string; ativa?: boolean });
             onFechar();
             // Limpar formulário
             setDados({
@@ -324,35 +328,144 @@ function ModalTransacao({ aberto, onFechar, onSalvar, transacaoInicial, categori
                             </button>
                         </div>
                         {dados.recorrente && (
-                            <div className="mt-3">
-                                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
-                                    Repetir a cada:
-                                </label>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {[
-                                        { valor: 'diaria', label: 'Dia' },
-                                        { valor: 'semanal', label: 'Semana' },
-                                        { valor: 'mensal', label: 'Mês' },
-                                        { valor: 'anual', label: 'Ano' }
-                                    ].map(opt => (
-                                        <button
-                                            key={opt.valor}
-                                            type="button"
-                                            onClick={() => setDados(prev => ({ ...prev, recorrencia: opt.valor as any }))}
-                                            className={cn(
-                                                'px-2 py-1.5 rounded-lg text-xs font-medium transition-all border',
-                                                dados.recorrencia === opt.valor
-                                                    ? 'border-primary-500 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
-                                                    : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400'
-                                            )}
-                                        >
-                                            {opt.label}
-                                        </button>
-                                    ))}
+                            <div className="mt-3 space-y-4">
+                                {/* Status Ativo/Inativo */}
+                                <div className="flex items-center justify-between p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                                    <span className="text-xs font-medium text-gray-600 dark:text-gray-400">Status</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setDados(prev => ({ ...prev, ativa: !prev.ativa }))}
+                                        className={cn(
+                                            "px-2 py-1 rounded text-xs font-medium transition-colors",
+                                            dados.ativa
+                                                ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                                                : "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400"
+                                        )}
+                                    >
+                                        {dados.ativa ? 'Ativa' : 'Pausada'}
+                                    </button>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-2">
-                                    💡 A transação será gerada automaticamente na próxima recorrência.
-                                </p>
+
+                                <div>
+                                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                        Repetir a cada:
+                                    </label>
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {[
+                                            { valor: 'diaria', label: 'Dia' },
+                                            { valor: 'semanal', label: 'Semana' },
+                                            { valor: 'mensal', label: 'Mês' },
+                                            { valor: 'anual', label: 'Ano' }
+                                        ].map(opt => (
+                                            <button
+                                                key={opt.valor}
+                                                type="button"
+                                                onClick={() => setDados(prev => ({ ...prev, recorrencia: opt.valor as any }))}
+                                                className={cn(
+                                                    'px-2 py-1.5 rounded-lg text-xs font-medium transition-all border',
+                                                    dados.recorrencia === opt.valor
+                                                        ? 'border-primary-500 bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
+                                                        : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400'
+                                                )}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Configurações Específicas */}
+                                {dados.recorrencia === 'mensal' && (
+                                    <div>
+                                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                            Dia do Mês
+                                        </label>
+                                        <select
+                                            value={dados.diaDoMes || new Date(dados.data!).getDate()}
+                                            onChange={(e) => setDados(prev => ({ ...prev, diaDoMes: parseInt(e.target.value) }))}
+                                            className="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-800"
+                                        >
+                                            {Array.from({ length: 31 }, (_, i) => i + 1).map(dia => (
+                                                <option key={dia} value={dia}>Dia {dia}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
+                                {dados.recorrencia === 'semanal' && (
+                                    <div>
+                                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                            Dia da Semana
+                                        </label>
+                                        <div className="flex gap-1 overflow-x-auto pb-1">
+                                            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map((label, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    type="button"
+                                                    onClick={() => setDados(prev => ({ ...prev, diaDaSemana: idx }))}
+                                                    className={cn(
+                                                        'flex-1 py-1.5 px-2 rounded-lg text-[10px] font-medium transition-colors whitespace-nowrap',
+                                                        (dados.diaDaSemana ?? new Date(dados.data!).getDay()) === idx
+                                                            ? 'bg-blue-600 text-white'
+                                                            : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600'
+                                                    )}
+                                                >
+                                                    {label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">
+                                        Data Final (Opcional)
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={dados.dataFim || ''}
+                                        onChange={(e) => setDados(prev => ({ ...prev, dataFim: e.target.value }))}
+                                        className="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-xs bg-white dark:bg-gray-800"
+                                    />
+                                </div>
+
+                                {/* Previsão de Lançamentos */}
+                                <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                                    <h4 className="text-xs font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-1">
+                                        <Calendar className="w-3 h-3 text-primary-600" />
+                                        Previsão (Próximas 5)
+                                    </h4>
+                                    <div className="space-y-1">
+                                        {(() => {
+                                            const prevs = [];
+                                            let data = dados.data!;
+                                            const limite = new Date();
+                                            limite.setFullYear(limite.getFullYear() + 1);
+
+                                            for (let i = 0; i < 5; i++) {
+                                                prevs.push(data);
+                                                data = calcularProximaData(
+                                                    data,
+                                                    dados.recorrencia as any,
+                                                    dados.recorrencia === 'mensal' ? (dados.diaDoMes || new Date(dados.data!).getDate()) : undefined,
+                                                    dados.recorrencia === 'semanal' ? (dados.diaDaSemana ?? new Date(dados.data!).getDay()) : undefined
+                                                );
+                                                if (dados.dataFim && new Date(data) > new Date(dados.dataFim)) break;
+                                            }
+
+                                            return prevs.map((data, idx) => (
+                                                <div key={idx} className="flex items-center justify-between text-[10px]">
+                                                    <span className="text-gray-500">
+                                                        {idx + 1}ª
+                                                    </span>
+                                                    <span className="font-medium text-gray-900 dark:text-white">
+                                                        {formatarData(data)}
+                                                    </span>
+                                                </div>
+                                            ));
+                                        })()}
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
@@ -434,6 +547,7 @@ function ModalConfirmacao({ aberto, onFechar, onConfirmar, titulo, mensagem }: M
 // Componente Principal
 export function FluxoCaixa() {
     const {
+        transacoes,
         transacoesAgrupadas,
         categorias,
         filtros,
@@ -456,9 +570,11 @@ export function FluxoCaixa() {
 
     const {
         cartoes,
+        gastos: gastosCartao,
         estatisticas: estatisticasCartoes,
         obterFaturaAtual,
-        pagarFatura
+        pagarFatura,
+        faturasPagas
     } = useCartaoCredito();
 
     // Hooks para Metas e Recorrentes
@@ -474,7 +590,8 @@ export function FluxoCaixa() {
         adicionarRecorrente,
         editarRecorrente,
         excluirRecorrente,
-        toggleAtiva
+        toggleAtiva,
+        atualizarProximaData
     } = useRecorrentes();
 
     const [modalAberto, setModalAberto] = useState(false);
@@ -498,6 +615,48 @@ export function FluxoCaixa() {
         return saved ? JSON.parse(saved) : DASHBOARD_CONFIG_PADRAO;
     });
     const { success, error, toasts, removeToast } = useToast();
+
+    // Sincronizar recorrentes pendentes
+    useEffect(() => {
+        if (!carregado) return;
+
+        const hoje = new Date().toISOString().split('T')[0];
+
+        recorrentes.forEach(rec => {
+            if (!rec.ativa) return;
+            if (rec.dataFim && rec.proximaData > rec.dataFim) return;
+
+            // Se a próxima data já chegou ou passou
+            if (rec.proximaData <= hoje) {
+                // Verificar se já existe uma transação idêntica nesta data para evitar duplicidade
+                // (Caso o efeito rode múltiplas vezes ou haja delay na atualização)
+                const jaExiste = transacoesAgrupadas
+                    .flatMap(g => g.transacoes)
+                    .some(t =>
+                        t.descricao === rec.descricao &&
+                        t.valor === rec.valor &&
+                        t.data.startsWith(rec.proximaData)
+                    );
+
+                if (!jaExiste) {
+                    adicionarTransacao({
+                        descricao: rec.descricao,
+                        valor: rec.valor,
+                        tipo: rec.tipo,
+                        categoriaId: rec.categoriaId,
+                        data: rec.proximaData,
+                        observacoes: rec.observacoes ? `${rec.observacoes} (Recorrente)` : 'Transação Recorrente',
+                        recorrente: false // Não usar a lógica antiga interna do useFluxoCaixa
+                    });
+
+                    // Atualizar a próxima data da recorrência
+                    atualizarProximaData(rec.id);
+
+                    success('🔄 Recorrência gerada', `Transação "${rec.descricao}" foi gerada.`);
+                }
+            }
+        });
+    }, [recorrentes, carregado, transacoesAgrupadas, adicionarTransacao, atualizarProximaData]);
 
     // Funções para controlar visibilidade dos cards
     const handleToggleInsight = (key: keyof DashboardConfig['insights']) => {
@@ -556,9 +715,37 @@ export function FluxoCaixa() {
         { valor: 'ano', label: 'Este Ano' }
     ];
 
-    const handleAdicionarTransacao = (dados: NovaTransacao) => {
-        adicionarTransacao(dados);
-        success('✅ Transação adicionada!', 'Sua transação foi registrada com sucesso.');
+    const handleAdicionarTransacao = (dados: NovaTransacao & { diaDoMes?: number; diaDaSemana?: number; dataFim?: string; ativa?: boolean }) => {
+        if (dados.recorrente) {
+            // Adicionar à lista de regras recorrentes
+            adicionarRecorrente({
+                descricao: dados.descricao,
+                valor: dados.valor,
+                tipo: dados.tipo,
+                categoriaId: dados.categoriaId,
+                frequencia: dados.recorrencia!,
+                diaDoMes: dados.diaDoMes,
+                diaDaSemana: dados.diaDaSemana,
+                dataInicio: dados.data,
+                dataFim: dados.dataFim,
+                observacoes: dados.observacoes,
+                ativa: dados.ativa
+            });
+
+            // Se a data for hoje ou anterior, adicionar também a transação imediata
+            const hoje = new Date().toISOString().split('T')[0];
+            if (dados.data <= hoje && (dados.ativa ?? true)) {
+                adicionarTransacao({
+                    ...dados,
+                    recorrente: false // Importante: marcar como não recorrente na lista de transações para não duplicar lógica
+                });
+            }
+
+            success('✅ Recorrência criada!', 'A regra de recorrência foi configurada.');
+        } else {
+            adicionarTransacao(dados);
+            success('✅ Transação adicionada!', 'Sua transação foi registrada com sucesso.');
+        }
     };
 
     const handleEditarTransacao = (dados: NovaTransacao) => {
@@ -938,12 +1125,16 @@ export function FluxoCaixa() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
                         <CardPrevisaoMes
                             saldoAtual={estatisticas.saldo}
-                            transacoes={transacoesAgrupadas.flatMap(g => g.transacoes).map(t => ({
+                            transacoes={transacoes.map(t => ({
                                 data: t.data,
                                 tipo: t.tipo,
                                 valor: t.valor
                             }))}
-                            recorrentes={[]}
+                            recorrentes={recorrentes}
+                            gastosCartao={gastosCartao}
+                            cartoes={cartoes}
+                            faturasPagas={faturasPagas}
+                            dividasPendentes={dividasPendentes}
                         />
                         <CardEconomiaMensal
                             receitasConsideradas={estatisticas.totalEntradas}
@@ -1115,6 +1306,8 @@ export function FluxoCaixa() {
                         {dashboardConfig.graficos.barrasComparativo && dadosGraficoComparativo.length > 0 && (
                             <GraficoBarrasComparativo dados={dadosGraficoComparativo} />
                         )}
+
+
                     </div>
 
                     {/* Analytics Avançados - Fases 2 e 3 */}
@@ -1370,6 +1563,7 @@ export function FluxoCaixa() {
                     }
                     setModalRecorrente({ aberto: false });
                 }}
+                onToggleAtiva={toggleAtiva}
                 recorrenteInicial={modalRecorrente.recorrente}
             />
 
