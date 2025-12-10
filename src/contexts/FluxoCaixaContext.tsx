@@ -2,9 +2,16 @@
  * CONTEXT GLOBAL DO FLUXO DE CAIXA
  * Sincroniza TODOS os dados em um único lugar
  * Atualização automática sem F5
+ * 
+ * CORREÇÕES APLICADAS:
+ * ✅ Revalidação automática ao trocar de rota
+ * ✅ Listener de eventos customizados
+ * ✅ Sincronização entre abas
+ * ✅ Atualização imediata após salvar
  */
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
     Transacao,
     NovaTransacao,
@@ -22,6 +29,7 @@ import type {
     GastoCartao,
     NovoGastoCartao
 } from '../types/fluxoCaixa';
+import { obterDataHoraAtual } from '../utils/dateUtils';
 
 // Tipo para novo cartão
 interface NovoCartaoCredito {
@@ -75,34 +83,34 @@ interface FluxoCaixaContextType extends FluxoCaixaState {
     adicionarTransacao: (nova: NovaTransacao) => Transacao;
     editarTransacao: (id: string, dados: Partial<NovaTransacao>) => void;
     excluirTransacao: (id: string) => void;
-    
+
     // Recorrentes
     adicionarRecorrente: (nova: NovaTransacaoRecorrente) => TransacaoRecorrente;
     editarRecorrente: (id: string, dados: Partial<TransacaoRecorrente>) => void;
     excluirRecorrente: (id: string) => void;
     toggleRecorrente: (id: string) => void;
-    
+
     // Dívidas
     adicionarDivida: (nova: NovaDivida) => Divida;
     editarDivida: (id: string, dados: Partial<Divida>) => void;
     excluirDivida: (id: string) => void;
-    
+
     // Cartões
     adicionarCartao: (novo: NovoCartaoCredito) => CartaoCredito;
     editarCartao: (id: string, dados: Partial<CartaoCredito>) => void;
     excluirCartao: (id: string) => void;
     adicionarGastoCartao: (novo: NovoGastoCartao) => GastoCartao;
     excluirGastoCartao: (id: string) => void;
-    
+
     // Categorias
     adicionarCategoria: (categoria: Omit<CategoriaFluxo, 'id'>) => CategoriaFluxo;
     excluirCategoria: (id: string) => void;
     obterCategoria: (id: string) => CategoriaFluxo | undefined;
-    
+
     // Filtros
     atualizarFiltros: (filtros: Partial<FiltrosFluxo>) => void;
     limparFiltros: () => void;
-    
+
     // Forçar atualização
     forcarAtualizacao: () => void;
 }
@@ -124,7 +132,8 @@ const STORAGE_KEYS = {
 // ============================================================================
 
 const gerarId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-const getDataAtual = () => new Date().toISOString();
+// ✅ CORREÇÃO: Usar função de data corrigida
+const getDataAtual = () => obterDataHoraAtual();
 
 // Carregar dados do localStorage
 const carregarDados = (): Partial<FluxoCaixaState> => {
@@ -132,23 +141,23 @@ const carregarDados = (): Partial<FluxoCaixaState> => {
         // Transações e categorias
         const dadosFluxo = localStorage.getItem(STORAGE_KEYS.TRANSACOES);
         const parsedFluxo = dadosFluxo ? JSON.parse(dadosFluxo) : {};
-        
+
         // Recorrentes
         const dadosRecorrentes = localStorage.getItem(STORAGE_KEYS.RECORRENTES);
         const recorrentes = dadosRecorrentes ? JSON.parse(dadosRecorrentes) : [];
-        
+
         // Dívidas
         const dadosDividas = localStorage.getItem(STORAGE_KEYS.DIVIDAS);
         const dividas = dadosDividas ? JSON.parse(dadosDividas) : [];
-        
+
         // Cartões
         const dadosCartoes = localStorage.getItem(STORAGE_KEYS.CARTOES);
         const cartoes = dadosCartoes ? JSON.parse(dadosCartoes) : [];
-        
+
         // Gastos de cartão
         const dadosGastos = localStorage.getItem(STORAGE_KEYS.GASTOS_CARTAO);
         const gastosCartao = dadosGastos ? JSON.parse(dadosGastos) : [];
-        
+
         return {
             transacoes: parsedFluxo.transacoes || [],
             categorias: parsedFluxo.categorias || CATEGORIAS_PADRAO,
@@ -178,19 +187,19 @@ const salvarDados = (state: FluxoCaixaState) => {
             transacoes: state.transacoes,
             categorias: state.categorias
         }));
-        
+
         // Recorrentes
         localStorage.setItem(STORAGE_KEYS.RECORRENTES, JSON.stringify(state.recorrentes));
-        
+
         // Dívidas
         localStorage.setItem(STORAGE_KEYS.DIVIDAS, JSON.stringify(state.dividas));
-        
+
         // Cartões
         localStorage.setItem(STORAGE_KEYS.CARTOES, JSON.stringify(state.cartoes));
-        
+
         // Gastos de cartão
         localStorage.setItem(STORAGE_KEYS.GASTOS_CARTAO, JSON.stringify(state.gastosCartao));
-        
+
         // Disparar evento customizado para sincronizar outras abas
         window.dispatchEvent(new CustomEvent('fluxocaixa-updated', { detail: state }));
     } catch (error) {
@@ -221,14 +230,14 @@ function fluxoCaixaReducer(state: FluxoCaixaState, action: FluxoCaixaAction): Fl
                 ...action.payload,
                 carregado: true
             };
-            
+
         // TRANSAÇÕES
         case 'ADICIONAR_TRANSACAO':
             return {
                 ...state,
                 transacoes: [action.payload, ...state.transacoes]
             };
-            
+
         case 'EDITAR_TRANSACAO':
             return {
                 ...state,
@@ -238,20 +247,20 @@ function fluxoCaixaReducer(state: FluxoCaixaState, action: FluxoCaixaAction): Fl
                         : t
                 )
             };
-            
+
         case 'EXCLUIR_TRANSACAO':
             return {
                 ...state,
                 transacoes: state.transacoes.filter(t => t.id !== action.payload)
             };
-            
+
         // RECORRENTES
         case 'ADICIONAR_RECORRENTE':
             return {
                 ...state,
                 recorrentes: [...state.recorrentes, action.payload]
             };
-            
+
         case 'EDITAR_RECORRENTE':
             return {
                 ...state,
@@ -261,13 +270,13 @@ function fluxoCaixaReducer(state: FluxoCaixaState, action: FluxoCaixaAction): Fl
                         : r
                 )
             };
-            
+
         case 'EXCLUIR_RECORRENTE':
             return {
                 ...state,
                 recorrentes: state.recorrentes.filter(r => r.id !== action.payload)
             };
-            
+
         case 'TOGGLE_RECORRENTE':
             return {
                 ...state,
@@ -275,14 +284,14 @@ function fluxoCaixaReducer(state: FluxoCaixaState, action: FluxoCaixaAction): Fl
                     r.id === action.payload ? { ...r, ativa: !r.ativa } : r
                 )
             };
-            
+
         // DÍVIDAS
         case 'ADICIONAR_DIVIDA':
             return {
                 ...state,
                 dividas: [...state.dividas, action.payload]
             };
-            
+
         case 'EDITAR_DIVIDA':
             return {
                 ...state,
@@ -292,20 +301,20 @@ function fluxoCaixaReducer(state: FluxoCaixaState, action: FluxoCaixaAction): Fl
                         : d
                 )
             };
-            
+
         case 'EXCLUIR_DIVIDA':
             return {
                 ...state,
                 dividas: state.dividas.filter(d => d.id !== action.payload)
             };
-            
+
         // CARTÕES
         case 'ADICIONAR_CARTAO':
             return {
                 ...state,
                 cartoes: [...state.cartoes, action.payload]
             };
-            
+
         case 'EDITAR_CARTAO':
             return {
                 ...state,
@@ -315,51 +324,51 @@ function fluxoCaixaReducer(state: FluxoCaixaState, action: FluxoCaixaAction): Fl
                         : c
                 )
             };
-            
+
         case 'EXCLUIR_CARTAO':
             return {
                 ...state,
                 cartoes: state.cartoes.filter(c => c.id !== action.payload)
             };
-            
+
         case 'ADICIONAR_GASTO_CARTAO':
             return {
                 ...state,
                 gastosCartao: [...state.gastosCartao, action.payload]
             };
-            
+
         case 'EXCLUIR_GASTO_CARTAO':
             return {
                 ...state,
                 gastosCartao: state.gastosCartao.filter(g => g.id !== action.payload)
             };
-            
+
         // CATEGORIAS
         case 'ADICIONAR_CATEGORIA':
             return {
                 ...state,
                 categorias: [...state.categorias, action.payload]
             };
-            
+
         case 'EXCLUIR_CATEGORIA':
             return {
                 ...state,
                 categorias: state.categorias.filter(c => c.id !== action.payload)
             };
-            
+
         // FILTROS
         case 'ATUALIZAR_FILTROS':
             return {
                 ...state,
                 filtros: { ...state.filtros, ...action.payload }
             };
-            
+
         case 'LIMPAR_FILTROS':
             return {
                 ...state,
                 filtros: FILTROS_PADRAO
             };
-            
+
         default:
             return state;
     }
@@ -377,40 +386,59 @@ const FluxoCaixaContext = createContext<FluxoCaixaContextType | undefined>(undef
 
 export function FluxoCaixaProvider({ children }: { children: React.ReactNode }) {
     const [state, dispatch] = useReducer(fluxoCaixaReducer, initialState);
-    
+
     // Carregar dados iniciais
     useEffect(() => {
         const dados = carregarDados();
         dispatch({ type: 'CARREGAR_DADOS', payload: dados });
     }, []);
-    
+
     // Salvar sempre que houver mudanças
     useEffect(() => {
         if (state.carregado) {
             salvarDados(state);
         }
     }, [state]);
-    
-    // Listener para sincronizar entre abas
+
+    // ✅ CORREÇÃO: Sincronização entre abas usando o evento 'storage'
+    // O evento 'storage' é disparado automaticamente quando o localStorage é alterado em OUTRA aba/janela.
+    // Isso evita o loop infinito que ocorreria se escutássemos o evento na mesma aba que salvou os dados.
     useEffect(() => {
-        const handleStorageChange = () => {
+        const handleStorageChange = (e: StorageEvent) => {
+            // Se a alteração foi em uma das chaves que nos interessa
+            if (e.key && Object.values(STORAGE_KEYS).includes(e.key)) {
+                const dados = carregarDados();
+                dispatch({ type: 'CARREGAR_DADOS', payload: dados });
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+        };
+    }, []);
+
+    // ✅ CORREÇÃO: Revalidar dados ao trocar de rota
+    // Garante que ao navegar entre páginas, os dados são recarregados
+    useEffect(() => {
+        const handleRouteChange = () => {
+            console.log('🔄 Revalidando dados após mudança de rota...');
             const dados = carregarDados();
             dispatch({ type: 'CARREGAR_DADOS', payload: dados });
         };
-        
-        window.addEventListener('storage', handleStorageChange);
-        window.addEventListener('fluxocaixa-updated', handleStorageChange as EventListener);
-        
+
+        window.addEventListener('route-changed', handleRouteChange as EventListener);
+
         return () => {
-            window.removeEventListener('storage', handleStorageChange);
-            window.removeEventListener('fluxocaixa-updated', handleStorageChange as EventListener);
+            window.removeEventListener('route-changed', handleRouteChange as EventListener);
         };
     }, []);
-    
+
     // ========================================================================
     // ACTIONS - TRANSAÇÕES
     // ========================================================================
-    
+
     const adicionarTransacao = useCallback((nova: NovaTransacao): Transacao => {
         const transacao: Transacao = {
             id: gerarId(),
@@ -421,19 +449,19 @@ export function FluxoCaixaProvider({ children }: { children: React.ReactNode }) 
         dispatch({ type: 'ADICIONAR_TRANSACAO', payload: transacao });
         return transacao;
     }, []);
-    
+
     const editarTransacao = useCallback((id: string, dados: Partial<NovaTransacao>) => {
         dispatch({ type: 'EDITAR_TRANSACAO', payload: { id, dados } });
     }, []);
-    
+
     const excluirTransacao = useCallback((id: string) => {
         dispatch({ type: 'EXCLUIR_TRANSACAO', payload: id });
     }, []);
-    
+
     // ========================================================================
     // ACTIONS - RECORRENTES
     // ========================================================================
-    
+
     const adicionarRecorrente = useCallback((nova: NovaTransacaoRecorrente): TransacaoRecorrente => {
         const recorrente: TransacaoRecorrente = {
             ...nova,
@@ -445,23 +473,23 @@ export function FluxoCaixaProvider({ children }: { children: React.ReactNode }) 
         dispatch({ type: 'ADICIONAR_RECORRENTE', payload: recorrente });
         return recorrente;
     }, []);
-    
+
     const editarRecorrente = useCallback((id: string, dados: Partial<TransacaoRecorrente>) => {
         dispatch({ type: 'EDITAR_RECORRENTE', payload: { id, dados } });
     }, []);
-    
+
     const excluirRecorrente = useCallback((id: string) => {
         dispatch({ type: 'EXCLUIR_RECORRENTE', payload: id });
     }, []);
-    
+
     const toggleRecorrente = useCallback((id: string) => {
         dispatch({ type: 'TOGGLE_RECORRENTE', payload: id });
     }, []);
-    
+
     // ========================================================================
     // ACTIONS - DÍVIDAS
     // ========================================================================
-    
+
     const adicionarDivida = useCallback((nova: NovaDivida): Divida => {
         const divida: Divida = {
             ...nova,
@@ -473,19 +501,19 @@ export function FluxoCaixaProvider({ children }: { children: React.ReactNode }) 
         dispatch({ type: 'ADICIONAR_DIVIDA', payload: divida });
         return divida;
     }, []);
-    
+
     const editarDivida = useCallback((id: string, dados: Partial<Divida>) => {
         dispatch({ type: 'EDITAR_DIVIDA', payload: { id, dados } });
     }, []);
-    
+
     const excluirDivida = useCallback((id: string) => {
         dispatch({ type: 'EXCLUIR_DIVIDA', payload: id });
     }, []);
-    
+
     // ========================================================================
     // ACTIONS - CARTÕES
     // ========================================================================
-    
+
     const adicionarCartao = useCallback((novo: NovoCartaoCredito): CartaoCredito => {
         const cartao: CartaoCredito = {
             ...novo,
@@ -496,15 +524,15 @@ export function FluxoCaixaProvider({ children }: { children: React.ReactNode }) 
         dispatch({ type: 'ADICIONAR_CARTAO', payload: cartao });
         return cartao;
     }, []);
-    
+
     const editarCartao = useCallback((id: string, dados: Partial<CartaoCredito>) => {
         dispatch({ type: 'EDITAR_CARTAO', payload: { id, dados } });
     }, []);
-    
+
     const excluirCartao = useCallback((id: string) => {
         dispatch({ type: 'EXCLUIR_CARTAO', payload: id });
     }, []);
-    
+
     const adicionarGastoCartao = useCallback((novo: NovoGastoCartao): GastoCartao => {
         const gasto: GastoCartao = {
             ...novo,
@@ -516,15 +544,15 @@ export function FluxoCaixaProvider({ children }: { children: React.ReactNode }) 
         dispatch({ type: 'ADICIONAR_GASTO_CARTAO', payload: gasto });
         return gasto;
     }, []);
-    
+
     const excluirGastoCartao = useCallback((id: string) => {
         dispatch({ type: 'EXCLUIR_GASTO_CARTAO', payload: id });
     }, []);
-    
+
     // ========================================================================
     // ACTIONS - CATEGORIAS
     // ========================================================================
-    
+
     const adicionarCategoria = useCallback((categoria: Omit<CategoriaFluxo, 'id'>): CategoriaFluxo => {
         const novaCategoria: CategoriaFluxo = {
             id: gerarId(),
@@ -533,41 +561,41 @@ export function FluxoCaixaProvider({ children }: { children: React.ReactNode }) 
         dispatch({ type: 'ADICIONAR_CATEGORIA', payload: novaCategoria });
         return novaCategoria;
     }, []);
-    
+
     const excluirCategoria = useCallback((id: string) => {
         if (CATEGORIAS_PADRAO.some(c => c.id === id)) return;
         dispatch({ type: 'EXCLUIR_CATEGORIA', payload: id });
     }, []);
-    
+
     const obterCategoria = useCallback((id: string): CategoriaFluxo | undefined => {
         return state.categorias.find(c => c.id === id);
     }, [state.categorias]);
-    
+
     // ========================================================================
     // ACTIONS - FILTROS
     // ========================================================================
-    
+
     const atualizarFiltros = useCallback((filtros: Partial<FiltrosFluxo>) => {
         dispatch({ type: 'ATUALIZAR_FILTROS', payload: filtros });
     }, []);
-    
+
     const limparFiltros = useCallback(() => {
         dispatch({ type: 'LIMPAR_FILTROS' });
     }, []);
-    
+
     // ========================================================================
     // FORÇAR ATUALIZAÇÃO
     // ========================================================================
-    
+
     const forcarAtualizacao = useCallback(() => {
         const dados = carregarDados();
         dispatch({ type: 'CARREGAR_DADOS', payload: dados });
     }, []);
-    
+
     // ========================================================================
     // CONTEXT VALUE
     // ========================================================================
-    
+
     const value = useMemo<FluxoCaixaContextType>(() => ({
         ...state,
         adicionarTransacao,
@@ -615,7 +643,7 @@ export function FluxoCaixaProvider({ children }: { children: React.ReactNode }) 
         limparFiltros,
         forcarAtualizacao
     ]);
-    
+
     return (
         <FluxoCaixaContext.Provider value={value}>
             {children}

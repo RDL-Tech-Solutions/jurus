@@ -54,15 +54,30 @@ export function Comparacao() {
   const [aporteMensal, setAporteMensal] = useState(100);
   const [prazoMeses, setPrazoMeses] = useState(12);
 
+  // ✅ CORREÇÃO: Recarregar ao montar E quando dados mudarem
   useEffect(() => {
-    const sims = carregarSimulacoes();
-    setSimulacoes(sims);
-    if (sims.length > 0) {
-      setSimulacaoSelecionada(sims[0]);
-      setValorInicial(sims[0].valorInicial);
-      setAporteMensal(sims[0].aporteMensal);
-      setPrazoMeses(sims[0].prazoMeses);
-    }
+    const carregarDados = () => {
+      const sims = carregarSimulacoes();
+      setSimulacoes(sims);
+      if (sims.length > 0) {
+        setSimulacaoSelecionada(sims[0]);
+        setValorInicial(sims[0].valorInicial);
+        setAporteMensal(sims[0].aporteMensal);
+        setPrazoMeses(sims[0].prazoMeses);
+      }
+    };
+    
+    // Carregar dados iniciais
+    carregarDados();
+    
+    // Ouvir mudanças de rota e storage
+    window.addEventListener('route-changed', carregarDados);
+    window.addEventListener('storage', carregarDados);
+    
+    return () => {
+      window.removeEventListener('route-changed', carregarDados);
+      window.removeEventListener('storage', carregarDados);
+    };
   }, []);
 
   // Comparações
