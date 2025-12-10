@@ -31,7 +31,8 @@ export function useDashboardConfig() {
         setConfig(prev => ({
             insights: { ...prev.insights, ...(novaConfig.insights || {}) },
             analytics: { ...prev.analytics, ...(novaConfig.analytics || {}) },
-            graficos: { ...prev.graficos, ...(novaConfig.graficos || {}) }
+            graficos: { ...prev.graficos, ...(novaConfig.graficos || {}) },
+            cardsTransacoes: { ...prev.cardsTransacoes, ...(novaConfig.cardsTransacoes || {}) }
         }));
     }, []);
 
@@ -78,6 +79,14 @@ export function useDashboardConfig() {
                 barrasComparativo: true,
                 pizza: true,
                 evolucao: true
+            },
+            cardsTransacoes: {
+                previsaoMes: true,
+                economiaMensal: true,
+                dividasPendentes: true,
+                cartoesCredito: true,
+                metasMes: true,
+                recorrentes: true
             }
         });
     }, []);
@@ -100,6 +109,14 @@ export function useDashboardConfig() {
                 barrasComparativo: false,
                 pizza: false,
                 evolucao: false
+            },
+            cardsTransacoes: {
+                previsaoMes: false,
+                economiaMensal: false,
+                dividasPendentes: false,
+                cartoesCredito: false,
+                metasMes: false,
+                recorrentes: false
             }
         });
     }, []);

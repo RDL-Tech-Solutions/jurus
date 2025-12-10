@@ -10,6 +10,7 @@ interface ModalConfigDashboardProps {
     onToggleInsight: (key: keyof DashboardConfig['insights']) => void;
     onToggleAnalytic: (key: keyof DashboardConfig['analytics']) => void;
     onToggleGrafico: (key: keyof DashboardConfig['graficos']) => void;
+    onToggleCardTransacao: (key: keyof DashboardConfig['cardsTransacoes']) => void;
     onRestaurarPadrao: () => void;
     onMostrarTodos: () => void;
     onOcultarTodos: () => void;
@@ -35,6 +36,15 @@ const GRAFICOS_CONFIG = [
     { key: 'evolucao' as const, label: 'Evolução', icone: '📈', desc: 'Linha de evolução do saldo' }
 ];
 
+const CARDS_TRANSACOES_CONFIG = [
+    { key: 'previsaoMes' as const, label: 'Previsão do Mês', icone: '📅', desc: 'Projeção de saldo e gastos futuros' },
+    { key: 'economiaMensal' as const, label: 'Economia Mensal', icone: '💰', desc: 'Quanto você economizou este mês' },
+    { key: 'dividasPendentes' as const, label: 'Dívidas Pendentes', icone: '📄', desc: 'Resumo de dívidas a vencer' },
+    { key: 'cartoesCredito' as const, label: 'Cartões de Crédito', icone: '💳', desc: 'Faturas e limites dos cartões' },
+    { key: 'metasMes' as const, label: 'Metas do Mês', icone: '🎯', desc: 'Progresso das metas de gastos' },
+    { key: 'recorrentes' as const, label: 'Recorrentes', icone: '🔄', desc: 'Transações recorrentes ativas' }
+];
+
 export function ModalConfigDashboard({
     aberto,
     onFechar,
@@ -42,6 +52,7 @@ export function ModalConfigDashboard({
     onToggleInsight,
     onToggleAnalytic,
     onToggleGrafico,
+    onToggleCardTransacao,
     onRestaurarPadrao,
     onMostrarTodos,
     onOcultarTodos
@@ -50,7 +61,8 @@ export function ModalConfigDashboard({
         const insights = Object.values(config.insights).filter(Boolean).length;
         const analytics = Object.values(config.analytics).filter(Boolean).length;
         const graficos = Object.values(config.graficos).filter(Boolean).length;
-        return { insights, analytics, graficos, total: insights + analytics + graficos };
+        const cardsTransacoes = Object.values(config.cardsTransacoes).filter(Boolean).length;
+        return { insights, analytics, graficos, cardsTransacoes, total: insights + analytics + graficos + cardsTransacoes };
     };
 
     const ativos = contarAtivos();
@@ -104,7 +116,7 @@ export function ModalConfigDashboard({
                         </button>
                     </div>
                     <p className="text-center text-xs text-gray-500 mt-2">
-                        {ativos.total} de 11 itens visíveis
+                        {ativos.total} de 17 itens visíveis
                     </p>
                 </div>
 
@@ -215,6 +227,43 @@ export function ModalConfigDashboard({
                                         checked={config.graficos[item.key]}
                                         onChange={() => onToggleGrafico(item.key)}
                                         className="w-5 h-5 rounded text-green-600"
+                                    />
+                                </label>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Cards de Transações */}
+                    <div>
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+                            💳 Cards de Transações
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-600">
+                                {ativos.cardsTransacoes}/{CARDS_TRANSACOES_CONFIG.length}
+                            </span>
+                        </h3>
+                        <div className="space-y-2">
+                            {CARDS_TRANSACOES_CONFIG.map(item => (
+                                <label
+                                    key={item.key}
+                                    className={cn(
+                                        'flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all',
+                                        config.cardsTransacoes[item.key]
+                                            ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300'
+                                    )}
+                                >
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xl">{item.icone}</span>
+                                        <div>
+                                            <p className="text-sm font-medium text-gray-900 dark:text-white">{item.label}</p>
+                                            <p className="text-xs text-gray-500">{item.desc}</p>
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        checked={config.cardsTransacoes[item.key]}
+                                        onChange={() => onToggleCardTransacao(item.key)}
+                                        className="w-5 h-5 rounded text-amber-600"
                                     />
                                 </label>
                             ))}

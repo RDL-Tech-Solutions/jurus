@@ -48,37 +48,26 @@ import { useMetas } from '../hooks/useMetas';
 import { useRecorrentes } from '../hooks/useRecorrentes';
 import { useTransacoesPendentes } from '../hooks/useTransacoesPendentes';
 import { useToast } from '../hooks/useToast';
+import { ExportButton, ExportModal } from '../features/export/components';
+import { useExport } from '../features/export/hooks/useExport';
 import { useModal } from '../hooks/useModal';
 import { ToastContainer } from './Toast';
-import { ListaDividas } from './ListaDividas';
-import { GerenciadorCartao } from './GerenciadorCartao';
-import { GerenciadorCategorias } from './GerenciadorCategorias';
+import { CategoriesManager } from '../features/categories/components';
 import { NovaTransacao, TipoTransacao, PeriodoFiltro, EstatisticasFluxo, DashboardConfig, DASHBOARD_CONFIG_PADRAO } from '../types/fluxoCaixa';
 import { formatarMoeda, calcularProximaData, formatarData, obterDataHoje } from '../utils/calculos';
 import { exportarCSV, exportarJSON, imprimirPDF } from '../utils/exportar';
 import { cn } from '../utils/cn';
-import { calcularTendencia, calcularMediaDiaria, calcularRunway, calcularBreakEven, encontrarMaiorGasto, gerarAlertas } from '../utils/analiseFinanceira';
 import {
-    CardTendencia,
-    CardMediaDiaria,
-    CardComparativo,
-    GraficoBarrasComparativo,
-    GraficoTopCategorias,
-    CardRunway,
-    CardBreakEven,
-    CardMaiorGasto,
-    CardAlertas,
-    CardPrevisaoMes,
-    CardEconomiaMensal,
-    CardResumoDividas,
-    CardResumoCartoes,
-    CardMetas,
     ModalMeta,
-    ListaRecorrentes,
-    ListaTransacoesPendentes,
     ModalRecorrente,
-    ModalConfigDashboard
+    ModalConfigDashboard,
+    ModalDivida,
+    ModalCartao
 } from './FluxoCaixa/index';
+import { AreaTransacoes } from '../features/transacoes';
+import { DashboardFinanceiro } from '../features/dashboard';
+import { DebtsManager } from '../features/debts';
+import { CardsManager } from '../features/cards';
 
 // Modal de Adicionar/Editar Transação
 interface ModalTransacaoProps {
@@ -574,7 +563,10 @@ export function FluxoCaixa() {
     const {
         dividasPendentes,
         estatisticas: estatisticasDividas,
-        marcarComoPago: marcarDividaComoPago
+        marcarComoPago: marcarDividaComoPago,
+        adicionarDivida,
+        editarDivida,
+        excluirDivida
     } = useDividas();
 
     const {
@@ -583,7 +575,10 @@ export function FluxoCaixa() {
         estatisticas: estatisticasCartoes,
         obterFaturaAtual,
         pagarFatura,
-        faturasPagas
+        faturasPagas,
+        adicionarCartao,
+        editarCartao,
+        excluirCartao
     } = useCartaoCredito();
 
     // Hooks para Metas e Recorrentes
@@ -602,7 +597,7 @@ export function FluxoCaixa() {
         toggleAtiva,
         atualizarProximaData
     } = useRecorrentes();
-    
+
     const {
         pendentes,
         pendentesPorData,
@@ -611,6 +606,10 @@ export function FluxoCaixa() {
         editarPendente,
         excluirPendente
     } = useTransacoesPendentes();
+
+    // Hook de Exportação
+    const { exportData, isExporting } = useExport();
+    const [showExportModal, setShowExportModal] = useState(false);
 
     const [modalAberto, setModalAberto] = useState(false);
     const [modalEdicao, setModalEdicao] = useState<{ aberto: boolean; id: string; dados?: Partial<NovaTransacao> }>({
@@ -623,22 +622,24 @@ export function FluxoCaixa() {
         descricao: ''
     });
     const [mostrarFiltros, setMostrarFiltros] = useState(false);
-    const [abaAtiva, setAbaAtiva] = useState<'transacoes' | 'dividas' | 'cartoes' | 'categorias'>('transacoes');
+    const [abaAtiva, setAbaAtiva] = useState<'dashboard' | 'transacoes' | 'dividas' | 'cartoes' | 'categorias'>('dashboard');
     const [mostrarMenuExportar, setMostrarMenuExportar] = useState(false);
     const [modalMeta, setModalMeta] = useState<{ aberto: boolean; meta?: any }>({ aberto: false });
     const [modalRecorrente, setModalRecorrente] = useState<{ aberto: boolean; recorrente?: any }>({ aberto: false });
     const [modalConfigDashboard, setModalConfigDashboard] = useState(false);
+    const [modalDivida, setModalDivida] = useState(false);
+    const [modalCartao, setModalCartao] = useState(false);
     const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig>(() => {
         const saved = localStorage.getItem('jurus_dashboard_config');
         return saved ? JSON.parse(saved) : DASHBOARD_CONFIG_PADRAO;
     });
     const { success, error, toasts, removeToast } = useToast();
-    
+
     // Funções para gerenciar transações pendentes
     const handleEfetivarPendente = useCallback((id: string) => {
         const pendente = pendentes.find(p => p.id === id);
         if (!pendente) return;
-        
+
         // Criar transação efetiva
         adicionarTransacao({
             descricao: pendente.descricao,
@@ -648,28 +649,28 @@ export function FluxoCaixa() {
             data: obterDataHoje(),
             observacoes: pendente.observacoes
         });
-        
+
         // Remover da lista de pendentes
         excluirPendente(id);
-        
+
         // Se veio de recorrente, atualizar próxima data
         if (pendente.recorrenteId) {
             atualizarProximaData(pendente.recorrenteId);
         }
-        
+
         success('✅ Transação efetivada', `${pendente.descricao} foi registrada.`);
     }, [pendentes, adicionarTransacao, excluirPendente, atualizarProximaData, success]);
-    
+
     const handleAnteciparPendente = useCallback((id: string, novaData: string) => {
         editarPendente(id, { dataAgendada: novaData });
         success('📅 Transação antecipada', 'Data atualizada com sucesso.');
     }, [editarPendente, success]);
-    
+
     const handleCancelarPendente = useCallback((id: string) => {
         excluirPendente(id);
         success('❌ Transação cancelada', 'Transação pendente removida.');
     }, [excluirPendente, success]);
-    
+
     // Calcular gastos por categoria (incluindo dívidas e cartões) - com useMemo para reatividade
     const gastosPorCategoria = useMemo(() => {
         // Gastos por categoria de transações
@@ -679,7 +680,7 @@ export function FluxoCaixa() {
                 acc[t.categoriaId] = (acc[t.categoriaId] || 0) + t.valor;
                 return acc;
             }, {} as Record<string, number>);
-        
+
         // Adicionar dívidas por categoria
         dividasPendentes.forEach(divida => {
             if (divida.categoriaId) {
@@ -690,7 +691,7 @@ export function FluxoCaixa() {
                 gastos['dividas'] = (gastos['dividas'] || 0) + divida.valor;
             }
         });
-        
+
         // Adicionar total de gastos em cartões (faturas atuais)
         const totalCartoes = cartoes.reduce((sum, cartao) => {
             const fatura = obterFaturaAtual(cartao.id);
@@ -699,7 +700,7 @@ export function FluxoCaixa() {
         if (totalCartoes > 0) {
             gastos['cartoes'] = totalCartoes;
         }
-        
+
         return Object.entries(gastos).map(([categoriaId, total]) => ({ categoriaId, total }));
     }, [transacoesAgrupadas, dividasPendentes, cartoes, gastosCartao, obterFaturaAtual]);
 
@@ -721,7 +722,7 @@ export function FluxoCaixa() {
             // Pular se inativa, expirada ou já processada hoje
             if (!rec.ativa) return;
             if (rec.dataFim && rec.proximaData > rec.dataFim) return;
-            
+
             const chaveProcessamento = `${rec.id}_${rec.proximaData}`;
             if (recorrentesProcessadasRef.current.has(chaveProcessamento)) return;
 
@@ -783,6 +784,14 @@ export function FluxoCaixa() {
         });
     };
 
+    const handleToggleCardTransacao = (key: keyof DashboardConfig['cardsTransacoes']) => {
+        setDashboardConfig(prev => {
+            const newConfig = { ...prev, cardsTransacoes: { ...prev.cardsTransacoes, [key]: !prev.cardsTransacoes[key] } };
+            localStorage.setItem('jurus_dashboard_config', JSON.stringify(newConfig));
+            return newConfig;
+        });
+    };
+
     const handleRestaurarPadrao = () => {
         setDashboardConfig(DASHBOARD_CONFIG_PADRAO);
         localStorage.setItem('jurus_dashboard_config', JSON.stringify(DASHBOARD_CONFIG_PADRAO));
@@ -792,7 +801,8 @@ export function FluxoCaixa() {
         const allTrue: DashboardConfig = {
             insights: { tendencia: true, mediaDiaria: true, comparativo: true },
             analytics: { runway: true, breakEven: true, maiorGasto: true, alertas: true, topCategorias: true },
-            graficos: { barrasComparativo: true, pizza: true, evolucao: true }
+            graficos: { barrasComparativo: true, pizza: true, evolucao: true },
+            cardsTransacoes: { previsaoMes: true, economiaMensal: true, dividasPendentes: true, cartoesCredito: true, metasMes: true, recorrentes: true }
         };
         setDashboardConfig(allTrue);
         localStorage.setItem('jurus_dashboard_config', JSON.stringify(allTrue));
@@ -802,7 +812,8 @@ export function FluxoCaixa() {
         const allFalse: DashboardConfig = {
             insights: { tendencia: false, mediaDiaria: false, comparativo: false },
             analytics: { runway: false, breakEven: false, maiorGasto: false, alertas: false, topCategorias: false },
-            graficos: { barrasComparativo: false, pizza: false, evolucao: false }
+            graficos: { barrasComparativo: false, pizza: false, evolucao: false },
+            cardsTransacoes: { previsaoMes: false, economiaMensal: false, dividasPendentes: false, cartoesCredito: false, metasMes: false, recorrentes: false }
         };
         setDashboardConfig(allFalse);
         localStorage.setItem('jurus_dashboard_config', JSON.stringify(allFalse));
@@ -911,16 +922,83 @@ export function FluxoCaixa() {
         }
     };
 
+    // Handler de exportação do dashboard completo
+    const handleExportDashboard = useCallback(async (config: any) => {
+        const periodoLabel = periodos.find(p => p.valor === filtros.periodo)?.label || 'Personalizado';
+        const transacoesList = transacoesAgrupadas.flatMap(g => g.transacoes);
+        
+        // Formatar dados para exportação
+        const dashboardData = {
+            summary: {
+                title: 'Dashboard Completo - Jurus',
+                description: `Período: ${periodoLabel} | Gerado em: ${new Date().toLocaleDateString('pt-BR')}`
+            },
+            tables: [
+                {
+                    title: 'Resumo Financeiro',
+                    headers: ['Item', 'Valor'],
+                    rows: [
+                        ['Receitas', formatarMoeda(estatisticas.totalEntradas)],
+                        ['Despesas', formatarMoeda(estatisticas.totalSaidas)],
+                        ['Saldo', formatarMoeda(estatisticas.saldo)]
+                    ]
+                },
+                {
+                    title: 'Transações Recentes',
+                    headers: ['Data', 'Descrição', 'Categoria', 'Valor', 'Tipo'],
+                    rows: transacoesList.slice(0, 20).map(t => [
+                        formatarData(t.data),
+                        t.descricao,
+                        obterCategoria(t.categoriaId)?.nome || 'Sem categoria',
+                        formatarMoeda(t.valor),
+                        t.tipo === 'entrada' ? 'Entrada' : 'Saída'
+                    ])
+                }
+            ],
+            sheets: [
+                {
+                    name: 'Resumo',
+                    data: [
+                        ['Receitas', estatisticas.totalEntradas],
+                        ['Despesas', estatisticas.totalSaidas],
+                        ['Saldo', estatisticas.saldo]
+                    ],
+                    headers: ['Item', 'Valor']
+                },
+                {
+                    name: 'Transações',
+                    json: transacoesList.map(t => ({
+                        Data: formatarData(t.data),
+                        Descrição: t.descricao,
+                        Categoria: obterCategoria(t.categoriaId)?.nome || 'Sem categoria',
+                        Valor: t.valor,
+                        Tipo: t.tipo === 'entrada' ? 'Entrada' : 'Saída'
+                    }))
+                }
+            ],
+            headers: ['Data', 'Descrição', 'Categoria', 'Valor', 'Tipo'],
+            rows: transacoesList.map(t => [
+                formatarData(t.data),
+                t.descricao,
+                obterCategoria(t.categoriaId)?.nome || 'Sem categoria',
+                t.valor,
+                t.tipo === 'entrada' ? 'Entrada' : 'Saída'
+            ])
+        };
+
+        await exportData('dashboard', dashboardData, config.format, config);
+    }, [exportData, filtros, periodos, estatisticas, transacoesAgrupadas, obterCategoria]);
+
     // Dados para gráfico de pizza
     const dadosPizza = useMemo(() => {
         return estatisticas.transacoesPorCategoria
             .filter(c => c.tipo === 'saida')
             .slice(0, 5)
             .map(c => ({
-                name: c.categoria.nome,
+                name: c.categoria?.nome || 'Outros',
                 value: c.total,
-                color: c.categoria.cor,
-                icone: c.categoria.icone
+                color: c.categoria?.cor || '#9CA3AF',
+                icone: c.categoria?.icone || 'help-circle'
             }));
     }, [estatisticas.transacoesPorCategoria]);
 
@@ -949,73 +1027,6 @@ export function FluxoCaixa() {
         evolucaoSaldo: estatisticas.evolucaoSaldo
     }), [estatisticas]);
 
-    // Calcular tendência
-    const tendencia = useMemo(() =>
-        calcularTendencia(estatisticas, estatisticasAnterior),
-        [estatisticas, estatisticasAnterior]
-    );
-
-    // Calcular média diária
-    const mediaDiaria = useMemo(() =>
-        calcularMediaDiaria(estatisticas, todasTransacoes),
-        [estatisticas, todasTransacoes]
-    );
-
-    // Dados para gráfico comparativo (últimos 6 meses)
-    const dadosGraficoComparativo = useMemo(() => {
-        return estatisticas.evolucaoSaldo.slice(-6).map((item, index) => {
-            const data = new Date(item.data);
-            const mes = data.toLocaleDateString('pt-BR', { month: 'short' });
-
-            // Simular entradas/saídas baseado na posição (TODO: usar dados reais se disponível)
-            const baseEntradas = estatisticas.totalEntradas / 6;
-            const baseSaidas = estatisticas.totalSaidas / 6;
-
-            return {
-                mes: mes.charAt(0).toUpperCase() + mes.slice(1),
-                entradas: baseEntradas * (0.8 + (index * 0.08)),
-                saidas: baseSaidas * (1.2 - (index * 0.06))
-            };
-        });
-    }, [estatisticas]);
-
-    // Dados para gráfico de top categorias (Fase 2)
-    const dadosTopCategorias = useMemo(() => {
-        return estatisticas.transacoesPorCategoria
-            .filter(c => c.tipo === 'saida')
-            .slice(0, 5)
-            .map(c => ({
-                nome: c.categoria.nome,
-                valor: c.total,
-                cor: c.categoria.cor,
-                icone: c.categoria.icone
-            }));
-    }, [estatisticas.transacoesPorCategoria]);
-
-    // Calcular runway (Fase 3)
-    const runway = useMemo(() => {
-        const gastoMensal = estatisticas.totalSaidas;
-        const receitaMensal = estatisticas.totalEntradas;
-        return calcularRunway(estatisticas.saldo, gastoMensal, receitaMensal);
-    }, [estatisticas]);
-
-    // Calcular break-even (Fase 3)
-    const breakEven = useMemo(() =>
-        calcularBreakEven(estatisticas),
-        [estatisticas]
-    );
-
-    // Encontrar maior gasto (Fase 3)
-    const maiorGasto = useMemo(() =>
-        encontrarMaiorGasto(todasTransacoes, estatisticas.totalSaidas),
-        [todasTransacoes, estatisticas.totalSaidas]
-    );
-
-    // Gerar alertas (Fase 3)
-    const alertas = useMemo(() =>
-        gerarAlertas(estatisticas, todasTransacoes, runway, breakEven),
-        [estatisticas, todasTransacoes, runway, breakEven]
-    );
 
     if (!carregado) {
         return (
@@ -1039,6 +1050,17 @@ export function FluxoCaixa() {
                             <p className="text-xs text-gray-500">Controle financeiro</p>
                         </div>
                     </div>
+                    {abaAtiva === 'dashboard' && (
+                        <div className="flex items-center gap-2">
+                            <ExportButton
+                                onClick={() => setShowExportModal(true)}
+                                label="Exportar Dashboard"
+                                variant="outline"
+                                size="md"
+                                loading={isExporting}
+                            />
+                        </div>
+                    )}
                     {abaAtiva === 'transacoes' && (
                         <div className="flex items-center gap-2">
                             {/* Botão Exportar */}
@@ -1094,15 +1116,27 @@ export function FluxoCaixa() {
                     )}
                 </div>
 
-                {/* Abas de Navegação - Scroll Horizontal */}
-                <div className="flex gap-2 overflow-x-auto pb-2 mt-4 -mx-4 px-4">
+                {/* Abas de Navegação - Desktop Only */}
+                <div className="hidden md:flex gap-2 overflow-x-auto pb-2 mt-4 -mx-4 px-4">
+                    <button
+                        onClick={() => setAbaAtiva('dashboard')}
+                        className={cn(
+                            'flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all',
+                            abaAtiva === 'dashboard'
+                                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
+                        )}
+                    >
+                        <BarChart3 className="w-4 h-4" />
+                        <span>Dashboard</span>
+                    </button>
                     <button
                         onClick={() => setAbaAtiva('transacoes')}
                         className={cn(
                             'flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all',
                             abaAtiva === 'transacoes'
                                 ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700'
-                                : 'border-gray-200 dark:border-gray-700 text-gray-500'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
                         )}
                     >
                         <Wallet className="w-4 h-4" />
@@ -1114,7 +1148,7 @@ export function FluxoCaixa() {
                             'flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all',
                             abaAtiva === 'dividas'
                                 ? 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700'
-                                : 'border-gray-200 dark:border-gray-700 text-gray-500'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
                         )}
                     >
                         <FileText className="w-4 h-4" />
@@ -1126,7 +1160,7 @@ export function FluxoCaixa() {
                             'flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all',
                             abaAtiva === 'cartoes'
                                 ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-700'
-                                : 'border-gray-200 dark:border-gray-700 text-gray-500'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
                         )}
                     >
                         <CreditCard className="w-4 h-4" />
@@ -1138,7 +1172,7 @@ export function FluxoCaixa() {
                             'flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all',
                             abaAtiva === 'categorias'
                                 ? 'border-amber-500 bg-amber-50 dark:bg-amber-900/20 text-amber-700'
-                                : 'border-gray-200 dark:border-gray-700 text-gray-500'
+                                : 'border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'
                         )}
                     >
                         <Tag className="w-4 h-4" />
@@ -1147,35 +1181,118 @@ export function FluxoCaixa() {
                     <button
                         onClick={() => setModalConfigDashboard(true)}
                         className="flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 text-sm font-medium whitespace-nowrap transition-all border-gray-200 dark:border-gray-700 text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800"
-                        title="Configurar cards visíveis"
+                        title="Personalizar Dashboard"
                     >
                         <Settings className="w-4 h-4" />
+                        <span>Configurações</span>
                     </button>
+                </div>
+
+                {/* Navegação Mobile - Sidebar Style */}
+                <div className="md:hidden mt-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl p-2 border border-gray-200 dark:border-gray-700">
+                    <nav className="space-y-1">
+                        <button
+                            onClick={() => setAbaAtiva('dashboard')}
+                            className={cn(
+                                'w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all',
+                                abaAtiva === 'dashboard'
+                                    ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            )}
+                        >
+                            <BarChart3 className="w-5 h-5" />
+                            <span>Dashboard</span>
+                        </button>
+                        <button
+                            onClick={() => setAbaAtiva('transacoes')}
+                            className={cn(
+                                'w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all',
+                                abaAtiva === 'transacoes'
+                                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/30'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            )}
+                        >
+                            <Wallet className="w-5 h-5" />
+                            <span>Transações</span>
+                        </button>
+                        <button
+                            onClick={() => setAbaAtiva('dividas')}
+                            className={cn(
+                                'w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all',
+                                abaAtiva === 'dividas'
+                                    ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            )}
+                        >
+                            <FileText className="w-5 h-5" />
+                            <span>Dívidas</span>
+                        </button>
+                        <button
+                            onClick={() => setAbaAtiva('cartoes')}
+                            className={cn(
+                                'w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all',
+                                abaAtiva === 'cartoes'
+                                    ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            )}
+                        >
+                            <CreditCard className="w-5 h-5" />
+                            <span>Cartões</span>
+                        </button>
+                        <button
+                            onClick={() => setAbaAtiva('categorias')}
+                            className={cn(
+                                'w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all',
+                                abaAtiva === 'categorias'
+                                    ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30'
+                                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            )}
+                        >
+                            <Tag className="w-5 h-5" />
+                            <span>Categorias</span>
+                        </button>
+                        <button
+                            onClick={() => setModalConfigDashboard(true)}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all border-t border-gray-200 dark:border-gray-700 mt-2 pt-3"
+                        >
+                            <Settings className="w-5 h-5" />
+                            <span>Configurações</span>
+                        </button>
+                    </nav>
                 </div>
             </div>
 
             {/* Conteúdo baseado na aba ativa */}
+            {abaAtiva === 'dashboard' && (
+                <div className="card-mobile">
+                    <DashboardFinanceiro />
+                </div>
+            )}
+
             {abaAtiva === 'categorias' && (
                 <div className="card-mobile">
-                    <GerenciadorCategorias
-                        categorias={categorias}
-                        onAdicionarCategoria={adicionarCategoria}
-                        onExcluirCategoria={excluirCategoria}
+                    <CategoriesManager
+                        categories={categorias}
+                        onAddCategory={adicionarCategoria}
+                        onDeleteCategory={excluirCategoria}
                     />
                 </div>
             )}
 
             {abaAtiva === 'dividas' && (
                 <div className="card-mobile">
-                    <ListaDividas
-                        onPagarDivida={(valor, descricao) => {
-                            adicionarTransacao({
-                                descricao,
-                                valor,
-                                tipo: 'saida',
-                                categoriaId: 'contas',
-                                data: obterDataHoje()
-                            });
+                    <DebtsManager
+                        onAddDebt={() => setModalDivida(true)}
+                        onEditDebt={(debtId) => {
+                            // TODO: Implementar edição de dívida
+                            console.log('Edit debt:', debtId);
+                        }}
+                        onDeleteDebt={(debtId) => {
+                            success('🗑️ Dívida excluída', 'Dívida removida com sucesso!');
+                        }}
+                        onMarkAsPaid={(debtId) => {
+                            marcarDividaComoPago(debtId);
+                            success('✅ Dívida paga', 'Dívida marcada como paga com sucesso!');
                         }}
                     />
                 </div>
@@ -1183,15 +1300,17 @@ export function FluxoCaixa() {
 
             {abaAtiva === 'cartoes' && (
                 <div className="card-mobile">
-                    <GerenciadorCartao
-                        onPagarFatura={(valor, descricao) => {
-                            adicionarTransacao({
-                                descricao,
-                                valor,
-                                tipo: 'saida',
-                                categoriaId: 'contas',
-                                data: obterDataHoje()
-                            });
+                    <CardsManager
+                        onAddCard={() => setModalCartao(true)}
+                        onEditCard={(cardId) => {
+                            // TODO: Implementar edição de cartão
+                            console.log('Edit card:', cardId);
+                        }}
+                        onDeleteCard={(cardId) => {
+                            success('🗑️ Cartão excluído', 'Cartão removido com sucesso!');
+                        }}
+                        onAddExpense={(cardId) => {
+                            success('💳 Gasto adicionado', 'Gasto registrado no cartão com sucesso!');
                         }}
                     />
                 </div>
@@ -1199,445 +1318,46 @@ export function FluxoCaixa() {
 
             {abaAtiva === 'transacoes' && (
                 <>
-                    {/* Cards de Resumo - Compacto */}
-                    <div className="flex sm:grid sm:grid-cols-3 gap-2 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:pb-0 snap-x hide-scrollbar">
-                        {/* Entradas */}
-                        <div className="min-w-[130px] sm:min-w-0 snap-center p-3 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
-                            <TrendingUp className="w-5 h-5 text-green-600 mb-1" />
-                            <p className="text-[10px] text-green-600 font-medium">Entradas</p>
-                            <p className="text-sm font-bold text-green-700 dark:text-green-400">
-                                {formatarMoeda(estatisticas.totalEntradas)}
-                            </p>
-                        </div>
-
-                        {/* Saídas */}
-                        <div className="min-w-[130px] sm:min-w-0 snap-center p-3 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                            <TrendingDown className="w-5 h-5 text-red-600 mb-1" />
-                            <p className="text-[10px] text-red-600 font-medium">Saídas</p>
-                            <p className="text-sm font-bold text-red-700 dark:text-red-400">
-                                {formatarMoeda(estatisticas.totalSaidas)}
-                            </p>
-                        </div>
-
-                        {/* Saldo */}
-                        <div className={cn(
-                            "min-w-[130px] sm:min-w-0 snap-center p-3 rounded-xl border",
-                            estatisticas.saldo >= 0
-                                ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
-                                : "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
-                        )}>
-                            <BarChart3 className={cn(
-                                "w-5 h-5 mb-1",
-                                estatisticas.saldo >= 0 ? "text-blue-600" : "text-amber-600"
-                            )} />
-                            <p className={cn(
-                                "text-[10px] font-medium",
-                                estatisticas.saldo >= 0 ? "text-blue-600" : "text-amber-600"
-                            )}>Saldo</p>
-                            <p className={cn(
-                                "text-sm font-bold",
-                                estatisticas.saldo >= 0 ? "text-blue-700 dark:text-blue-400" : "text-amber-700 dark:text-amber-400"
-                            )}>
-                                {formatarMoeda(estatisticas.saldo)}
-                            </p>
-                        </div>
-                    </div>
-
-                    {/* Cards de Previsão e Economia */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-                        <CardPrevisaoMes
-                            saldoAtual={estatisticas.saldo}
-                            transacoes={transacoes.map(t => ({
-                                data: t.data,
-                                tipo: t.tipo,
-                                valor: t.valor
-                            }))}
-                            recorrentes={recorrentes}
-                            gastosCartao={gastosCartao}
-                            cartoes={cartoes}
-                            faturasPagas={faturasPagas}
-                            dividasPendentes={dividasPendentes}
-                        />
-                        <CardEconomiaMensal
-                            receitasConsideradas={estatisticas.totalEntradas}
-                            despesasConsideradas={estatisticas.totalSaidas}
-                            transacoesEntrada={transacoesAgrupadas.flatMap(g => g.transacoes).filter(t => t.tipo === 'entrada')}
-                            transacoesSaida={transacoesAgrupadas.flatMap(g => g.transacoes).filter(t => t.tipo === 'saida')}
-                            categorias={categorias}
-                            onEditarTransacao={(id, dados) => editarTransacao(id, dados)}
-                            onExcluirTransacao={excluirTransacao}
-                        />
-                    </div>
-
-                    {/* Cards de Dívidas e Cartões */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-                        <CardResumoDividas
-                            estatisticas={estatisticasDividas}
-                            dividasPendentes={dividasPendentes}
-                            onPagarDivida={(valor, descricao) => {
-                                adicionarTransacao({
-                                    descricao,
-                                    valor,
-                                    tipo: 'saida',
-                                    categoriaId: 'contas',
-                                    data: obterDataHoje()
+                    {/* NOVA ÁREA DE TRANSAÇÕES REFATORADA */}
+                    <div className="card-mobile">
+                        <AreaTransacoes
+                            onNovaTransacao={() => setModalAberto(true)}
+                            onEditarTransacao={(id, dados) => {
+                                setModalEdicao({
+                                    aberto: true,
+                                    id,
+                                    dados
                                 });
                             }}
-                            onMarcarComoPago={marcarDividaComoPago}
-                            onVerTodas={() => setAbaAtiva('dividas')}
-                        />
-                        <CardResumoCartoes
-                            cartoes={cartoes}
-                            estatisticas={estatisticasCartoes}
-                            obterFaturaAtual={obterFaturaAtual}
-                            onPagarFatura={pagarFatura}
-                            onRegistrarPagamento={(valor, descricao) => {
-                                adicionarTransacao({
-                                    descricao,
-                                    valor,
-                                    tipo: 'saida',
-                                    categoriaId: 'contas',
-                                    data: obterDataHoje()
+                            onExcluirTransacao={(id, descricao) => {
+                                setModalExclusao({
+                                    aberto: true,
+                                    id,
+                                    descricao
                                 });
                             }}
-                            onVerDetalhes={() => setAbaAtiva('cartoes')}
+                            onAdicionarMeta={() => setModalMeta({ aberto: true })}
+                            onEditarMeta={(metaId) => {
+                                const meta = metas.find(m => m.id === metaId);
+                                if (meta) setModalMeta({ aberto: true, meta });
+                            }}
+                            onExcluirMeta={(metaId) => {
+                                excluirMeta(metaId);
+                                success('🗑️ Meta excluída', 'Meta removida com sucesso!');
+                            }}
+                            onAdicionarRecorrente={() => setModalRecorrente({ aberto: true })}
+                            onEditarRecorrente={(recorrenteId) => {
+                                const recorrente = recorrentes.find(r => r.id === recorrenteId);
+                                if (recorrente) setModalRecorrente({ aberto: true, recorrente });
+                            }}
+                            onExcluirRecorrente={(recorrenteId) => {
+                                excluirRecorrente(recorrenteId);
+                                success('🗑️ Recorrente excluída', 'Transação recorrente removida com sucesso!');
+                            }}
+                            onToggleRecorrente={(recorrenteId) => {
+                                toggleAtiva(recorrenteId);
+                            }}
                         />
-                    </div>
-
-                    {/* Cards de Metas e Recorrentes */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-                        <CardMetas
-                            metas={metas}
-                            categorias={categorias}
-                            gastosPorCategoria={gastosPorCategoria}
-                            onNovaMeta={() => setModalMeta({ aberto: true })}
-                            onEditarMeta={(meta) => setModalMeta({ aberto: true, meta })}
-                            onExcluirMeta={excluirMeta}
-                        />
-                        <ListaRecorrentes
-                            recorrentes={recorrentes}
-                            onNovaRecorrente={() => setModalRecorrente({ aberto: true })}
-                            onEditarRecorrente={(rec) => setModalRecorrente({ aberto: true, recorrente: rec })}
-                            onExcluirRecorrente={excluirRecorrente}
-                            onToggleAtiva={toggleAtiva}
-                        />
-                    </div>
-                    
-                    {/* Transações Pendentes */}
-                    {pendentes.length > 0 && (
-                        <div className="mt-4">
-                            <ListaTransacoesPendentes
-                                pendentes={pendentes}
-                                pendentesPorData={pendentesPorData}
-                                onEfetivar={handleEfetivarPendente}
-                                onAntecipar={handleAnteciparPendente}
-                                onCancelar={handleCancelarPendente}
-                                onEditar={(pendente) => {
-                                    // TODO: Implementar modal de edição de pendente
-                                }}
-                            />
-                        </div>
-                    )}
-
-                    {/* Filtros - Compacto */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
-                        {/* Período - Scroll Horizontal */}
-                        <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 mb-2">
-                            {periodos.map(p => (
-                                <button
-                                    key={p.valor}
-                                    onClick={() => atualizarFiltros({ periodo: p.valor })}
-                                    className={cn(
-                                        'px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',
-                                        filtros.periodo === p.valor
-                                            ? 'bg-blue-600 text-white'
-                                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                                    )}
-                                >
-                                    {p.label}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Filtros Expandidos */}
-                        <button
-                            onClick={() => setMostrarFiltros(!mostrarFiltros)}
-                            className="flex items-center gap-1 text-xs text-gray-500"
-                        >
-                            <Filter className="w-3 h-3" />
-                            <span>{mostrarFiltros ? 'Ocultar filtros' : 'Mais filtros'}</span>
-                            <ChevronDown className={cn("w-3 h-3 transition-transform", mostrarFiltros && "rotate-180")} />
-                        </button>
-
-                        {mostrarFiltros && (
-                            <div className="grid grid-cols-3 gap-2 mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-                                <div>
-                                    <label className="block text-[10px] text-gray-500 mb-1">Tipo</label>
-                                    <select
-                                        value={filtros.tipo}
-                                        onChange={(e) => atualizarFiltros({ tipo: e.target.value as any })}
-                                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-gray-50 dark:bg-gray-700"
-                                    >
-                                        <option value="todos">Todos</option>
-                                        <option value="entrada">Entradas</option>
-                                        <option value="saida">Saídas</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] text-gray-500 mb-1">Categoria</label>
-                                    <select
-                                        value={filtros.categoriaId || ''}
-                                        onChange={(e) => atualizarFiltros({ categoriaId: e.target.value || undefined })}
-                                        className="w-full px-2 py-1.5 border rounded-lg text-xs bg-gray-50 dark:bg-gray-700"
-                                    >
-                                        <option value="">Todas</option>
-                                        {categorias.map(c => (
-                                            <option key={c.id} value={c.id}>{c.icone} {c.nome}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] text-gray-500 mb-1">Buscar</label>
-                                    <div className="relative">
-                                        <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400" />
-                                        <input
-                                            type="text"
-                                            value={filtros.busca || ''}
-                                            onChange={(e) => atualizarFiltros({ busca: e.target.value })}
-                                            className="w-full pl-6 pr-2 py-1.5 border rounded-lg text-xs bg-gray-50 dark:bg-gray-700"
-                                            placeholder="Buscar..."
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Insights Financeiros - NOVO */}
-                    <div className="space-y-3">
-                        <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 px-1">
-                            💡 Insights Financeiros
-                        </h2>
-
-                        {/* Grid de Cards */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {dashboardConfig.insights.tendencia && <CardTendencia tendencia={tendencia} />}
-                            {dashboardConfig.insights.mediaDiaria && <CardMediaDiaria media={mediaDiaria} />}
-                            {dashboardConfig.insights.comparativo && (
-                                <CardComparativo
-                                    atual={estatisticas}
-                                    anterior={estatisticasAnterior}
-                                    periodoAtual={periodos.find(p => p.valor === filtros.periodo)?.label || 'Atual'}
-                                    periodoAnterior="Anterior"
-                                />
-                            )}
-                        </div>
-
-                        {/* Gráfico Comparativo */}
-                        {dashboardConfig.graficos.barrasComparativo && dadosGraficoComparativo.length > 0 && (
-                            <GraficoBarrasComparativo dados={dadosGraficoComparativo} />
-                        )}
-
-
-                    </div>
-
-                    {/* Analytics Avançados - Fases 2 e 3 */}
-                    <div className="space-y-3">
-                        <h2 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2 px-1">
-                            🔬 Analytics Avançados
-                        </h2>
-
-                        {/* Gráfico Top Categorias (Fase 2) */}
-                        {dashboardConfig.analytics.topCategorias && dadosTopCategorias.length > 0 && (
-                            <GraficoTopCategorias dados={dadosTopCategorias} limite={5} />
-                        )}
-
-                        {/* Grid de Cards Avançados (Fase 3) */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                            {dashboardConfig.analytics.runway && (
-                                <CardRunway
-                                    runway={runway}
-                                    saldoAtual={estatisticas.saldo}
-                                    gastoMensal={estatisticas.totalSaidas}
-                                />
-                            )}
-                            {dashboardConfig.analytics.breakEven && <CardBreakEven breakEven={breakEven} />}
-                            {dashboardConfig.analytics.maiorGasto && <CardMaiorGasto maiorGasto={maiorGasto} />}
-                            {dashboardConfig.analytics.alertas && <CardAlertas alertas={alertas} />}
-                        </div>
-                    </div>
-
-                    {/* Gráficos - Responsivo */}
-                    {estatisticas.evolucaoSaldo.length > 0 && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            {/* Gráfico de Categorias */}
-                            {dashboardConfig.graficos.pizza && dadosPizza.length > 0 && (
-                                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
-                                    <h3 className="text-xs font-semibold text-gray-900 dark:text-white mb-2">
-                                        Gastos por Categoria
-                                    </h3>
-                                    <div className="h-[140px]">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <PieChart>
-                                                <Pie
-                                                    data={dadosPizza}
-                                                    cx="50%"
-                                                    cy="50%"
-                                                    innerRadius={30}
-                                                    outerRadius={50}
-                                                    dataKey="value"
-                                                    labelLine={false}
-                                                >
-                                                    {dadosPizza.map((entry, index) => (
-                                                        <Cell key={`cell-${index}`} fill={entry.color} />
-                                                    ))}
-                                                </Pie>
-                                                <Tooltip
-                                                    formatter={(value: number) => formatarMoeda(value)}
-                                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', fontSize: '11px' }}
-                                                />
-                                            </PieChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Gráfico de Evolução */}
-                            {dashboardConfig.graficos.evolucao && dadosEvolucao.length > 1 && (
-                                <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
-                                    <h3 className="text-xs font-semibold text-gray-900 dark:text-white mb-2">
-                                        Evolução do Saldo
-                                    </h3>
-                                    <div className="h-[140px]">
-                                        <ResponsiveContainer width="100%" height="100%">
-                                            <LineChart data={dadosEvolucao}>
-                                                <XAxis dataKey="data" tick={{ fontSize: 8 }} axisLine={false} />
-                                                <YAxis tick={{ fontSize: 8 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} axisLine={false} />
-                                                <Tooltip
-                                                    formatter={(value: number) => formatarMoeda(value)}
-                                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', fontSize: '11px' }}
-                                                />
-                                                <Line type="monotone" dataKey="saldo" stroke="#3b82f6" strokeWidth={2} dot={false} />
-                                            </LineChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Insights - Compacto */}
-                    {(estatisticas.categoriaMaisGastos || estatisticas.mediaDiariaGastos > 0) && (
-                        <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                            <div className="flex items-center gap-2 mb-2">
-                                <Lightbulb className="w-4 h-4 text-amber-600" />
-                                <h3 className="text-xs font-semibold text-amber-900 dark:text-amber-100">Insights</h3>
-                            </div>
-                            <div className="space-y-1 text-xs text-amber-800 dark:text-amber-200">
-                                {estatisticas.categoriaMaisGastos && (
-                                    <p>• Maior gasto: <strong>{estatisticas.categoriaMaisGastos.categoria.nome}</strong> ({formatarMoeda(estatisticas.categoriaMaisGastos.total)})</p>
-                                )}
-                                {estatisticas.mediaDiariaGastos > 0 && (
-                                    <p>• Média/dia: <strong>{formatarMoeda(estatisticas.mediaDiariaGastos)}</strong></p>
-                                )}
-                                <p>• Projeção mês: <strong className={estatisticas.projecaoFimMes >= 0 ? 'text-green-700' : 'text-red-700'}>{formatarMoeda(estatisticas.projecaoFimMes)}</strong></p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Lista de Transações - Compacto */}
-                    <div className="bg-white dark:bg-gray-800 rounded-xl p-3 border border-gray-100 dark:border-gray-700">
-                        <h3 className="text-xs font-semibold text-gray-900 dark:text-white mb-3">
-                            Transações Recentes
-                        </h3>
-
-                        {transacoesAgrupadas.length === 0 ? (
-                            <div className="text-center py-8">
-                                <BarChart3 className="w-8 h-8 mx-auto text-gray-300 mb-2" />
-                                <p className="text-xs text-gray-500">Nenhuma transação</p>
-                                <p className="text-[10px] text-gray-400">Clique em "Nova" para começar</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {transacoesAgrupadas.map(grupo => (
-                                    <div key={grupo.data}>
-                                        <div className="flex items-center gap-1 mb-1.5">
-                                            <Calendar className="w-3 h-3 text-gray-400" />
-                                            <span className="text-[10px] font-medium text-gray-500">
-                                                {grupo.data}
-                                            </span>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            {grupo.transacoes.map(transacao => {
-                                                const categoria = obterCategoria(transacao.categoriaId);
-                                                return (
-                                                    <div
-                                                        key={transacao.id}
-                                                        className="flex items-center justify-between p-2 rounded-lg bg-gray-50 dark:bg-gray-800/50 group"
-                                                    >
-                                                        <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                            <div
-                                                                className="w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0"
-                                                                style={{ backgroundColor: `${categoria?.cor}20` }}
-                                                            >
-                                                                {categoria?.icone}
-                                                            </div>
-                                                            <div className="min-w-0">
-                                                                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                                                    {transacao.descricao}
-                                                                </p>
-                                                                <p className="text-[10px] text-gray-500 truncate">
-                                                                    {categoria?.nome}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-2 flex-shrink-0">
-                                                            <span className={cn(
-                                                                'text-sm font-semibold',
-                                                                transacao.tipo === 'entrada' ? 'text-green-600' : 'text-red-600'
-                                                            )}>
-                                                                {transacao.tipo === 'entrada' ? '+' : '-'}{formatarMoeda(transacao.valor)}
-                                                            </span>
-                                                            <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
-                                                                <button
-                                                                    onClick={() => setModalEdicao({
-                                                                        aberto: true,
-                                                                        id: transacao.id,
-                                                                        dados: {
-                                                                            descricao: transacao.descricao,
-                                                                            valor: transacao.valor,
-                                                                            tipo: transacao.tipo,
-                                                                            categoriaId: transacao.categoriaId,
-                                                                            data: transacao.data.split('T')[0],
-                                                                            observacoes: transacao.observacoes
-                                                                        }
-                                                                    })}
-                                                                    className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                                                                    aria-label="Editar transação"
-                                                                >
-                                                                    <Pencil className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                                                                </button>
-                                                                <button
-                                                                    onClick={() => setModalExclusao({
-                                                                        aberto: true,
-                                                                        id: transacao.id,
-                                                                        descricao: transacao.descricao
-                                                                    })}
-                                                                    className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
-                                                                    aria-label="Excluir transação"
-                                                                >
-                                                                    <Trash2 className="w-4 h-4 text-red-500 dark:text-red-400" />
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
                     </div>
 
                     {/* Modais */}
@@ -1708,9 +1428,54 @@ export function FluxoCaixa() {
                 onToggleInsight={handleToggleInsight}
                 onToggleAnalytic={handleToggleAnalytic}
                 onToggleGrafico={handleToggleGrafico}
+                onToggleCardTransacao={handleToggleCardTransacao}
                 onRestaurarPadrao={handleRestaurarPadrao}
                 onMostrarTodos={handleMostrarTodos}
                 onOcultarTodos={handleOcultarTodos}
+            />
+
+            {/* Modal de Adicionar Dívida */}
+            <ModalDivida
+                aberto={modalDivida}
+                onFechar={() => setModalDivida(false)}
+                onSalvar={(dados) => {
+                    adicionarDivida({
+                        descricao: dados.descricao,
+                        valor: dados.valor,
+                        credor: '',
+                        categoriaId: dados.categoriaId || '',
+                        dataVencimento: dados.dataVencimento,
+                        observacoes: dados.observacoes,
+                        numeroParcelas: dados.parcelas
+                    });
+                    success('✅ Dívida adicionada', 'Dívida cadastrada com sucesso!');
+                }}
+            />
+
+            {/* Modal de Adicionar Cartão */}
+            <ModalCartao
+                aberto={modalCartao}
+                onFechar={() => setModalCartao(false)}
+                onSalvar={(dados) => {
+                    adicionarCartao({
+                        nome: dados.nome,
+                        limite: dados.limite,
+                        diaFechamento: dados.diaFechamento,
+                        diaVencimento: dados.diaVencimento,
+                        bandeira: dados.bandeira as any,
+                        cor: dados.cor
+                    });
+                    success('✅ Cartão adicionado', 'Cartão cadastrado com sucesso!');
+                }}
+            />
+
+            {/* Modal de Exportação do Dashboard */}
+            <ExportModal
+                isOpen={showExportModal}
+                onClose={() => setShowExportModal(false)}
+                onExport={handleExportDashboard}
+                reportType="dashboard"
+                title="Exportar Dashboard Completo"
             />
 
             {/* Toast Container */}

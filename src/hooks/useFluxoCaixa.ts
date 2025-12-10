@@ -229,10 +229,16 @@ export function useFluxoCaixa() {
         });
 
         const transacoesPorCategoria = Object.entries(porCategoria).map(([categoriaId, dados]) => {
-            const categoria = obterCategoria(categoriaId) || CATEGORIAS_PADRAO.find(c => c.id === categoriaId);
+            const categoria = obterCategoria(categoriaId) || CATEGORIAS_PADRAO.find(c => c.id === categoriaId) || {
+                id: 'desconhecida',
+                nome: 'Categoria Desconhecida',
+                icone: '❓',
+                cor: '#9CA3AF',
+                tipo: dados.tipo
+            };
             const totalTipo = dados.tipo === 'entrada' ? totalEntradas : totalSaidas;
             return {
-                categoria: categoria!,
+                categoria,
                 total: dados.total,
                 percentual: totalTipo > 0 ? (dados.total / totalTipo) * 100 : 0,
                 tipo: dados.tipo

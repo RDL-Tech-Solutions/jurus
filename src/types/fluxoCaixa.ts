@@ -207,6 +207,14 @@ export interface DashboardConfig {
         pizza: boolean;
         evolucao: boolean;
     };
+    cardsTransacoes: {
+        previsaoMes: boolean;
+        economiaMensal: boolean;
+        dividasPendentes: boolean;
+        cartoesCredito: boolean;
+        metasMes: boolean;
+        recorrentes: boolean;
+    };
 }
 
 export const DASHBOARD_CONFIG_PADRAO: DashboardConfig = {
@@ -226,6 +234,14 @@ export const DASHBOARD_CONFIG_PADRAO: DashboardConfig = {
         barrasComparativo: true,
         pizza: true,
         evolucao: true
+    },
+    cardsTransacoes: {
+        previsaoMes: true,
+        economiaMensal: true,
+        dividasPendentes: true,
+        cartoesCredito: true,
+        metasMes: true,
+        recorrentes: true
     }
 };
 
