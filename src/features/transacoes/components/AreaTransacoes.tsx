@@ -15,9 +15,9 @@ import { CardMetasMes } from './CardMetasMes';
 import { CardRecorrentes } from './CardRecorrentes';
 import { CardPrevisaoMes } from './CardPrevisaoMes';
 import { CardEconomiaMensal } from './CardEconomiaMensal';
-import { 
-  CardInserirPorCodigo, 
-  ModalDigitarCodigo, 
+import {
+  CardInserirPorCodigo,
+  ModalDigitarCodigo,
   InsertExpenseFromBarcode,
   CameraScanner,
   ImageUploader
@@ -68,10 +68,10 @@ export const AreaTransacoes: React.FC<AreaTransacoesProps> = ({
   } = useTransacoes();
 
   // Barcode Expense
-  const { 
-    barcodeData, 
-    processBarcode, 
-    clearBarcodeData 
+  const {
+    barcodeData,
+    processBarcode,
+    clearBarcodeData
   } = useBarcodeExpense();
 
   const [showModalDigitar, setShowModalDigitar] = useState(false);
@@ -82,14 +82,14 @@ export const AreaTransacoes: React.FC<AreaTransacoesProps> = ({
   // Export
   const { exportData, isExporting } = useExport();
   const [showExportModal, setShowExportModal] = useState(false);
-  
+
   // Handlers
   const handleEditar = useCallback((transacao: TransacaoExpandida) => {
     // Só permite editar transações normais (não recorrentes/parceladas)
     if (transacao.isRecorrente || transacao.isParcelada) {
       return;
     }
-    
+
     onEditarTransacao(transacao.id, {
       descricao: transacao.descricao,
       valor: transacao.valor,
@@ -100,8 +100,8 @@ export const AreaTransacoes: React.FC<AreaTransacoesProps> = ({
     });
   }, [onEditarTransacao]);
 
-  const handleExcluir = useCallback((id: string, descricao: string) => {
-    onExcluirTransacao(id, descricao);
+  const handleExcluir = useCallback((transacao: TransacaoExpandida) => {
+    onExcluirTransacao(transacao.id, transacao.descricao);
   }, [onExcluirTransacao]);
 
   // Handlers do Barcode
@@ -126,7 +126,7 @@ export const AreaTransacoes: React.FC<AreaTransacoesProps> = ({
   const handleExport = useCallback(async (config: any) => {
     await exportData('transacoes', transacoesAgrupadasPorDia, config.format, config);
   }, [exportData, transacoesAgrupadasPorDia]);
-  
+
   return (
     <div className="space-y-4">
       {/* Header com Botões */}
@@ -162,7 +162,7 @@ export const AreaTransacoes: React.FC<AreaTransacoesProps> = ({
         reportType="transacoes"
         title="Exportar Transações"
       />
-      
+
       {/* Seletor de Mês */}
       <SeletorMes
         nomeMes={nomeMesAtual}
@@ -172,37 +172,37 @@ export const AreaTransacoes: React.FC<AreaTransacoesProps> = ({
         onProximoMes={irParaProximoMes}
         onIrParaHoje={irParaHoje}
       />
-      
+
       {/* Resumo Mensal */}
       <ResumoMensal
         totalReceitas={somaReceitas}
         totalDespesas={somaDespesas}
         saldo={saldoDoMes}
       />
-      
+
       {/* Cards de Previsão e Economia */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <CardPrevisaoMes />
         <CardEconomiaMensal />
       </div>
-      
+
       {/* Cards Extras - Dívidas, Cartões, Metas e Recorrentes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <CardDividasPendentes />
         <CardCartoesCredito />
-        <CardMetasMes 
+        <CardMetasMes
           onAdicionarMeta={onAdicionarMeta}
           onEditarMeta={onEditarMeta}
           onExcluirMeta={onExcluirMeta}
         />
-        <CardRecorrentes 
+        <CardRecorrentes
           onAdicionarRecorrente={onAdicionarRecorrente}
           onEditarRecorrente={onEditarRecorrente}
           onExcluirRecorrente={onExcluirRecorrente}
           onToggleAtiva={onToggleRecorrente}
         />
       </div>
-      
+
       {/* Card Inserir por Código */}
       <CardInserirPorCodigo
         onScanClick={() => setShowCameraScanner(true)}
@@ -240,7 +240,7 @@ export const AreaTransacoes: React.FC<AreaTransacoesProps> = ({
           onCancel={handleCancelExpense}
         />
       )}
-      
+
       {/* Lista de Transações */}
       <div className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
         <ListaTransacoes

@@ -61,10 +61,16 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   if (!isOpen) return null;
 
   const reportTitles: Record<ReportType, string> = {
+    'monthly-summary': 'Resumo Mensal',
+    transactions: 'Transações',
     transacoes: 'Transações',
+    debts: 'Dívidas',
     dividas: 'Dívidas',
+    invoices: 'Faturas',
     cartoes: 'Cartões de Crédito',
-    dashboard: 'Dashboard Completo'
+    goals: 'Metas',
+    dashboard: 'Dashboard Completo',
+    'item-detail': 'Detalhes do Item'
   };
 
   return (

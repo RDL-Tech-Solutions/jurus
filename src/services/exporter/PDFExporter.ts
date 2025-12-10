@@ -16,7 +16,7 @@ export class PDFExporter {
   constructor(private options: ExportOptions, private metadata: ReportMetadata) {
     const orientation = options.orientation || 'portrait';
     const format = options.pageSize || 'a4';
-    
+
     this.doc = new jsPDF({
       orientation,
       unit: 'mm',
@@ -81,7 +81,7 @@ export class PDFExporter {
 
     this.doc.setFontSize(8);
     this.doc.setTextColor(150);
-    
+
     // Número da página
     this.doc.text(
       `Página ${this.pageNumber}`,
@@ -107,13 +107,13 @@ export class PDFExporter {
     if (title) {
       this.doc.setFontSize(14);
       this.doc.setFont('helvetica', 'bold');
-      this.doc.text(title, this.margin, this.doc.lastAutoTable ? this.doc.lastAutoTable.finalY + 15 : 40);
+      this.doc.text(title, this.margin, (this.doc as any).lastAutoTable ? (this.doc as any).lastAutoTable.finalY + 15 : 40);
     }
 
     autoTable(this.doc, {
       head: [headers],
       body: rows,
-      startY: this.doc.lastAutoTable ? this.doc.lastAutoTable.finalY + (title ? 20 : 10) : (title ? 45 : 40),
+      startY: (this.doc as any).lastAutoTable ? (this.doc as any).lastAutoTable.finalY + (title ? 20 : 10) : (title ? 45 : 40),
       margin: { left: this.margin, right: this.margin },
       styles: {
         fontSize: 9,
@@ -144,8 +144,8 @@ export class PDFExporter {
 
     this.doc.setFontSize(fontSize);
     this.doc.setFont('helvetica', bold ? 'bold' : 'normal');
-    
-    const y = this.doc.lastAutoTable ? this.doc.lastAutoTable.finalY + 10 : 40;
+
+    const y = (this.doc as any).lastAutoTable ? (this.doc as any).lastAutoTable.finalY + 10 : 40;
     this.doc.text(text, this.margin, y);
   }
 
