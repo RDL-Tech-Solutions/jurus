@@ -4,7 +4,7 @@
 
 import React, { memo, useState, useCallback } from 'react';
 import { AlertCircle, TrendingUp, Calendar, DollarSign, ChevronRight } from 'lucide-react';
-import { useDividas } from '../../../hooks/useDividas';
+import { useDividas } from '../../../hooks/useDividasV2';
 import { cn } from '../../../utils/cn';
 import { ExportButton, ExportModal } from '../../export/components';
 import { useExport } from '../../export/hooks/useExport';
@@ -14,7 +14,7 @@ interface CardDividasPendentesProps {
 }
 
 export const CardDividasPendentes: React.FC<CardDividasPendentesProps> = memo(({ onVerMais }) => {
-    const { dividasPendentes, estatisticas } = useDividas();
+    const { dividasPendentes, totalPendente } = useDividas();
     const { exportData, isExporting } = useExport();
     const [showExportModal, setShowExportModal] = useState(false);
 
@@ -23,7 +23,7 @@ export const CardDividasPendentes: React.FC<CardDividasPendentesProps> = memo(({
         const dividasData = {
             summary: {
                 title: 'Relatório de Dívidas Pendentes',
-                description: `Total: ${dividasPendentes.length} dívidas | Valor: ${formatarMoeda(estatisticas.totalPendente)}`
+                description: `Total: ${dividasPendentes.length} dívidas | Valor: ${formatarMoeda(totalPendente)}`
             },
             tables: [
                 {
@@ -59,7 +59,7 @@ export const CardDividasPendentes: React.FC<CardDividasPendentesProps> = memo(({
             ])
         };
         await exportData('dividas', dividasData, config.format, config);
-    }, [exportData, dividasPendentes, estatisticas]);
+    }, [exportData, dividasPendentes, totalPendente]);
 
     // Pegar as 3 próximas dívidas a vencer
     const proximasDividas = dividasPendentes
@@ -161,7 +161,7 @@ export const CardDividasPendentes: React.FC<CardDividasPendentesProps> = memo(({
                 <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl p-3 border border-red-100 dark:border-red-900">
                     <p className="text-xs text-red-600 dark:text-red-400 mb-1">Total Pendente</p>
                     <p className="text-lg font-bold text-red-900 dark:text-red-100">
-                        {formatarMoeda(estatisticas.totalPendente)}
+                        {formatarMoeda(totalPendente)}
                     </p>
                 </div>
                 <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl p-3 border border-red-100 dark:border-red-900">

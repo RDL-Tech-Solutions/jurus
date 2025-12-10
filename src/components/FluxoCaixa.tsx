@@ -41,11 +41,11 @@ import {
     Pie,
     Cell
 } from 'recharts';
-import { useFluxoCaixa } from '../hooks/useFluxoCaixa';
-import { useDividas } from '../hooks/useDividas';
-import { useCartaoCredito } from '../hooks/useCartaoCredito';
+import { useFluxoCaixa } from '../hooks/useFluxoCaixaV2';
+import { useDividas } from '../hooks/useDividasV2';
+import { useCartaoCredito } from '../hooks/useCartaoCreditoV2';
 import { useMetas } from '../hooks/useMetas';
-import { useRecorrentes } from '../hooks/useRecorrentes';
+import { useRecorrentes } from '../hooks/useRecorrentesV2';
 import { useTransacoesPendentes } from '../hooks/useTransacoesPendentes';
 import { useToast } from '../hooks/useToast';
 import { ExportButton, ExportModal } from '../features/export/components';
@@ -562,8 +562,8 @@ export function FluxoCaixa() {
     // Hooks para Dívidas e Cartões
     const {
         dividasPendentes,
-        estatisticas: estatisticasDividas,
-        marcarComoPago: marcarDividaComoPago,
+        totalPendente,
+        marcarComoPaga: marcarDividaComoPago,
         adicionarDivida,
         editarDivida,
         excluirDivida
@@ -572,13 +572,17 @@ export function FluxoCaixa() {
     const {
         cartoes,
         gastos: gastosCartao,
-        estatisticas: estatisticasCartoes,
-        obterFaturaAtual,
-        pagarFatura,
-        faturasPagas,
+        limiteTotal,
+        totalGasto,
+        limiteDisponivel,
+        percentualUsado,
+        estatisticasPorCartao,
+        obterProximaFatura,
         adicionarCartao,
         editarCartao,
-        excluirCartao
+        excluirCartao,
+        adicionarGastoCartao,
+        excluirGastoCartao
     } = useCartaoCredito();
 
     // Hooks para Metas e Recorrentes
@@ -595,7 +599,7 @@ export function FluxoCaixa() {
         editarRecorrente,
         excluirRecorrente,
         toggleAtiva,
-        atualizarProximaData
+        efetivarProximaOcorrencia
     } = useRecorrentes();
 
     const {
@@ -655,11 +659,11 @@ export function FluxoCaixa() {
 
         // Se veio de recorrente, atualizar próxima data
         if (pendente.recorrenteId) {
-            atualizarProximaData(pendente.recorrenteId);
+            efetivarProximaOcorrencia(pendente.recorrenteId);
         }
 
         success('✅ Transação efetivada', `${pendente.descricao} foi registrada.`);
-    }, [pendentes, adicionarTransacao, excluirPendente, atualizarProximaData, success]);
+    }, [pendentes, adicionarTransacao, excluirPendente, efetivarProximaOcorrencia, success]);
 
     const handleAnteciparPendente = useCallback((id: string, novaData: string) => {
         editarPendente(id, { dataAgendada: novaData });
@@ -694,7 +698,7 @@ export function FluxoCaixa() {
 
         // Adicionar total de gastos em cartões (faturas atuais)
         const totalCartoes = cartoes.reduce((sum, cartao) => {
-            const fatura = obterFaturaAtual(cartao.id);
+            const fatura = obterProximaFatura(cartao.id);
             return sum + (fatura?.total || 0);
         }, 0);
         if (totalCartoes > 0) {
@@ -702,7 +706,7 @@ export function FluxoCaixa() {
         }
 
         return Object.entries(gastos).map(([categoriaId, total]) => ({ categoriaId, total }));
-    }, [transacoesAgrupadas, dividasPendentes, cartoes, gastosCartao, obterFaturaAtual]);
+    }, [transacoesAgrupadas, dividasPendentes, cartoes, gastosCartao, obterProximaFatura]);
 
     // Sincronizar recorrentes pendentes - Otimizado
     useEffect(() => {
@@ -751,13 +755,13 @@ export function FluxoCaixa() {
                     });
 
                     // Atualizar a próxima data da recorrência
-                    atualizarProximaData(rec.id);
+                    efetivarProximaOcorrencia(rec.id);
 
                     success('🔄 Recorrência gerada', `Transação "${rec.descricao}" foi gerada.`);
                 }
             }
         });
-    }, [recorrentes, carregado, transacoes, adicionarTransacao, atualizarProximaData, success]);
+    }, [recorrentes, carregado, transacoes, adicionarTransacao, efetivarProximaOcorrencia, success]);
 
     // Funções para controlar visibilidade dos cards
     const handleToggleInsight = (key: keyof DashboardConfig['insights']) => {

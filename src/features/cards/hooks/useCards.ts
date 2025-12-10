@@ -4,7 +4,7 @@
  */
 
 import { useMemo } from 'react';
-import { useCartaoCredito } from '../../../hooks/useCartaoCredito';
+import { useCartaoCredito } from '../../../hooks/useCartaoCreditoV2';
 import { CardWithStats, CardSummaryData } from '../types';
 import { enrichCardWithStats } from '../utils/cardHelpers';
 
@@ -14,28 +14,27 @@ export function useCards() {
     cartoes,
     gastos: gastosCartao,
     carregado,
-    faturasPagas,
+    limiteTotal,
+    totalGasto,
+    limiteDisponivel,
+    percentualUsado,
     adicionarCartao,
     editarCartao,
     excluirCartao,
-    adicionarGasto,
-    editarGasto,
-    excluirGasto,
-    obterFaturaAtual,
-    pagarFatura,
-    estatisticas: estatisticasCartoes
+    adicionarGastoCartao: adicionarGasto,
+    excluirGastoCartao: excluirGasto,
+    obterProximaFatura
   } = useCartaoCredito();
   
   // Enriquece cartões com estatísticas
   const cardsWithStats = useMemo((): CardWithStats[] => {
     return cartoes.map(card => {
-      const faturaAtual = obterFaturaAtual(card.id);
-      // TODO: Implementar obterProximaFatura se necessário
+      const faturaAtual = obterProximaFatura(card.id);
       const proximaFatura = null;
       
       return enrichCardWithStats(card, gastosCartao, faturaAtual, proximaFatura);
     });
-  }, [cartoes, gastosCartao, obterFaturaAtual]);
+  }, [cartoes, gastosCartao, obterProximaFatura]);
   
   // Cartões ativos
   const activeCards = useMemo(() => {
@@ -61,8 +60,10 @@ export function useCards() {
     cartoes,
     gastosCartao,
     carregado,
-    faturasPagas,
-    estatisticasCartoes,
+    limiteTotal,
+    totalGasto,
+    limiteDisponivel,
+    percentualUsado,
     
     // Dados enriquecidos
     cardsWithStats,
@@ -74,9 +75,7 @@ export function useCards() {
     editarCartao,
     excluirCartao,
     adicionarGasto,
-    editarGasto,
     excluirGasto,
-    obterFaturaAtual,
-    pagarFatura
+    obterProximaFatura
   };
 }

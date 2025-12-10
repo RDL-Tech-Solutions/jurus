@@ -4,7 +4,7 @@
 
 import React, { memo } from 'react';
 import { Repeat, Play, Pause, Calendar, DollarSign, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
-import { useRecorrentes } from '../../../hooks/useRecorrentes';
+import { useRecorrentes } from '../../../hooks/useRecorrentesV2';
 import { cn } from '../../../utils/cn';
 
 interface CardRecorrentesProps {

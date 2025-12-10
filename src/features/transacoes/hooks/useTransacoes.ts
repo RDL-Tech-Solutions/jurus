@@ -4,8 +4,8 @@
  */
 
 import { useState, useMemo, useCallback } from 'react';
-import { useFluxoCaixa } from '../../../hooks/useFluxoCaixa';
-import { useRecorrentes } from '../../../hooks/useRecorrentes';
+import { useFluxoCaixa } from '../../../hooks/useFluxoCaixaV2';
+import { useRecorrentes } from '../../../hooks/useRecorrentesV2';
 import { TransacaoExpandida, ResumoMensal } from '../types';
 import {
   filtrarPorMes,

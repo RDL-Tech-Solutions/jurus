@@ -4,7 +4,7 @@
 
 import React, { memo } from 'react';
 import { CreditCard, TrendingUp, AlertTriangle, ChevronRight } from 'lucide-react';
-import { useCartaoCredito } from '../../../hooks/useCartaoCredito';
+import { useCartaoCredito } from '../../../hooks/useCartaoCreditoV2';
 import { cn } from '../../../utils/cn';
 
 interface CardCartoesCreditoProps {
@@ -12,9 +12,15 @@ interface CardCartoesCreditoProps {
 }
 
 export const CardCartoesCredito: React.FC<CardCartoesCreditoProps> = memo(({ onVerMais }) => {
-    const { cartoes, estatisticas, obterFaturaAtual } = useCartaoCredito();
-
-    const cartoesAtivos = cartoes.filter(c => c.ativo);
+    const { 
+        cartoes, 
+        cartoesAtivos,
+        limiteTotal, 
+        totalGasto, 
+        limiteDisponivel, 
+        percentualUsado,
+        obterProximaFatura 
+    } = useCartaoCredito();
 
     const formatarMoeda = (valor: number) => {
         return new Intl.NumberFormat('pt-BR', {
@@ -88,19 +94,19 @@ export const CardCartoesCredito: React.FC<CardCartoesCreditoProps> = memo(({ onV
                 <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl p-3 border border-blue-100 dark:border-blue-900">
                     <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">Limite Total</p>
                     <p className="text-sm font-bold text-blue-900 dark:text-blue-100">
-                        {formatarMoeda(estatisticas.totalLimite)}
+                        {formatarMoeda(limiteTotal)}
                     </p>
                 </div>
                 <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl p-3 border border-blue-100 dark:border-blue-900">
                     <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">Usado</p>
                     <p className="text-sm font-bold text-blue-900 dark:text-blue-100">
-                        {formatarMoeda(estatisticas.totalUsado)}
+                        {formatarMoeda(totalGasto)}
                     </p>
                 </div>
                 <div className="bg-white/50 dark:bg-gray-800/50 rounded-xl p-3 border border-blue-100 dark:border-blue-900">
                     <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">Disponível</p>
                     <p className="text-sm font-bold text-blue-900 dark:text-blue-100">
-                        {formatarMoeda(estatisticas.limiteDisponivel)}
+                        {formatarMoeda(limiteDisponivel)}
                     </p>
                 </div>
             </div>
@@ -108,7 +114,7 @@ export const CardCartoesCredito: React.FC<CardCartoesCreditoProps> = memo(({ onV
             {/* Lista de Cartões */}
             <div className="space-y-3">
                 {cartoesAtivos.slice(0, 3).map((cartao) => {
-                    const fatura = obterFaturaAtual(cartao.id);
+                    const fatura = obterProximaFatura(cartao.id);
                     const usado = fatura?.total || 0;
                     const disponivel = cartao.limite - usado;
                     const percentual = calcularPercentualUsado(usado, cartao.limite);
@@ -190,7 +196,7 @@ export const CardCartoesCredito: React.FC<CardCartoesCreditoProps> = memo(({ onV
             )}
 
             {/* Total de Faturas */}
-            {estatisticas.totalFaturas > 0 && (
+            {totalGasto > 0 && (
                 <div className="mt-4 p-3 bg-white/70 dark:bg-gray-800/70 rounded-xl border border-blue-100 dark:border-blue-900">
                     <div className="flex items-center justify-between">
                         <span className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
@@ -198,7 +204,7 @@ export const CardCartoesCredito: React.FC<CardCartoesCreditoProps> = memo(({ onV
                             Total de Faturas Abertas
                         </span>
                         <span className="text-sm font-bold text-blue-900 dark:text-blue-100">
-                            {formatarMoeda(estatisticas.totalFaturas)}
+                            {formatarMoeda(totalGasto)}
                         </span>
                     </div>
                 </div>

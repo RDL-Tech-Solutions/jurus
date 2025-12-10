@@ -4,10 +4,10 @@
  */
 
 import React, { useMemo } from 'react';
-import { useFluxoCaixa } from '../../../hooks/useFluxoCaixa';
-import { useRecorrentes } from '../../../hooks/useRecorrentes';
-import { useDividas } from '../../../hooks/useDividas';
-import { useCartaoCredito } from '../../../hooks/useCartaoCredito';
+import { useFluxoCaixa } from '../../../hooks/useFluxoCaixaV2';
+import { useRecorrentes } from '../../../hooks/useRecorrentesV2';
+import { useDividas } from '../../../hooks/useDividasV2';
+import { useCartaoCredito } from '../../../hooks/useCartaoCreditoV2';
 
 interface CardPrevisaoMesProps {
   saldoAtual: number;

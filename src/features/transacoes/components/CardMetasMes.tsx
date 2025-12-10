@@ -5,7 +5,7 @@
 import React, { memo } from 'react';
 import { Target, AlertTriangle, Plus, ChevronRight } from 'lucide-react';
 import { useMetas } from '../../../hooks/useMetas';
-import { useFluxoCaixa } from '../../../hooks/useFluxoCaixa';
+import { useFluxoCaixa } from '../../../hooks/useFluxoCaixaV2';
 import { cn } from '../../../utils/cn';
 
 interface CardMetasMesProps {

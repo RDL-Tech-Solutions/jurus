@@ -4,7 +4,7 @@
  */
 
 import React, { useMemo } from 'react';
-import { useFluxoCaixa } from '../../../hooks/useFluxoCaixa';
+import { useFluxoCaixa } from '../../../hooks/useFluxoCaixaV2';
 import { useMetas } from '../../../hooks/useMetas';
 
 interface CardEconomiaMensalProps {

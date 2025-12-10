@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { AppRouter } from './router';
 import { useAppStore } from './store/useAppStore';
+import { FluxoCaixaProvider } from './contexts/FluxoCaixaContext';
 
 function App() {
   const { theme } = useAppStore();
@@ -24,9 +25,11 @@ function App() {
   }, []);
 
   return (
-    <div className="App min-h-screen bg-gray-50 dark:bg-gray-900">
-      <AppRouter />
-    </div>
+    <FluxoCaixaProvider>
+      <div className="App min-h-screen bg-gray-50 dark:bg-gray-900">
+        <AppRouter />
+      </div>
+    </FluxoCaixaProvider>
   );
 }
 
